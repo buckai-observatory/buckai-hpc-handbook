@@ -1,7 +1,12 @@
+
 ---
 title: "CPU Job Templates"
 ---
 
-# CPU Job Examples
+# CPU Job
 
-Basic and array job templates.
+```bash
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+python preprocess.py
+```

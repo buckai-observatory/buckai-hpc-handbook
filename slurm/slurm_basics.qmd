@@ -1,7 +1,22 @@
+
 ---
 title: "Slurm Basics"
 ---
 
-# Overview
+# Basic Commands
 
-Basic Slurm commands and job submission workflow.
+```bash
+sinfo
+squeue
+sbatch job.slurm
+scancel JOBID
+```
+
+# Minimal Job Script
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=test
+#SBATCH --time=01:00:00
+python script.py
+```

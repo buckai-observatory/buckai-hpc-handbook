@@ -1,7 +1,11 @@
+
 ---
 title: "GPU Job Templates"
 ---
 
-# GPU Job Examples
+# Single GPU
 
-Templates for L40 and multi-GPU jobs.
+```bash
+#SBATCH --gres=gpu:l40:1
+python train.py
+```

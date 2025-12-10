@@ -1,7 +1,10 @@
+
 ---
 title: "Modules System"
 ---
 
-# Using Environment Modules
+# Load CUDA
 
-How to load software modules on Unity.
+```bash
+module load cuda
+```

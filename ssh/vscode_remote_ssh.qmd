@@ -1,7 +1,14 @@
+
 ---
 title: "VS Code Remote SSH Setup"
 ---
 
-# Remote SSH in VS Code
+# Install Extension
 
-Steps to configure VS Code for Unity access.
+Install **Remote – SSH** in VS Code.
+
+# Connect
+
+1. Cmd+Shift+P  
+2. Remote-SSH: Connect  
+3. Select `unity`

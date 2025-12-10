@@ -1,7 +1,22 @@
+
 ---
 title: "SSH Keys — Concepts & Best Practices"
 ---
 
-# SSH Keys Overview
+# Why SSH Keys?
 
-SSH keys provide secure, passwordless authentication for ASC/Unity.
+Secure authentication without passwords.
+
+# Create Key
+
+```bash
+ssh-keygen -t ed25519 -C "yourname@osu.edu" -f ~/.ssh/buckai_key
+```
+
+# Permissions
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/buckai_key
+chmod 644 ~/.ssh/buckai_key.pub
+```

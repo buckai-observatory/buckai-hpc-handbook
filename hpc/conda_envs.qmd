@@ -1,7 +1,10 @@
+
 ---
 title: "Conda Environments"
 ---
 
-# Managing Conda Environments
+# Create
 
-Recommended environment setup for Unity and ASC.
+```bash
+conda create -n buckai python=3.11
+```

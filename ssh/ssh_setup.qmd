@@ -1,0 +1,51 @@
+
+---
+title: "SSH Setup for ASC and Unity (Full Guide)"
+---
+
+# Overview
+Many OSU systems require connecting **through a jump host**. This guide includes SSH keys, ProxyJump, and troubleshooting.
+
+# 1. Generate SSH Keys
+
+```bash
+ssh-keygen -t ed25519 -C "yourname@osu.edu" -f ~/.ssh/buckai_key
+```
+
+# 2. Install Public Key
+
+```bash
+ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200
+ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu
+```
+
+# 3. SSH Config
+
+```sshconfig
+Host ascjumphost
+    HostName jump.asc.ohio-state.edu
+    User yourname.##
+    Port 2200
+
+Host unity
+    HostName unity.asc.ohio-state.edu
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    ProxyJump ascjumphost
+```
+
+# 4. Optional Node Shortcuts
+
+```sshconfig
+Host u126
+    HostName u126.asc.ohio-state.edu
+    ProxyJump unity
+```
+
+# Troubleshooting
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/buckai_key
+chmod 644 ~/.ssh/buckai_key.pub
+```

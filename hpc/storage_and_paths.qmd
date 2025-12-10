@@ -1,7 +1,11 @@
+
 ---
 title: "Storage & Paths"
 ---
 
-# File Systems on Unity
+# Filesystems
 
-Overview of /fs/project, /fs/scratch, and quotas.
+| Path | Purpose |
+|------|---------|
+| /fs/project | Long-term storage |
+| /fs/scratch | Temporary |

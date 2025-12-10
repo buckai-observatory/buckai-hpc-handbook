@@ -1,7 +1,14 @@
+
 ---
 title: "Slurm Best Practices"
 ---
 
-# Efficient Use of Slurm Resources
+# Avoid Over-Requesting
 
-Guidelines to avoid wasting CPUs, GPUs, and memory.
+Large allocations slow scheduling.
+
+# Suggested Resources
+
+| Task | CPUs | Memory |
+|------|------|--------|
+| Preprocessing | 2–4 | 4–8 GB |
