@@ -118,12 +118,34 @@
   {
     "objectID": "ssh/ssh_setup.html",
     "href": "ssh/ssh_setup.html",
-    "title": "SSH Setup for ASC and Unity (Full Guide)",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
     "section": "",
-    "text": "Overview\nMany OSU systems require connecting through a jump host. This guide includes SSH keys, ProxyJump, and troubleshooting.\n\n\n1. Generate SSH Keys\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\n2. Install Public Key\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu\n\n\n3. SSH Config\nHost ascjumphost\n    HostName jump.asc.ohio-state.edu\n    User yourname.##\n    Port 2200\n\nHost unity\n    HostName unity.asc.ohio-state.edu\n    User yourname.##\n    IdentityFile ~/.ssh/buckai_key\n    ProxyJump ascjumphost\n\n\n4. Optional Node Shortcuts\nHost u126\n    HostName u126.asc.ohio-state.edu\n    ProxyJump unity\n\n\nTroubleshooting\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub",
+    "text": "High-performance computing (HPC) clusters like ASC and Unity at OSU are accessed using a tool called SSH (Secure Shell).\nSSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.\nBecause OSU clusters are protected behind institutional firewalls, you cannot log in directly.\nInstead, you must:\n\nconnect first to a jump host (a secure gateway machine), then\n\nfrom there connect to Unity or compute nodes like u126, u170, u181, etc.\n\nSSH can automatically perform these multi-step hops for you, but only if your setup is correct.\nThis guide walks through everything you need:\n✔ Understanding SSH keys\n✔ Why clusters use jump hosts\n✔ How to generate a secure key pair\n✔ How to upload your key to OSU systems\n✔ How to configure SSH so you can just type:\nssh unity\n✔ Troubleshooting and common mistakes\nIt is designed for students and postdocs with zero prior HPC experience.",
     "crumbs": [
       "SSH",
-      "SSH Setup for ASC and Unity (Full Guide)"
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#install-on-asc-jump-host",
+    "href": "ssh/ssh_setup.html#install-on-asc-jump-host",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "4.1 Install on ASC Jump Host",
+    "text": "4.1 Install on ASC Jump Host\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200\nYou will enter your OSU password once here.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#install-on-unity-login-node",
+    "href": "ssh/ssh_setup.html#install-on-unity-login-node",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "4.2 Install on Unity Login Node",
+    "text": "4.2 Install on Unity Login Node\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu\nAfter these two steps, your key is recognized on OSU systems.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
     ]
   }
 ]

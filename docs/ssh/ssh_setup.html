@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>SSH Setup for ASC and Unity (Full Guide) – BuckAI HPC Handbook</title>
+<title>SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide) – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -286,7 +286,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH Setup for ASC and Unity (Full Guide)</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -334,7 +334,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../ssh/ssh_setup.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">SSH Setup for ASC and Unity (Full Guide)</span></a>
+ <span class="menu-text">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -427,12 +427,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
-  <li><a href="#generate-ssh-keys" id="toc-generate-ssh-keys" class="nav-link" data-scroll-target="#generate-ssh-keys">1. Generate SSH Keys</a></li>
-  <li><a href="#install-public-key" id="toc-install-public-key" class="nav-link" data-scroll-target="#install-public-key">2. Install Public Key</a></li>
-  <li><a href="#ssh-config" id="toc-ssh-config" class="nav-link" data-scroll-target="#ssh-config">3. SSH Config</a></li>
-  <li><a href="#optional-node-shortcuts" id="toc-optional-node-shortcuts" class="nav-link" data-scroll-target="#optional-node-shortcuts">4. Optional Node Shortcuts</a></li>
-  <li><a href="#troubleshooting" id="toc-troubleshooting" class="nav-link" data-scroll-target="#troubleshooting">Troubleshooting</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#what-is-ssh-and-why-do-we-use-it" id="toc-what-is-ssh-and-why-do-we-use-it" class="nav-link" data-scroll-target="#what-is-ssh-and-why-do-we-use-it">1. What Is SSH, and Why Do We Use It?</a>
+  <ul class="collapse">
+  <li><a href="#why-ssh-keys-instead-of-passwords" id="toc-why-ssh-keys-instead-of-passwords" class="nav-link" data-scroll-target="#why-ssh-keys-instead-of-passwords">Why SSH keys instead of passwords?</a></li>
+  </ul></li>
+  <li><a href="#why-do-we-need-a-jump-host" id="toc-why-do-we-need-a-jump-host" class="nav-link" data-scroll-target="#why-do-we-need-a-jump-host">2. Why Do We Need a Jump Host?</a></li>
+  <li><a href="#step-by-step-create-your-ssh-key-pair-on-your-laptop" id="toc-step-by-step-create-your-ssh-key-pair-on-your-laptop" class="nav-link" data-scroll-target="#step-by-step-create-your-ssh-key-pair-on-your-laptop">3. Step-by-Step: Create Your SSH Key Pair (on your laptop)</a></li>
+  <li><a href="#install-your-public-key-on-osu-systems" id="toc-install-your-public-key-on-osu-systems" class="nav-link" data-scroll-target="#install-your-public-key-on-osu-systems">4. Install Your Public Key on OSU Systems</a>
+  <ul class="collapse">
+  <li><a href="#install-on-asc-jump-host" id="toc-install-on-asc-jump-host" class="nav-link" data-scroll-target="#install-on-asc-jump-host">4.1 Install on ASC Jump Host</a></li>
+  <li><a href="#install-on-unity-login-node" id="toc-install-on-unity-login-node" class="nav-link" data-scroll-target="#install-on-unity-login-node">4.2 Install on Unity Login Node</a></li>
+  </ul></li>
+  <li><a href="#create-your-local-ssh-configuration-file" id="toc-create-your-local-ssh-configuration-file" class="nav-link" data-scroll-target="#create-your-local-ssh-configuration-file">5. Create Your Local SSH Configuration File</a></li>
+  <li><a href="#optional-direct-shortcuts-to-compute-nodes" id="toc-optional-direct-shortcuts-to-compute-nodes" class="nav-link" data-scroll-target="#optional-direct-shortcuts-to-compute-nodes">6. (Optional) Direct Shortcuts to Compute Nodes</a></li>
+  <li><a href="#fix-for-older-nodes-requiring-rsa-compatibility" id="toc-fix-for-older-nodes-requiring-rsa-compatibility" class="nav-link" data-scroll-target="#fix-for-older-nodes-requiring-rsa-compatibility">7. Fix for Older Nodes Requiring RSA Compatibility</a></li>
+  <li><a href="#testing-your-setup" id="toc-testing-your-setup" class="nav-link" data-scroll-target="#testing-your-setup">8. Testing Your Setup</a></li>
+  <li><a href="#troubleshooting-guide-common-student-issues" id="toc-troubleshooting-guide-common-student-issues" class="nav-link" data-scroll-target="#troubleshooting-guide-common-student-issues">9. Troubleshooting Guide (Common Student Issues)</a>
+  <ul class="collapse">
+  <li><a href="#permission-denied-publickey" id="toc-permission-denied-publickey" class="nav-link" data-scroll-target="#permission-denied-publickey">❌ “Permission denied (publickey)”</a></li>
+  <li><a href="#could-not-resolve-hostname-unity" id="toc-could-not-resolve-hostname-unity" class="nav-link" data-scroll-target="#could-not-resolve-hostname-unity">❌ “Could not resolve hostname unity”</a></li>
+  <li><a href="#jump-host-asks-for-password-every-time" id="toc-jump-host-asks-for-password-every-time" class="nav-link" data-scroll-target="#jump-host-asks-for-password-every-time">❌ Jump host asks for password every time</a></li>
+  <li><a href="#bad-owner-or-permissions" id="toc-bad-owner-or-permissions" class="nav-link" data-scroll-target="#bad-owner-or-permissions">❌ “Bad owner or permissions”</a></li>
+  <li><a href="#vs-code-cannot-connect" id="toc-vs-code-cannot-connect" class="nav-link" data-scroll-target="#vs-code-cannot-connect">❌ VS Code cannot connect</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">10. Summary</a></li>
   </ul>
 </nav>
     </div>
@@ -440,9 +459,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH Setup for ASC and Unity (Full Guide)</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">SSH Setup for ASC and Unity (Full Guide)</h1>
+<h1 class="title">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</h1>
 </div>
 
 
@@ -459,43 +478,224 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="overview" class="level1">
-<h1>Overview</h1>
-<p>Many OSU systems require connecting <strong>through a jump host</strong>. This guide includes SSH keys, ProxyJump, and troubleshooting.</p>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>High-performance computing (HPC) clusters like <strong>ASC</strong> and <strong>Unity</strong> at OSU are accessed using a tool called <strong>SSH (Secure Shell)</strong>.<br>
+SSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.</p>
+<p>Because OSU clusters are protected behind institutional firewalls, you <strong>cannot log in directly</strong>.<br>
+Instead, you must:</p>
+<ol type="1">
+<li>connect first to a <strong>jump host</strong> (a secure gateway machine), then<br>
+</li>
+<li>from there connect to <strong>Unity</strong> or compute nodes like <code>u126</code>, <code>u170</code>, <code>u181</code>, etc.</li>
+</ol>
+<p>SSH can automatically perform these multi-step hops <em>for you</em>, but only if your setup is correct.</p>
+<p>This guide walks through <em>everything</em> you need:</p>
+<p>✔ Understanding SSH keys<br>
+✔ Why clusters use jump hosts<br>
+✔ How to generate a secure key pair<br>
+✔ How to upload your key to OSU systems<br>
+✔ How to configure SSH so you can just type:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>✔ Troubleshooting and common mistakes</p>
+<p>It is designed for students and postdocs with <strong>zero prior HPC experience</strong>.</p>
+<hr>
 </section>
-<section id="generate-ssh-keys" class="level1">
-<h1>1. Generate SSH Keys</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-C</span> <span class="st">"yourname@osu.edu"</span> <span class="at">-f</span> ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="what-is-ssh-and-why-do-we-use-it" class="level1">
+<h1>1. What Is SSH, and Why Do We Use It?</h1>
+<p>SSH = <strong>Secure Shell</strong><br>
+It is a tool that:</p>
+<ul>
+<li>encrypts your connection<br>
+</li>
+<li>verifies your identity<br>
+</li>
+<li>lets you run commands on remote computers</li>
+</ul>
+<p>Almost everything you do on HPC systems — submitting jobs, loading modules, managing files — starts with SSH.</p>
+<section id="why-ssh-keys-instead-of-passwords" class="level3">
+<h3 class="anchored" data-anchor-id="why-ssh-keys-instead-of-passwords">Why SSH keys instead of passwords?</h3>
+<p>Using passwords is:</p>
+<ul>
+<li>slow<br>
+</li>
+<li>easy to mistype<br>
+</li>
+<li>insecure<br>
+</li>
+<li>often disabled for HPC environments</li>
+</ul>
+<p>SSH <strong>keys</strong> are:</p>
+<ul>
+<li>more secure<br>
+</li>
+<li>faster (no password prompts)<br>
+</li>
+<li>mandatory for multi-hop connections<br>
+</li>
+<li>compatible with VS Code Remote-SSH</li>
+</ul>
+<p>An SSH key pair consists of:</p>
+<ul>
+<li><strong>private key</strong> → stays on your laptop<br>
+</li>
+<li><strong>public key</strong> → copied to remote machines</li>
+</ul>
+<p>Think of it as a <strong>lock and key</strong>:<br>
+You install the lock (public key) on the cluster, you keep the key (private key) on your computer.</p>
+<hr>
 </section>
-<section id="install-public-key" class="level1">
-<h1>2. Install Public Key</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="ssh-config" class="level1">
-<h1>3. SSH Config</h1>
-<pre class="sshconfig"><code>Host ascjumphost
+<section id="why-do-we-need-a-jump-host" class="level1">
+<h1>2. Why Do We Need a Jump Host?</h1>
+<p>Most OSU HPC nodes <em>cannot</em> be reached from outside campus or VPN.</p>
+<p>So you must log in through:</p>
+<pre><code>Your Laptop → ASC Jump Host → Unity Login Node → Compute Nodes</code></pre>
+<p>SSH can be configured to do this automatically using <code>ProxyJump</code>.</p>
+<hr>
+</section>
+<section id="step-by-step-create-your-ssh-key-pair-on-your-laptop" class="level1">
+<h1>3. Step-by-Step: Create Your SSH Key Pair (on your laptop)</h1>
+<p>Run this <em>on your Mac</em>, <strong>not</strong> on any cluster:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-C</span> <span class="st">"yourname@osu.edu"</span> <span class="at">-f</span> ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Choose <strong>no passphrase</strong> unless you prefer extra security.</p>
+<p>You now have:</p>
+<pre><code>~/.ssh/buckai_key       ← private key (keep safe!)
+~/.ssh/buckai_key.pub   ← public key (send to clusters)</code></pre>
+<hr>
+</section>
+<section id="install-your-public-key-on-osu-systems" class="level1">
+<h1>4. Install Your Public Key on OSU Systems</h1>
+<section id="install-on-asc-jump-host" class="level2">
+<h2 class="anchored" data-anchor-id="install-on-asc-jump-host">4.1 Install on ASC Jump Host</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You will enter your OSU password <em>once</em> here.</p>
+</section>
+<section id="install-on-unity-login-node" class="level2">
+<h2 class="anchored" data-anchor-id="install-on-unity-login-node">4.2 Install on Unity Login Node</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After these two steps, your key is recognized on OSU systems.</p>
+<hr>
+</section>
+</section>
+<section id="create-your-local-ssh-configuration-file" class="level1">
+<h1>5. Create Your Local SSH Configuration File</h1>
+<p>This file tells SSH:</p>
+<ul>
+<li>how to connect<br>
+</li>
+<li>which key to use<br>
+</li>
+<li>how to automatically hop through the jump host</li>
+</ul>
+<p>Open the file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nano</span> ~/.ssh/config</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Add the following <strong>template</strong> (replace <code>yourname.##</code> with your OSU username):</p>
+<pre class="sshconfig"><code>### ASC Jumphost
+Host ascjumphost
     HostName jump.asc.ohio-state.edu
     User yourname.##
     Port 2200
 
+### Unity Login Node (via jump host)
 Host unity
     HostName unity.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
-    ProxyJump ascjumphost</code></pre>
+    IdentitiesOnly yes
+    ProxyJump ascjumphost
+    ServerAliveInterval 240
+    ServerAliveCountMax 2</code></pre>
+<p>Now typing:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>automatically performs:</p>
+<pre><code>Laptop → Jump Host → Unity</code></pre>
+<hr>
 </section>
-<section id="optional-node-shortcuts" class="level1">
-<h1>4. Optional Node Shortcuts</h1>
+<section id="optional-direct-shortcuts-to-compute-nodes" class="level1">
+<h1>6. (Optional) Direct Shortcuts to Compute Nodes</h1>
+<p>Students often log into specific compute nodes for debugging interactive jobs.</p>
+<p>Add entries like:</p>
 <pre class="sshconfig"><code>Host u126
     HostName u126.asc.ohio-state.edu
-    ProxyJump unity</code></pre>
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
+    ProxyJump unity
+    ServerAliveInterval 240
+    ServerAliveCountMax 2</code></pre>
+<p>Repeat for other nodes (<code>u170</code>, <code>u181</code>, etc.).</p>
+<p>Usage:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u126</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
 </section>
-<section id="troubleshooting" class="level1">
-<h1>Troubleshooting</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="fix-for-older-nodes-requiring-rsa-compatibility" class="level1">
+<h1>7. Fix for Older Nodes Requiring RSA Compatibility</h1>
+<p>Some ASC systems still use older cryptographic settings. Add:</p>
+<pre class="sshconfig"><code>Host u126 u170 u181 unity
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa</code></pre>
+<p>Only include this if needed.</p>
+<hr>
+</section>
+<section id="testing-your-setup" class="level1">
+<h1>8. Testing Your Setup</h1>
+<p>Try:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You should connect with <strong>no password</strong>.</p>
+<p>Then:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u126</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You should see a prompt like:</p>
+<pre><code>[username@u126 ~]$</code></pre>
+<hr>
+</section>
+<section id="troubleshooting-guide-common-student-issues" class="level1">
+<h1>9. Troubleshooting Guide (Common Student Issues)</h1>
+<section id="permission-denied-publickey" class="level3">
+<h3 class="anchored" data-anchor-id="permission-denied-publickey">❌ “Permission denied (publickey)”</h3>
+<p>Fix:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="could-not-resolve-hostname-unity" class="level3">
+<h3 class="anchored" data-anchor-id="could-not-resolve-hostname-unity">❌ “Could not resolve hostname unity”</h3>
+<p>The config file name must be exactly:</p>
+<pre><code>~/.ssh/config</code></pre>
+</section>
+<section id="jump-host-asks-for-password-every-time" class="level3">
+<h3 class="anchored" data-anchor-id="jump-host-asks-for-password-every-time">❌ Jump host asks for password every time</h3>
+<p>You forgot to copy the public key:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="bad-owner-or-permissions" class="level3">
+<h3 class="anchored" data-anchor-id="bad-owner-or-permissions">❌ “Bad owner or permissions”</h3>
+<p>Folder permissions must be strict:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="vs-code-cannot-connect" class="level3">
+<h3 class="anchored" data-anchor-id="vs-code-cannot-connect">❌ VS Code cannot connect</h3>
+<p>Make sure your config includes:</p>
+<pre class="sshconfig"><code>IdentityFile ~/.ssh/buckai_key
+IdentitiesOnly yes</code></pre>
+<hr>
+</section>
+</section>
+<section id="summary" class="level1">
+<h1>10. Summary</h1>
+<p>With this setup you now have:</p>
+<ul>
+<li>secure SSH access<br>
+</li>
+<li>automated multi-hop login<br>
+</li>
+<li>passwordless authentication<br>
+</li>
+<li>shortcuts to compute nodes<br>
+</li>
+<li>compatibility with VS Code Remote SSH</li>
+</ul>
+<p>This is the foundation for all future HPC usage.</p>
 
 
 </section>

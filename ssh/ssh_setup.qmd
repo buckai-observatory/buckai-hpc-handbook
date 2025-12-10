@@ -1,51 +1,289 @@
+---
+title: "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+---
+
+# Introduction
+
+High-performance computing (HPC) clusters like **ASC** and **Unity** at OSU are accessed using a tool called **SSH (Secure Shell)**.  
+SSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.
+
+Because OSU clusters are protected behind institutional firewalls, you **cannot log in directly**.  
+Instead, you must:
+
+1. connect first to a **jump host** (a secure gateway machine), then  
+2. from there connect to **Unity** or compute nodes like `u126`, `u170`, `u181`, etc.
+
+SSH can automatically perform these multi-step hops *for you*, but only if your setup is correct.
+
+This guide walks through *everything* you need:
+
+✔ Understanding SSH keys  
+✔ Why clusters use jump hosts  
+✔ How to generate a secure key pair  
+✔ How to upload your key to OSU systems  
+✔ How to configure SSH so you can just type:  
+```bash
+ssh unity
+```
+✔ Troubleshooting and common mistakes
+
+It is designed for students and postdocs with **zero prior HPC experience**.
 
 ---
-title: "SSH Setup for ASC and Unity (Full Guide)"
+
+# 1. What Is SSH, and Why Do We Use It?
+
+SSH = **Secure Shell**  
+It is a tool that:
+
+- encrypts your connection  
+- verifies your identity  
+- lets you run commands on remote computers  
+
+Almost everything you do on HPC systems — submitting jobs, loading modules, managing files — starts with SSH.
+
+### Why SSH keys instead of passwords?
+
+Using passwords is:
+
+- slow  
+- easy to mistype  
+- insecure  
+- often disabled for HPC environments  
+
+SSH **keys** are:
+
+- more secure  
+- faster (no password prompts)  
+- mandatory for multi-hop connections  
+- compatible with VS Code Remote-SSH
+
+An SSH key pair consists of:
+
+- **private key** → stays on your laptop  
+- **public key** → copied to remote machines  
+
+Think of it as a **lock and key**:  
+You install the lock (public key) on the cluster, you keep the key (private key) on your computer.
+
 ---
 
-# Overview
-Many OSU systems require connecting **through a jump host**. This guide includes SSH keys, ProxyJump, and troubleshooting.
+# 2. Why Do We Need a Jump Host?
 
-# 1. Generate SSH Keys
+Most OSU HPC nodes *cannot* be reached from outside campus or VPN.
+
+So you must log in through:
+
+```
+Your Laptop → ASC Jump Host → Unity Login Node → Compute Nodes
+```
+
+SSH can be configured to do this automatically using `ProxyJump`.
+
+---
+
+# 3. Step-by-Step: Create Your SSH Key Pair (on your laptop)
+
+Run this *on your Mac*, **not** on any cluster:
 
 ```bash
 ssh-keygen -t ed25519 -C "yourname@osu.edu" -f ~/.ssh/buckai_key
 ```
 
-# 2. Install Public Key
+Choose **no passphrase** unless you prefer extra security.
+
+You now have:
+
+```
+~/.ssh/buckai_key       ← private key (keep safe!)
+~/.ssh/buckai_key.pub   ← public key (send to clusters)
+```
+
+---
+
+# 4. Install Your Public Key on OSU Systems
+
+## 4.1 Install on ASC Jump Host
 
 ```bash
 ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200
+```
+
+You will enter your OSU password *once* here.
+
+## 4.2 Install on Unity Login Node
+
+```bash
 ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu
 ```
 
-# 3. SSH Config
+After these two steps, your key is recognized on OSU systems.
+
+---
+
+# 5. Create Your Local SSH Configuration File
+
+This file tells SSH:
+
+- how to connect  
+- which key to use  
+- how to automatically hop through the jump host  
+
+Open the file:
+
+```bash
+nano ~/.ssh/config
+```
+
+Add the following **template** (replace `yourname.##` with your OSU username):
 
 ```sshconfig
+### ASC Jumphost
 Host ascjumphost
     HostName jump.asc.ohio-state.edu
     User yourname.##
     Port 2200
 
+### Unity Login Node (via jump host)
 Host unity
     HostName unity.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
     ProxyJump ascjumphost
+    ServerAliveInterval 240
+    ServerAliveCountMax 2
 ```
 
-# 4. Optional Node Shortcuts
+Now typing:
+
+```bash
+ssh unity
+```
+
+automatically performs:
+
+```
+Laptop → Jump Host → Unity
+```
+
+---
+
+# 6. (Optional) Direct Shortcuts to Compute Nodes
+
+Students often log into specific compute nodes for debugging interactive jobs.
+
+Add entries like:
 
 ```sshconfig
 Host u126
     HostName u126.asc.ohio-state.edu
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
     ProxyJump unity
+    ServerAliveInterval 240
+    ServerAliveCountMax 2
 ```
 
-# Troubleshooting
+Repeat for other nodes (`u170`, `u181`, etc.).
+
+Usage:
+
+```bash
+ssh u126
+```
+
+---
+
+# 7. Fix for Older Nodes Requiring RSA Compatibility
+
+Some ASC systems still use older cryptographic settings. Add:
+
+```sshconfig
+Host u126 u170 u181 unity
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+```
+
+Only include this if needed.
+
+---
+
+# 8. Testing Your Setup
+
+Try:
+
+```bash
+ssh unity
+```
+
+You should connect with **no password**.
+
+Then:
+
+```bash
+ssh u126
+```
+
+You should see a prompt like:
+
+```
+[username@u126 ~]$
+```
+
+---
+
+# 9. Troubleshooting Guide (Common Student Issues)
+
+### ❌ "Permission denied (publickey)"
+Fix:
 
 ```bash
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/buckai_key
 chmod 644 ~/.ssh/buckai_key.pub
 ```
+
+### ❌ "Could not resolve hostname unity"
+The config file name must be exactly:
+
+```
+~/.ssh/config
+```
+
+### ❌ Jump host asks for password every time
+You forgot to copy the public key:
+
+```bash
+ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200
+```
+
+### ❌ "Bad owner or permissions"
+Folder permissions must be strict:
+
+```bash
+chmod 700 ~/.ssh
+```
+
+### ❌ VS Code cannot connect
+Make sure your config includes:
+
+```sshconfig
+IdentityFile ~/.ssh/buckai_key
+IdentitiesOnly yes
+```
+
+---
+
+# 10. Summary
+
+With this setup you now have:
+
+- secure SSH access  
+- automated multi-hop login  
+- passwordless authentication  
+- shortcuts to compute nodes  
+- compatibility with VS Code Remote SSH  
+
+This is the foundation for all future HPC usage.
