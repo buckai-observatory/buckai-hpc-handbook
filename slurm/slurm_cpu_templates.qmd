@@ -1,0 +1,7 @@
+---
+title: "CPU Job Templates"
+---
+
+# CPU Job Examples
+
+Basic and array job templates.

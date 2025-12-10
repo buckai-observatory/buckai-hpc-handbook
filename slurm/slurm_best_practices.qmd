@@ -1,0 +1,7 @@
+---
+title: "Slurm Best Practices"
+---
+
+# Efficient Use of Slurm Resources
+
+Guidelines to avoid wasting CPUs, GPUs, and memory.

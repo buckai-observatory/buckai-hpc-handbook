@@ -1,0 +1,8 @@
+---
+title: "BuckAI HPC Handbook"
+---
+
+# BuckAI HPC Handbook
+
+Welcome to the BuckAI Observatory’s HPC Handbook.  
+This site provides instructions for SSH setup, Slurm usage, GPU/CPU templates, and best practices.

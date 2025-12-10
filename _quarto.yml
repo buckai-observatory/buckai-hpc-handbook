@@ -1,0 +1,31 @@
+project:
+  type: website
+
+website:
+  title: "BuckAI HPC Handbook"
+  navbar:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "SSH"
+        menu:
+          - ssh/ssh_setup.qmd
+          - ssh/ssh_keys.qmd
+          - ssh/vscode_remote_ssh.qmd
+      - text: "Slurm"
+        menu:
+          - slurm/slurm_basics.qmd
+          - slurm/slurm_best_practices.qmd
+          - slurm/slurm_gpu_templates.qmd
+          - slurm/slurm_cpu_templates.qmd
+      - text: "HPC"
+        menu:
+          - hpc/conda_envs.qmd
+          - hpc/modules.qmd
+          - hpc/storage_and_paths.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
