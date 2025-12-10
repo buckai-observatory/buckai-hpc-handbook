@@ -1,0 +1,72 @@
+[
+  {
+    "objectID": "ssh/ssh_keys.html",
+    "href": "ssh/ssh_keys.html",
+    "title": "SSH Keys — Concepts & Best Practices",
+    "section": "",
+    "text": "SSH Keys Overview\nSSH keys provide secure, passwordless authentication for ASC/Unity."
+  },
+  {
+    "objectID": "hpc/modules.html",
+    "href": "hpc/modules.html",
+    "title": "Modules System",
+    "section": "",
+    "text": "Using Environment Modules\nHow to load software modules on Unity."
+  },
+  {
+    "objectID": "hpc/conda_envs.html",
+    "href": "hpc/conda_envs.html",
+    "title": "Conda Environments",
+    "section": "",
+    "text": "Managing Conda Environments\nRecommended environment setup for Unity and ASC."
+  },
+  {
+    "objectID": "slurm/slurm_gpu_templates.html",
+    "href": "slurm/slurm_gpu_templates.html",
+    "title": "GPU Job Templates",
+    "section": "",
+    "text": "GPU Job Examples\nTemplates for L40 and multi-GPU jobs."
+  },
+  {
+    "objectID": "slurm/slurm_best_practices.html",
+    "href": "slurm/slurm_best_practices.html",
+    "title": "Slurm Best Practices",
+    "section": "",
+    "text": "Efficient Use of Slurm Resources\nGuidelines to avoid wasting CPUs, GPUs, and memory."
+  },
+  {
+    "objectID": "slurm/slurm_basics.html",
+    "href": "slurm/slurm_basics.html",
+    "title": "Slurm Basics",
+    "section": "",
+    "text": "Overview\nBasic Slurm commands and job submission workflow."
+  },
+  {
+    "objectID": "slurm/slurm_cpu_templates.html",
+    "href": "slurm/slurm_cpu_templates.html",
+    "title": "CPU Job Templates",
+    "section": "",
+    "text": "CPU Job Examples\nBasic and array job templates."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "BuckAI HPC Handbook",
+    "section": "",
+    "text": "BuckAI HPC Handbook\nWelcome to the BuckAI Observatory’s HPC Handbook.\nThis site provides instructions for SSH setup, Slurm usage, GPU/CPU templates, and best practices."
+  },
+  {
+    "objectID": "hpc/storage_and_paths.html",
+    "href": "hpc/storage_and_paths.html",
+    "title": "Storage & Paths",
+    "section": "",
+    "text": "File Systems on Unity\nOverview of /fs/project, /fs/scratch, and quotas."
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html",
+    "href": "ssh/vscode_remote_ssh.html",
+    "title": "VS Code Remote SSH Setup",
+    "section": "",
+    "text": "Remote SSH in VS Code\nSteps to configure VS Code for Unity access."
+  }
+]
