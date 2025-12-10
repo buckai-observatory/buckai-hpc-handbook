@@ -1,0 +1,8 @@
+
+<div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
+  <img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="90">
+  <div style="font-size:2.0rem; font-weight:700;">
+    BuckAI Observatory — HPC Handbook
+  </div>
+</div>
+<hr>

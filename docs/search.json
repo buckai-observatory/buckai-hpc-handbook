@@ -4,76 +4,126 @@
     "href": "ssh/ssh_keys.html",
     "title": "SSH Keys — Concepts & Best Practices",
     "section": "",
-    "text": "Why SSH Keys?\nSecure authentication without passwords.\n\n\nCreate Key\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\nPermissions\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub"
+    "text": "Why SSH Keys?\nSecure authentication without passwords.\n\n\nCreate Key\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\nPermissions\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub",
+    "crumbs": [
+      "SSH",
+      "SSH Keys — Concepts & Best Practices"
+    ]
   },
   {
     "objectID": "ssh/vscode_remote_ssh.html",
     "href": "ssh/vscode_remote_ssh.html",
     "title": "VS Code Remote SSH Setup",
     "section": "",
-    "text": "Install Extension\nInstall Remote – SSH in VS Code.\n\n\nConnect\n\nCmd+Shift+P\n\nRemote-SSH: Connect\n\nSelect unity"
+    "text": "Install Extension\nInstall Remote – SSH in VS Code.\n\n\nConnect\n\nCmd+Shift+P\n\nRemote-SSH: Connect\n\nSelect unity",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote SSH Setup"
+    ]
   },
   {
     "objectID": "hpc/storage_and_paths.html",
     "href": "hpc/storage_and_paths.html",
     "title": "Storage & Paths",
     "section": "",
-    "text": "Filesystems\n\n\n\nPath\nPurpose\n\n\n\n\n/fs/project\nLong-term storage\n\n\n/fs/scratch\nTemporary"
+    "text": "Filesystems\n\n\n\nPath\nPurpose\n\n\n\n\n/fs/project\nLong-term storage\n\n\n/fs/scratch\nTemporary",
+    "crumbs": [
+      "HPC",
+      "Storage & Paths"
+    ]
   },
   {
     "objectID": "index.html",
     "href": "index.html",
     "title": "BuckAI HPC Handbook",
     "section": "",
-    "text": "BuckAI HPC Handbook\nThis handbook provides standardized documentation for BuckAI students, postdocs, and collaborators who use OSU HPC systems (ASC, Unity)."
-  },
-  {
-    "objectID": "slurm/slurm_cpu_templates.html",
-    "href": "slurm/slurm_cpu_templates.html",
-    "title": "CPU Job Templates",
-    "section": "",
-    "text": "CPU Job\n#SBATCH --cpus-per-task=4\n#SBATCH --mem=16G\npython preprocess.py"
-  },
-  {
-    "objectID": "slurm/slurm_basics.html",
-    "href": "slurm/slurm_basics.html",
-    "title": "Slurm Basics",
-    "section": "",
-    "text": "Basic Commands\nsinfo\nsqueue\nsbatch job.slurm\nscancel JOBID\n\n\nMinimal Job Script\n#!/bin/bash\n#SBATCH --job-name=test\n#SBATCH --time=01:00:00\npython script.py"
-  },
-  {
-    "objectID": "slurm/slurm_best_practices.html",
-    "href": "slurm/slurm_best_practices.html",
-    "title": "Slurm Best Practices",
-    "section": "",
-    "text": "Avoid Over-Requesting\nLarge allocations slow scheduling.\n\n\nSuggested Resources\n\n\n\nTask\nCPUs\nMemory\n\n\n\n\nPreprocessing\n2–4\n4–8 GB"
+    "text": "BuckAI Observatory — HPC Handbook\n\n\n\n\nBuckAI HPC Handbook\nThis handbook provides standardized documentation for BuckAI students, postdocs, and collaborators who use OSU HPC systems (ASC, Unity).",
+    "crumbs": [
+      "BuckAI HPC Handbook"
+    ]
   },
   {
     "objectID": "slurm/slurm_gpu_templates.html",
     "href": "slurm/slurm_gpu_templates.html",
     "title": "GPU Job Templates",
     "section": "",
-    "text": "Single GPU\n#SBATCH --gres=gpu:l40:1\npython train.py"
+    "text": "Single GPU\n#SBATCH --gres=gpu:l40:1\npython train.py",
+    "crumbs": [
+      "Slurm",
+      "GPU Job Templates"
+    ]
+  },
+  {
+    "objectID": "slurm/slurm_best_practices.html",
+    "href": "slurm/slurm_best_practices.html",
+    "title": "Slurm Best Practices",
+    "section": "",
+    "text": "Avoid Over-Requesting\nLarge allocations slow scheduling.\n\n\nSuggested Resources\n\n\n\nTask\nCPUs\nMemory\n\n\n\n\nPreprocessing\n2–4\n4–8 GB",
+    "crumbs": [
+      "Slurm",
+      "Slurm Best Practices"
+    ]
+  },
+  {
+    "objectID": "slurm/slurm_basics.html",
+    "href": "slurm/slurm_basics.html",
+    "title": "Slurm Basics",
+    "section": "",
+    "text": "Basic Commands\nsinfo\nsqueue\nsbatch job.slurm\nscancel JOBID\n\n\nMinimal Job Script\n#!/bin/bash\n#SBATCH --job-name=test\n#SBATCH --time=01:00:00\npython script.py",
+    "crumbs": [
+      "Slurm",
+      "Slurm Basics"
+    ]
+  },
+  {
+    "objectID": "slurm/slurm_cpu_templates.html",
+    "href": "slurm/slurm_cpu_templates.html",
+    "title": "CPU Job Templates",
+    "section": "",
+    "text": "CPU Job\n#SBATCH --cpus-per-task=4\n#SBATCH --mem=16G\npython preprocess.py",
+    "crumbs": [
+      "Slurm",
+      "CPU Job Templates"
+    ]
+  },
+  {
+    "objectID": "banner.html",
+    "href": "banner.html",
+    "title": "BuckAI HPC Handbook",
+    "section": "",
+    "text": "BuckAI Observatory — HPC Handbook"
   },
   {
     "objectID": "hpc/conda_envs.html",
     "href": "hpc/conda_envs.html",
     "title": "Conda Environments",
     "section": "",
-    "text": "Create\nconda create -n buckai python=3.11"
+    "text": "Create\nconda create -n buckai python=3.11",
+    "crumbs": [
+      "HPC",
+      "Conda Environments"
+    ]
   },
   {
     "objectID": "hpc/modules.html",
     "href": "hpc/modules.html",
     "title": "Modules System",
     "section": "",
-    "text": "Load CUDA\nmodule load cuda"
+    "text": "Load CUDA\nmodule load cuda",
+    "crumbs": [
+      "HPC",
+      "Modules System"
+    ]
   },
   {
     "objectID": "ssh/ssh_setup.html",
     "href": "ssh/ssh_setup.html",
     "title": "SSH Setup for ASC and Unity (Full Guide)",
     "section": "",
-    "text": "Overview\nMany OSU systems require connecting through a jump host. This guide includes SSH keys, ProxyJump, and troubleshooting.\n\n\n1. Generate SSH Keys\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\n2. Install Public Key\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu\n\n\n3. SSH Config\nHost ascjumphost\n    HostName jump.asc.ohio-state.edu\n    User yourname.##\n    Port 2200\n\nHost unity\n    HostName unity.asc.ohio-state.edu\n    User yourname.##\n    IdentityFile ~/.ssh/buckai_key\n    ProxyJump ascjumphost\n\n\n4. Optional Node Shortcuts\nHost u126\n    HostName u126.asc.ohio-state.edu\n    ProxyJump unity\n\n\nTroubleshooting\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub"
+    "text": "Overview\nMany OSU systems require connecting through a jump host. This guide includes SSH keys, ProxyJump, and troubleshooting.\n\n\n1. Generate SSH Keys\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\n2. Install Public Key\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu\n\n\n3. SSH Config\nHost ascjumphost\n    HostName jump.asc.ohio-state.edu\n    User yourname.##\n    Port 2200\n\nHost unity\n    HostName unity.asc.ohio-state.edu\n    User yourname.##\n    IdentityFile ~/.ssh/buckai_key\n    ProxyJump ascjumphost\n\n\n4. Optional Node Shortcuts\nHost u126\n    HostName u126.asc.ohio-state.edu\n    ProxyJump unity\n\n\nTroubleshooting\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Full Guide)"
+    ]
   }
 ]

@@ -1,0 +1,17 @@
+
+/* OSU Scarlet & Gray */
+:root {
+  --osu-scarlet: #bb0000;
+  --osu-gray: #666666;
+}
+
+/* Highlight active sidebar item */
+.sidebar .nav-link.active {
+  background-color: var(--osu-scarlet) !important;
+  color: white !important;
+}
+
+/* Navbar branding color */
+.navbar {
+  background-color: var(--osu-scarlet) !important;
+}

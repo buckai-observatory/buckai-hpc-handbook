@@ -5,29 +5,43 @@ project:
 
 website:
   title: "BuckAI HPC Handbook"
-  navbar:
-    left:
-      - text: "Home"
-        href: index.qmd
-      - text: "SSH"
-        menu:
+  favicon: images/BuckAI_logo_transp.png
+
+  page-navigation: true
+
+  sidebar:
+    style: "docked"
+    search: true
+    logo: images/BuckAI_logo_transp.png
+    contents:
+      - index.qmd
+      - section: "SSH"
+        icon: "unlock"
+        contents:
           - ssh/ssh_setup.qmd
           - ssh/ssh_keys.qmd
           - ssh/vscode_remote_ssh.qmd
-      - text: "Slurm"
-        menu:
+      - section: "Slurm"
+        icon: "cpu"
+        contents:
           - slurm/slurm_basics.qmd
           - slurm/slurm_best_practices.qmd
           - slurm/slurm_gpu_templates.qmd
           - slurm/slurm_cpu_templates.qmd
-      - text: "HPC"
-        menu:
+      - section: "HPC"
+        icon: "server"
+        contents:
           - hpc/conda_envs.qmd
           - hpc/modules.qmd
           - hpc/storage_and_paths.qmd
 
 format:
   html:
-    theme: cosmo
+    theme:
+      light: cosmo
+      dark: darkly
+    toggle: true
     toc: true
     toc-depth: 3
+    code-copy: true
+    css: styles.css
