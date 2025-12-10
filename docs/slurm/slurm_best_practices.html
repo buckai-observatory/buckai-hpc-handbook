@@ -98,7 +98,10 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text">SSH</span>
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-ssh">    
-        <li class="dropdown-header">ssh/ssh_setup.qmd</li>
+        <li>
+    <a class="dropdown-item" href="../ssh/ssh_setup.html">
+ <span class="dropdown-text">SSH Setup for ASC and Unity (Full Guide)</span></a>
+  </li>  
         <li>
     <a class="dropdown-item" href="../ssh/ssh_keys.html">
  <span class="dropdown-text">SSH Keys — Concepts &amp; Best Practices</span></a>
@@ -167,7 +170,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#efficient-use-of-slurm-resources" id="toc-efficient-use-of-slurm-resources" class="nav-link active" data-scroll-target="#efficient-use-of-slurm-resources">Efficient Use of Slurm Resources</a></li>
+  <li><a href="#avoid-over-requesting" id="toc-avoid-over-requesting" class="nav-link active" data-scroll-target="#avoid-over-requesting">Avoid Over-Requesting</a></li>
+  <li><a href="#suggested-resources" id="toc-suggested-resources" class="nav-link" data-scroll-target="#suggested-resources">Suggested Resources</a></li>
   </ul>
 </nav>
     </div>
@@ -193,9 +197,28 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="efficient-use-of-slurm-resources" class="level1">
-<h1>Efficient Use of Slurm Resources</h1>
-<p>Guidelines to avoid wasting CPUs, GPUs, and memory.</p>
+<section id="avoid-over-requesting" class="level1">
+<h1>Avoid Over-Requesting</h1>
+<p>Large allocations slow scheduling.</p>
+</section>
+<section id="suggested-resources" class="level1">
+<h1>Suggested Resources</h1>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>CPUs</th>
+<th>Memory</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Preprocessing</td>
+<td>2–4</td>
+<td>4–8 GB</td>
+</tr>
+</tbody>
+</table>
 
 
 </section>

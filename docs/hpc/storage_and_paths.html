@@ -98,7 +98,10 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text">SSH</span>
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-ssh">    
-        <li class="dropdown-header">ssh/ssh_setup.qmd</li>
+        <li>
+    <a class="dropdown-item" href="../ssh/ssh_setup.html">
+ <span class="dropdown-text">SSH Setup for ASC and Unity (Full Guide)</span></a>
+  </li>  
         <li>
     <a class="dropdown-item" href="../ssh/ssh_keys.html">
  <span class="dropdown-text">SSH Keys — Concepts &amp; Best Practices</span></a>
@@ -167,7 +170,7 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#file-systems-on-unity" id="toc-file-systems-on-unity" class="nav-link active" data-scroll-target="#file-systems-on-unity">File Systems on Unity</a></li>
+  <li><a href="#filesystems" id="toc-filesystems" class="nav-link active" data-scroll-target="#filesystems">Filesystems</a></li>
   </ul>
 </nav>
     </div>
@@ -193,9 +196,26 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="file-systems-on-unity" class="level1">
-<h1>File Systems on Unity</h1>
-<p>Overview of /fs/project, /fs/scratch, and quotas.</p>
+<section id="filesystems" class="level1">
+<h1>Filesystems</h1>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>/fs/project</td>
+<td>Long-term storage</td>
+</tr>
+<tr class="even">
+<td>/fs/scratch</td>
+<td>Temporary</td>
+</tr>
+</tbody>
+</table>
 
 
 </section>

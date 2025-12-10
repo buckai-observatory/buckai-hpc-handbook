@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>SSH Keys — Concepts &amp; Best Practices – BuckAI HPC Handbook</title>
+<title>SSH Setup for ASC and Unity (Full Guide) – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -205,9 +205,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#why-ssh-keys" id="toc-why-ssh-keys" class="nav-link active" data-scroll-target="#why-ssh-keys">Why SSH Keys?</a></li>
-  <li><a href="#create-key" id="toc-create-key" class="nav-link" data-scroll-target="#create-key">Create Key</a></li>
-  <li><a href="#permissions" id="toc-permissions" class="nav-link" data-scroll-target="#permissions">Permissions</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#generate-ssh-keys" id="toc-generate-ssh-keys" class="nav-link" data-scroll-target="#generate-ssh-keys">1. Generate SSH Keys</a></li>
+  <li><a href="#install-public-key" id="toc-install-public-key" class="nav-link" data-scroll-target="#install-public-key">2. Install Public Key</a></li>
+  <li><a href="#ssh-config" id="toc-ssh-config" class="nav-link" data-scroll-target="#ssh-config">3. SSH Config</a></li>
+  <li><a href="#optional-node-shortcuts" id="toc-optional-node-shortcuts" class="nav-link" data-scroll-target="#optional-node-shortcuts">4. Optional Node Shortcuts</a></li>
+  <li><a href="#troubleshooting" id="toc-troubleshooting" class="nav-link" data-scroll-target="#troubleshooting">Troubleshooting</a></li>
   </ul>
 </nav>
     </div>
@@ -216,7 +219,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">SSH Keys — Concepts &amp; Best Practices</h1>
+<h1 class="title">SSH Setup for ASC and Unity (Full Guide)</h1>
 </div>
 
 
@@ -233,19 +236,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="why-ssh-keys" class="level1">
-<h1>Why SSH Keys?</h1>
-<p>Secure authentication without passwords.</p>
+<section id="overview" class="level1">
+<h1>Overview</h1>
+<p>Many OSU systems require connecting <strong>through a jump host</strong>. This guide includes SSH keys, ProxyJump, and troubleshooting.</p>
 </section>
-<section id="create-key" class="level1">
-<h1>Create Key</h1>
+<section id="generate-ssh-keys" class="level1">
+<h1>1. Generate SSH Keys</h1>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-C</span> <span class="st">"yourname@osu.edu"</span> <span class="at">-f</span> ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="permissions" class="level1">
-<h1>Permissions</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="install-public-key" class="level1">
+<h1>2. Install Public Key</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="ssh-config" class="level1">
+<h1>3. SSH Config</h1>
+<pre class="sshconfig"><code>Host ascjumphost
+    HostName jump.asc.ohio-state.edu
+    User yourname.##
+    Port 2200
+
+Host unity
+    HostName unity.asc.ohio-state.edu
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    ProxyJump ascjumphost</code></pre>
+</section>
+<section id="optional-node-shortcuts" class="level1">
+<h1>4. Optional Node Shortcuts</h1>
+<pre class="sshconfig"><code>Host u126
+    HostName u126.asc.ohio-state.edu
+    ProxyJump unity</code></pre>
+</section>
+<section id="troubleshooting" class="level1">
+<h1>Troubleshooting</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

@@ -98,7 +98,10 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text">SSH</span>
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-ssh">    
-        <li class="dropdown-header">ssh/ssh_setup.qmd</li>
+        <li>
+    <a class="dropdown-item" href="../ssh/ssh_setup.html">
+ <span class="dropdown-text">SSH Setup for ASC and Unity (Full Guide)</span></a>
+  </li>  
         <li>
     <a class="dropdown-item" href="../ssh/ssh_keys.html">
  <span class="dropdown-text">SSH Keys — Concepts &amp; Best Practices</span></a>
@@ -167,7 +170,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#remote-ssh-in-vs-code" id="toc-remote-ssh-in-vs-code" class="nav-link active" data-scroll-target="#remote-ssh-in-vs-code">Remote SSH in VS Code</a></li>
+  <li><a href="#install-extension" id="toc-install-extension" class="nav-link active" data-scroll-target="#install-extension">Install Extension</a></li>
+  <li><a href="#connect" id="toc-connect" class="nav-link" data-scroll-target="#connect">Connect</a></li>
   </ul>
 </nav>
     </div>
@@ -193,9 +197,19 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="remote-ssh-in-vs-code" class="level1">
-<h1>Remote SSH in VS Code</h1>
-<p>Steps to configure VS Code for Unity access.</p>
+<section id="install-extension" class="level1">
+<h1>Install Extension</h1>
+<p>Install <strong>Remote – SSH</strong> in VS Code.</p>
+</section>
+<section id="connect" class="level1">
+<h1>Connect</h1>
+<ol type="1">
+<li>Cmd+Shift+P<br>
+</li>
+<li>Remote-SSH: Connect<br>
+</li>
+<li>Select <code>unity</code></li>
+</ol>
 
 
 </section>
