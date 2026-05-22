@@ -454,7 +454,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#the-flexible-path-headless-jupyter-via-ssh-tunnel" id="toc-the-flexible-path-headless-jupyter-via-ssh-tunnel" class="nav-link" data-scroll-target="#the-flexible-path-headless-jupyter-via-ssh-tunnel">2. The Flexible Path: Headless Jupyter via SSH Tunnel</a>
   <ul class="collapse">
-  <li><a href="#step-1-get-a-gpu-compute-node-on-unity" id="toc-step-1-get-a-gpu-compute-node-on-unity" class="nav-link" data-scroll-target="#step-1-get-a-gpu-compute-node-on-unity">2.1 Step 1 — Get a GPU compute node on Unity</a></li>
+  <li><a href="#step-1-get-a-compute-node-on-unity" id="toc-step-1-get-a-compute-node-on-unity" class="nav-link" data-scroll-target="#step-1-get-a-compute-node-on-unity">2.1 Step 1 — Get a compute node on Unity</a></li>
   <li><a href="#step-2-start-jupyter-on-the-compute-node" id="toc-step-2-start-jupyter-on-the-compute-node" class="nav-link" data-scroll-target="#step-2-start-jupyter-on-the-compute-node">2.2 Step 2 — Start Jupyter on the compute node</a></li>
   <li><a href="#step-3-open-the-ssh-tunnel-from-your-laptop" id="toc-step-3-open-the-ssh-tunnel-from-your-laptop" class="nav-link" data-scroll-target="#step-3-open-the-ssh-tunnel-from-your-laptop">2.3 Step 3 — Open the SSH tunnel from your laptop</a></li>
   <li><a href="#step-4-open-your-browser" id="toc-step-4-open-your-browser" class="nav-link" data-scroll-target="#step-4-open-your-browser">2.4 Step 4 — Open your browser</a></li>
@@ -522,7 +522,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>There are two ways to do this:</p>
 <ol type="1">
 <li>✅ <strong>The easy path: Unity OnDemand</strong> — a web portal that gives you Jupyter, MATLAB, RStudio, etc. with no SSH setup. Works for most exploratory and teaching use.</li>
-<li>🛠 <strong>The flexible path: headless Jupyter + SSH tunnel</strong> — start Jupyter yourself on a compute node and tunnel it back to your laptop’s browser. More setup, but you get <strong>GPU access</strong> and full control.</li>
+<li>🛠 <strong>The flexible path: headless Jupyter + SSH tunnel</strong> — start Jupyter yourself on a compute node and tunnel it back to your laptop’s browser. More setup, but you get <strong>full control over the allocation</strong> (CPU, memory, GPUs — whatever the work needs).</li>
 </ol>
 <p>This page covers both, and shows how to apply the same SSH-tunnel trick to <strong>TensorBoard</strong> for monitoring training runs.</p>
 <p>Prerequisite: a working SSH setup (<a href="../ssh/ssh_setup.html">SSH Setup</a>) with multiplexing and direct compute-node aliases (Section 8 of the SSH page). Familiarity with the <a href="../hpc/shell_environment.html">Shell Environment</a> page for aliases helps.</p>
@@ -570,19 +570,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="the-flexible-path-headless-jupyter-via-ssh-tunnel" class="level1">
 <h1>2. The Flexible Path: Headless Jupyter via SSH Tunnel</h1>
-<p>The idea: start a Jupyter server on a compute node (one that you’ve allocated, possibly with a GPU), and <strong>forward the connection back to your laptop’s browser</strong> through an SSH tunnel.</p>
+<p>The idea: start a Jupyter server on a compute node (one that you’ve allocated with whatever resources you need — CPU-only, memory-heavy, with GPUs, etc.), and <strong>forward the connection back to your laptop’s browser</strong> through an SSH tunnel.</p>
 <p>There are three moving parts:</p>
 <ol type="1">
-<li>A compute-node allocation (<code>sinteractive</code> with <code>-g</code> for GPU)</li>
+<li>A compute-node allocation via <code>sinteractive</code> (with whatever resource flags fit the work)</li>
 <li>A Jupyter process running on that node, <strong>not opening a browser</strong> (since the node has no browser) and listening on a port like <code>8888</code></li>
 <li>An SSH tunnel from your laptop that maps a local port (e.g.&nbsp;<code>9099</code>) to that remote port</li>
 </ol>
 <p>The reason it works is that <strong>SSH’s <code>-L</code> flag</strong> lets us route traffic from <code>localhost:9099</code> on your Mac all the way through to <code>127.0.0.1:8888</code> on the compute node, transparently. From your browser’s perspective, you’re just visiting <code>http://127.0.0.1:9099</code>.</p>
-<section id="step-1-get-a-gpu-compute-node-on-unity" class="level3">
-<h3 class="anchored" data-anchor-id="step-1-get-a-gpu-compute-node-on-unity">2.1 Step 1 — Get a GPU compute node on Unity</h3>
+<section id="step-1-get-a-compute-node-on-unity" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-get-a-compute-node-on-unity">2.1 Step 1 — Get a compute node on Unity</h3>
 <p>From a terminal SSH’d into Unity (or from VS Code’s integrated terminal):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> -g 1 <span class="at">-t</span> 06:00:00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Replace <code>&lt;group&gt;</code> with your Slurm partition (often <code>batch</code> — see <a href="../hpc/shell_environment.html">Shell Environment §4</a>). The <code>-g 1</code> requests one GPU. The <code>-t 06:00:00</code> asks for 6 hours.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CPU-only — fine for most data analysis, plotting, light Python work:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> -m 16000 <span class="at">-t</span> 06:00:00</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Add `-g 1` if you need a GPU (e.g. for training neural networks):</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> -g 1 <span class="at">-m</span> 16000 <span class="at">-t</span> 06:00:00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Replace <code>&lt;group&gt;</code> with your Slurm partition (often <code>batch</code> — see <a href="../hpc/shell_environment.html">Shell Environment §4</a>). The <code>-m 16000</code> requests 16 GB of memory, <code>-t 06:00:00</code> asks for 6 hours, and <code>-g 1</code> (optional) requests one GPU. Tune all three to your actual needs — many notebooks need much less than 16 GB and don’t need a GPU at all.</p>
 <p>Once allocated, your shell prompt will change to indicate you’re on a compute node — note the hostname (e.g.&nbsp;<code>u500</code> — I’ll use <code>mynode</code> as a placeholder throughout this page).</p>
 </section>
 <section id="step-2-start-jupyter-on-the-compute-node" class="level3">
@@ -619,7 +623,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>http://127.0.0.1:9099</code></pre>
 <p>(Note: <strong>9099</strong>, the local port, not 8888.)</p>
 <p>You’ll see Jupyter’s “Token authentication” page. Paste the token from Step 2.</p>
-<p>✅ You’re now running Jupyter on a GPU node, edited and viewed locally in Safari/Chrome.</p>
+<p>✅ You’re now running Jupyter on a Unity compute node, edited and viewed locally in Safari/Chrome.</p>
 <hr>
 </section>
 </section>
@@ -630,7 +634,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in">On the <strong>cluster’s</strong> <code>~/.bashrc</code> (so it’s available when you’re SSH’d in):</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start a headless Jupyter on the current node, port 8888</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'jupyter notebook --no-browser --port=8888'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>So after <code>sinteractive ... -g 1</code>, just type <code>jup</code>.</p>
+<p>So once you’ve grabbed a node with <code>sinteractive ...</code>, just type <code>jup</code>.</p>
 </section>
 <section id="on-your-laptops-.bashrc-or-.zshrc" class="level3">
 <h3 class="anchored" data-anchor-id="on-your-laptops-.bashrc-or-.zshrc">On your <strong>laptop’s</strong> <code>~/.bashrc</code> or <code>~/.zshrc</code>:</h3>
@@ -756,7 +760,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <p>The recipe:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On Unity:</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>                            <span class="co"># tmux + sinteractive -g 1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>                            <span class="co"># tmux + sinteractive (defined in your .bashrc)</span></span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                                 <span class="co"># starts headless Jupyter</span></span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ... disconnect, close laptop, etc. ...</span></span>
@@ -854,7 +858,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li>✔ Try <strong>OnDemand first</strong> for casual Jupyter / MATLAB / RStudio — no SSH setup, no Duo per session</li>
 <li>✔ Use the <strong>JupyterLab <code>/lab</code> URL trick</strong> for a better notebook interface in OnDemand</li>
-<li>✔ Use the <strong>headless Jupyter + SSH tunnel</strong> approach when you need a GPU, full control, or a custom mamba environment</li>
+<li>✔ Use the <strong>headless Jupyter + SSH tunnel</strong> approach when you need GPU access, more memory than OnDemand gives you, full control over the allocation, or a custom mamba environment</li>
 <li>✔ The same tunnel trick works for <strong>TensorBoard</strong> — just swap port <code>8888</code> for <code>6006</code></li>
 <li>✔ Run cluster-side servers inside <code>livenode</code> / <code>tmux</code> so they survive disconnects (<a href="../hpc/persistent_sessions.html">Persistent Sessions</a>)</li>
 <li>✔ Keep distinct local ports per tunnel so you can run several in parallel</li>

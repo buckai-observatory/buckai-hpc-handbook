@@ -9,7 +9,7 @@ One of the most useful daily HPC patterns is **running a notebook or dashboard i
 There are two ways to do this:
 
 1. ✅ **The easy path: Unity OnDemand** — a web portal that gives you Jupyter, MATLAB, RStudio, etc. with no SSH setup. Works for most exploratory and teaching use.
-2. 🛠 **The flexible path: headless Jupyter + SSH tunnel** — start Jupyter yourself on a compute node and tunnel it back to your laptop's browser. More setup, but you get **GPU access** and full control.
+2. 🛠 **The flexible path: headless Jupyter + SSH tunnel** — start Jupyter yourself on a compute node and tunnel it back to your laptop's browser. More setup, but you get **full control over the allocation** (CPU, memory, GPUs — whatever the work needs).
 
 This page covers both, and shows how to apply the same SSH-tunnel trick to **TensorBoard** for monitoring training runs.
 
@@ -69,25 +69,29 @@ If you need any of those, use the manual SSH-tunnel approach below.
 
 # 2. The Flexible Path: Headless Jupyter via SSH Tunnel
 
-The idea: start a Jupyter server on a compute node (one that you've allocated, possibly with a GPU), and **forward the connection back to your laptop's browser** through an SSH tunnel.
+The idea: start a Jupyter server on a compute node (one that you've allocated with whatever resources you need — CPU-only, memory-heavy, with GPUs, etc.), and **forward the connection back to your laptop's browser** through an SSH tunnel.
 
 There are three moving parts:
 
-1. A compute-node allocation (`sinteractive` with `-g` for GPU)
+1. A compute-node allocation via `sinteractive` (with whatever resource flags fit the work)
 2. A Jupyter process running on that node, **not opening a browser** (since the node has no browser) and listening on a port like `8888`
 3. An SSH tunnel from your laptop that maps a local port (e.g. `9099`) to that remote port
 
 The reason it works is that **SSH's `-L` flag** lets us route traffic from `localhost:9099` on your Mac all the way through to `127.0.0.1:8888` on the compute node, transparently. From your browser's perspective, you're just visiting `http://127.0.0.1:9099`.
 
-### 2.1 Step 1 — Get a GPU compute node on Unity
+### 2.1 Step 1 — Get a compute node on Unity
 
 From a terminal SSH'd into Unity (or from VS Code's integrated terminal):
 
 ```bash
-sinteractive -p <group> -g 1 -t 06:00:00
+# CPU-only — fine for most data analysis, plotting, light Python work:
+sinteractive -p <group> -m 16000 -t 06:00:00
+
+# Add `-g 1` if you need a GPU (e.g. for training neural networks):
+sinteractive -p <group> -g 1 -m 16000 -t 06:00:00
 ```
 
-Replace `<group>` with your Slurm partition (often `batch` — see [Shell Environment §4](shell_environment.qmd)). The `-g 1` requests one GPU. The `-t 06:00:00` asks for 6 hours.
+Replace `<group>` with your Slurm partition (often `batch` — see [Shell Environment §4](shell_environment.qmd)). The `-m 16000` requests 16 GB of memory, `-t 06:00:00` asks for 6 hours, and `-g 1` (optional) requests one GPU. Tune all three to your actual needs — many notebooks need much less than 16 GB and don't need a GPU at all.
 
 Once allocated, your shell prompt will change to indicate you're on a compute node — note the hostname (e.g. `u500` — I'll use `mynode` as a placeholder throughout this page).
 
@@ -145,7 +149,7 @@ http://127.0.0.1:9099
 
 You'll see Jupyter's "Token authentication" page. Paste the token from Step 2.
 
-✅ You're now running Jupyter on a GPU node, edited and viewed locally in Safari/Chrome.
+✅ You're now running Jupyter on a Unity compute node, edited and viewed locally in Safari/Chrome.
 
 ---
 
@@ -160,7 +164,7 @@ Once you've done the manual dance a few times, alias everything. From [Shell Env
 alias jup='jupyter notebook --no-browser --port=8888'
 ```
 
-So after `sinteractive ... -g 1`, just type `jup`.
+So once you've grabbed a node with `sinteractive ...`, just type `jup`.
 
 ### On your **laptop's** `~/.bashrc` or `~/.zshrc`:
 
@@ -309,7 +313,7 @@ The recipe:
 
 ```bash
 # On Unity:
-livenode                            # tmux + sinteractive -g 1
+livenode                            # tmux + sinteractive (defined in your .bashrc)
 jup                                 # starts headless Jupyter
 
 # ... disconnect, close laptop, etc. ...
@@ -416,7 +420,7 @@ alias tb_unity='ssh -L 16006:127.0.0.1:6006 unity'
 
 - ✔ Try **OnDemand first** for casual Jupyter / MATLAB / RStudio — no SSH setup, no Duo per session
 - ✔ Use the **JupyterLab `/lab` URL trick** for a better notebook interface in OnDemand
-- ✔ Use the **headless Jupyter + SSH tunnel** approach when you need a GPU, full control, or a custom mamba environment
+- ✔ Use the **headless Jupyter + SSH tunnel** approach when you need GPU access, more memory than OnDemand gives you, full control over the allocation, or a custom mamba environment
 - ✔ The same tunnel trick works for **TensorBoard** — just swap port `8888` for `6006`
 - ✔ Run cluster-side servers inside `livenode` / `tmux` so they survive disconnects ([Persistent Sessions](persistent_sessions.qmd))
 - ✔ Keep distinct local ports per tunnel so you can run several in parallel
