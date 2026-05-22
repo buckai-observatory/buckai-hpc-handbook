@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Persistent Sessions: tmux, nohup, and livenode – BuckAI HPC Handbook</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../hpc/modules.html" rel="next">
+<link href="../hpc/shell_environment.html" rel="prev">
+<link href="../images/BuckAI_logo_transp.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b758ccaa5987ceb1b75504551e579abf.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-76856fad3469a9725597717dd028a81b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/persistent_sessions.html">Persistent Sessions: tmux, nohup, and livenode</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../images/BuckAI_logo_transp.png" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="../images/BuckAI_logo_transp.png" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+      <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">BuckAI HPC Handbook</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true"><i class="bi bi-unlock" role="img">
+</i> 
+ <span class="menu-text">SSH</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/ssh_setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/ssh_keys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SSH Keys — Concepts &amp; Best Practices</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true"><i class="bi bi-cpu" role="img">
+</i> 
+ <span class="menu-text">Slurm</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Basics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Best Practices</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_gpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GPU Job Templates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_cpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CPU Job Templates</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true"><i class="bi bi-server" role="img">
+</i> 
+ <span class="menu-text">HPC</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/shell_environment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Shell Environment: .bashrc, PATH, aliases, and umask</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/persistent_sessions.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Persistent Sessions: tmux, nohup, and livenode</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Modules System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/storage_and_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Storage &amp; Paths</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/conda_envs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conda Environments</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#the-disconnect-problem-in-more-detail" id="toc-the-disconnect-problem-in-more-detail" class="nav-link" data-scroll-target="#the-disconnect-problem-in-more-detail">1. The Disconnect Problem in More Detail</a></li>
+  <li><a href="#tmux-sessions-that-survive-disconnects" id="toc-tmux-sessions-that-survive-disconnects" class="nav-link" data-scroll-target="#tmux-sessions-that-survive-disconnects">2. <code>tmux</code>: Sessions That Survive Disconnects</a>
+  <ul class="collapse">
+  <li><a href="#starting-a-session" id="toc-starting-a-session" class="nav-link" data-scroll-target="#starting-a-session">2.1 Starting a session</a></li>
+  <li><a href="#detaching" id="toc-detaching" class="nav-link" data-scroll-target="#detaching">2.2 Detaching</a></li>
+  <li><a href="#reattaching-from-anywhere" id="toc-reattaching-from-anywhere" class="nav-link" data-scroll-target="#reattaching-from-anywhere">2.3 Reattaching from anywhere</a></li>
+  <li><a href="#listing-sessions" id="toc-listing-sessions" class="nav-link" data-scroll-target="#listing-sessions">2.4 Listing sessions</a></li>
+  <li><a href="#killing-a-session" id="toc-killing-a-session" class="nav-link" data-scroll-target="#killing-a-session">2.5 Killing a session</a></li>
+  <li><a href="#the-minimum-tmux-you-actually-need" id="toc-the-minimum-tmux-you-actually-need" class="nav-link" data-scroll-target="#the-minimum-tmux-you-actually-need">2.6 The minimum tmux you actually need</a></li>
+  <li><a href="#known-rough-edges" id="toc-known-rough-edges" class="nav-link" data-scroll-target="#known-rough-edges">2.7 Known rough edges</a></li>
+  </ul></li>
+  <li><a href="#the-livenode-pattern-tmux-sinteractive" id="toc-the-livenode-pattern-tmux-sinteractive" class="nav-link" data-scroll-target="#the-livenode-pattern-tmux-sinteractive">3. The <code>livenode</code> Pattern: tmux + sinteractive</a>
+  <ul class="collapse">
+  <li><a href="#what-each-line-does" id="toc-what-each-line-does" class="nav-link" data-scroll-target="#what-each-line-does">3.1 What each line does</a></li>
+  <li><a href="#the-workflow-it-enables" id="toc-the-workflow-it-enables" class="nav-link" data-scroll-target="#the-workflow-it-enables">3.2 The workflow it enables</a></li>
+  <li><a href="#multiple-parallel-sessions" id="toc-multiple-parallel-sessions" class="nav-link" data-scroll-target="#multiple-parallel-sessions">3.3 Multiple parallel sessions</a></li>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats">3.4 Caveats</a></li>
+  </ul></li>
+  <li><a href="#nohup-fire-and-forget-for-one-shot-commands" id="toc-nohup-fire-and-forget-for-one-shot-commands" class="nav-link" data-scroll-target="#nohup-fire-and-forget-for-one-shot-commands">4. <code>nohup</code>: Fire-and-Forget for One-Shot Commands</a>
+  <ul class="collapse">
+  <li><a href="#checking-and-managing-nohup-jobs" id="toc-checking-and-managing-nohup-jobs" class="nav-link" data-scroll-target="#checking-and-managing-nohup-jobs">4.1 Checking and managing nohup jobs</a></li>
+  <li><a href="#disown-for-already-running-jobs" id="toc-disown-for-already-running-jobs" class="nav-link" data-scroll-target="#disown-for-already-running-jobs">4.2 <code>disown</code> for already-running jobs</a></li>
+  <li><a href="#nohup-vs-tmux" id="toc-nohup-vs-tmux" class="nav-link" data-scroll-target="#nohup-vs-tmux">4.3 <code>nohup</code> vs <code>tmux</code></a></li>
+  </ul></li>
+  <li><a href="#reconnecting-to-a-running-claude-code-session" id="toc-reconnecting-to-a-running-claude-code-session" class="nav-link" data-scroll-target="#reconnecting-to-a-running-claude-code-session">5. Reconnecting to a Running Claude Code Session</a></li>
+  <li><a href="#tmuxlivenode-vs-vs-code-remote-ssh" id="toc-tmuxlivenode-vs-vs-code-remote-ssh" class="nav-link" data-scroll-target="#tmuxlivenode-vs-vs-code-remote-ssh">6. tmux/livenode vs VS Code Remote-SSH</a></li>
+  <li><a href="#common-pitfalls" id="toc-common-pitfalls" class="nav-link" data-scroll-target="#common-pitfalls">7. Common Pitfalls</a>
+  <ul class="collapse">
+  <li><a href="#i-detached-and-now-i-cant-find-my-session" id="toc-i-detached-and-now-i-cant-find-my-session" class="nav-link" data-scroll-target="#i-detached-and-now-i-cant-find-my-session">❌ “I detached and now I can’t find my session”</a></li>
+  <li><a href="#mouse-scroll-doesnt-work-inside-tmux" id="toc-mouse-scroll-doesnt-work-inside-tmux" class="nav-link" data-scroll-target="#mouse-scroll-doesnt-work-inside-tmux">❌ Mouse scroll doesn’t work inside tmux</a></li>
+  <li><a href="#frozen-terminal-after-running-less-vim-htop-inside-tmux" id="toc-frozen-terminal-after-running-less-vim-htop-inside-tmux" class="nav-link" data-scroll-target="#frozen-terminal-after-running-less-vim-htop-inside-tmux">❌ Frozen terminal after running <code>less</code> / <code>vim</code> / <code>htop</code> inside tmux</a></li>
+  <li><a href="#nested-tmux-sessions-should-be-nested-with-care" id="toc-nested-tmux-sessions-should-be-nested-with-care" class="nav-link" data-scroll-target="#nested-tmux-sessions-should-be-nested-with-care">❌ Nested tmux: “sessions should be nested with care”</a></li>
+  <li><a href="#livenode-says-no-such-session-but-i-just-made-one" id="toc-livenode-says-no-such-session-but-i-just-made-one" class="nav-link" data-scroll-target="#livenode-says-no-such-session-but-i-just-made-one">❌ <code>livenode</code> says “no such session” but I just made one</a></li>
+  <li><a href="#nohup-output-isnt-appearing-in-sim.log" id="toc-nohup-output-isnt-appearing-in-sim.log" class="nav-link" data-scroll-target="#nohup-output-isnt-appearing-in-sim.log">❌ <code>nohup</code> output isn’t appearing in <code>sim.log</code></a></li>
+  <li><a href="#forgot-to-start-with-nohup-and-now-im-afraid-to-disconnect" id="toc-forgot-to-start-with-nohup-and-now-im-afraid-to-disconnect" class="nav-link" data-scroll-target="#forgot-to-start-with-nohup-and-now-im-afraid-to-disconnect">❌ Forgot to start with <code>nohup</code> and now I’m afraid to disconnect</a></li>
+  </ul></li>
+  <li><a href="#quick-reference" id="toc-quick-reference" class="nav-link" data-scroll-target="#quick-reference">8. Quick Reference</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">9. Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/persistent_sessions.html">Persistent Sessions: tmux, nohup, and livenode</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Persistent Sessions: tmux, nohup, and livenode</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>You’ve started a long computation, or you’re in the middle of a Claude Code session that has a lot of context, and then —</p>
+<ul>
+<li>your laptop sleeps</li>
+<li>WiFi blips</li>
+<li>a coffee shop kicks you off their network</li>
+<li>you commute home and want to pick up where you left off, from a different machine</li>
+</ul>
+<p>In a plain SSH session, <strong>all of that work dies</strong>. The shell on the cluster sees the SSH connection drop, gets sent a <code>HUP</code> (hangup) signal, and tears down every process you launched. Your interactive Slurm allocation goes back to the pool. Your Claude Code chat history is gone.</p>
+<p>This page covers three solutions, each suited to a different situation:</p>
+<ol type="1">
+<li><strong><code>tmux</code></strong> — start a session on the cluster that you can detach from and re-attach to from anywhere, with all running processes intact.</li>
+<li><strong><code>nohup</code></strong> — fire off a one-shot command that survives the disconnect, no session to reattach to.</li>
+<li><strong><code>livenode</code></strong> — a small function you put in your <code>.bashrc</code> that combines tmux with <code>sinteractive</code> to give you a persistent, reattachable compute-node session. <strong>This is the headline pattern.</strong></li>
+</ol>
+<p>This page assumes you’ve read <a href="../hpc/shell_environment.html">The Shell Environment</a> and have a working <code>.bashrc</code>. It’s complementary to <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a> — see Section 6 for when to use which.</p>
+<hr>
+</section>
+<section id="the-disconnect-problem-in-more-detail" class="level1">
+<h1>1. The Disconnect Problem in More Detail</h1>
+<p>When you <code>ssh unity</code> and then run <code>claude</code> (or <code>python long_script.py</code>, or <code>sinteractive</code>), there’s a process tree:</p>
+<pre><code>sshd (cluster)
+ └── bash (your shell)
+      └── claude</code></pre>
+<p>When the SSH connection drops, the kernel notifies <code>sshd</code>, which sends <code>SIGHUP</code> to your shell, which by default kills its children. Your shell, your <code>claude</code>, your <code>python</code> — all gone.</p>
+<p>The three solutions in this page each break this chain in a different way:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Solution</th>
+<th>How it survives</th>
+<th>Reattachable?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tmux</code></td>
+<td>Your shell runs inside a tmux session, not under sshd</td>
+<td>✅ Yes</td>
+</tr>
+<tr class="even">
+<td><code>nohup</code></td>
+<td>The command is detached from your shell’s signal group</td>
+<td>❌ No (it just runs in the background)</td>
+</tr>
+<tr class="odd">
+<td><code>livenode</code></td>
+<td>tmux + sinteractive combined into one function</td>
+<td>✅ Yes</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="tmux-sessions-that-survive-disconnects" class="level1">
+<h1>2. <code>tmux</code>: Sessions That Survive Disconnects</h1>
+<p><code>tmux</code> (“terminal multiplexer”) is the canonical tool for this. The mental model: tmux is a <strong>persistent terminal</strong> running on the cluster that you can hook into and unhook from.</p>
+<section id="starting-a-session" class="level3">
+<h3 class="anchored" data-anchor-id="starting-a-session">2.1 Starting a session</h3>
+<p>After SSHing to Unity:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> new <span class="at">-s</span> mywork</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The prompt now looks the same as before — but you’re inside a tmux session named <code>mywork</code>. Anything you run here lives inside the session.</p>
+</section>
+<section id="detaching" class="level3">
+<h3 class="anchored" data-anchor-id="detaching">2.2 Detaching</h3>
+<p>While inside the session, type <strong><code>Ctrl+b</code> then <code>d</code></strong> (release Ctrl+b first, then press d). You’ll see:</p>
+<pre><code>[detached (from session mywork)]</code></pre>
+<p>You’re back at the regular Unity prompt. The tmux session is still alive, and so is everything you were running inside it.</p>
+<p>You can now safely close your SSH connection. The session keeps running.</p>
+</section>
+<section id="reattaching-from-anywhere" class="level3">
+<h3 class="anchored" data-anchor-id="reattaching-from-anywhere">2.3 Reattaching from anywhere</h3>
+<p>Next day, from any machine that can <code>ssh unity</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> attach <span class="at">-t</span> mywork    <span class="co"># or: tmux a -t mywork</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You’re back exactly where you left off. The processes you started are still running, the scrollback is intact, the working directory is the same.</p>
+</section>
+<section id="listing-sessions" class="level3">
+<h3 class="anchored" data-anchor-id="listing-sessions">2.4 Listing sessions</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> ls</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># mywork: 1 windows (created Thu Nov 14 09:23:11 2024) [194x52]</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># train: 1 windows (created Fri Nov 15 14:01:33 2024) [194x52]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="killing-a-session" class="level3">
+<h3 class="anchored" data-anchor-id="killing-a-session">2.5 Killing a session</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> kill-session <span class="at">-t</span> mywork</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or, from inside the session: <code>Ctrl+b</code> then type <code>:kill-session</code> and Enter.</p>
+</section>
+<section id="the-minimum-tmux-you-actually-need" class="level3">
+<h3 class="anchored" data-anchor-id="the-minimum-tmux-you-actually-need">2.6 The minimum tmux you actually need</h3>
+<p>The full tmux feature set is enormous (windows, panes, scripting, copy mode, etc.). For day-to-day HPC use, this is enough:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Action</th>
+<th>Keys</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Start a new session</td>
+<td><code>tmux new -s NAME</code></td>
+</tr>
+<tr class="even">
+<td>Detach (leave it running)</td>
+<td><code>Ctrl+b</code> then <code>d</code></td>
+</tr>
+<tr class="odd">
+<td>List sessions</td>
+<td><code>tmux ls</code></td>
+</tr>
+<tr class="even">
+<td>Reattach</td>
+<td><code>tmux a -t NAME</code></td>
+</tr>
+<tr class="odd">
+<td>Scroll back in history</td>
+<td><code>Ctrl+b</code> then <code>[</code>, then arrow keys / PgUp ; <code>q</code> to exit</td>
+</tr>
+<tr class="even">
+<td>Kill a session</td>
+<td><code>tmux kill-session -t NAME</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="known-rough-edges" class="level3">
+<h3 class="anchored" data-anchor-id="known-rough-edges">2.7 Known rough edges</h3>
+<p><code>tmux</code> has a few annoyances that people often complain about:</p>
+<ul>
+<li><strong>Scrolling weirdness:</strong> by default, scrolling in your terminal doesn’t see tmux’s scrollback. Use <code>Ctrl+b</code> then <code>[</code> to enter “copy mode” where arrow keys / PgUp / PgDn actually scroll.</li>
+<li><strong>Alternate screen buffer leftover:</strong> programs like <code>less</code>, <code>vim</code>, <code>htop</code> use a “second screen” that’s supposed to be cleaned up on exit. Sometimes a crash leaves it visible. Fix: type <code>reset</code> (blind — you may not see the letters) and press Enter.</li>
+<li><strong>A slightly steep learning curve</strong> if you go beyond the basic detach/attach pattern.</li>
+</ul>
+<p>These are real but minor — for the “I want my work to survive disconnects” use case, tmux is rock solid.</p>
+<hr>
+</section>
+</section>
+<section id="the-livenode-pattern-tmux-sinteractive" class="level1">
+<h1>3. The <code>livenode</code> Pattern: tmux + sinteractive</h1>
+<p>This is the pattern that ties it all together. The goal:</p>
+<blockquote class="blockquote">
+<p>I want a persistent compute-node session — a real Slurm allocation, running Claude Code or Python, that I can connect to from any laptop, leave running overnight, and come back to.</p>
+</blockquote>
+<p>Put this in your <code>~/.bashrc</code> on Unity:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenode()</span> <span class="kw">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">local</span> <span class="va">session</span><span class="op">=</span><span class="st">"</span><span class="va">${1</span><span class="op">:-</span>jbm_node<span class="va">}</span><span class="st">"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ex">tmux</span> has-session <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> attach <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> new-session <span class="at">-s</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="st">"sinteractive -m 48000 -t 72:00:00; bash"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After <code>source ~/.bashrc</code>, you can just type:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>and it Does The Right Thing.</p>
+<section id="what-each-line-does" class="level3">
+<h3 class="anchored" data-anchor-id="what-each-line-does">3.1 What each line does</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenode()</span> <span class="kw">{</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Defines a shell <strong>function</strong> called <code>livenode</code>. Unlike an alias, this can take arguments and have logic.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>    <span class="bu">local</span> <span class="va">session</span><span class="op">=</span><span class="st">"</span><span class="va">${1</span><span class="op">:-</span>jbm_node<span class="va">}</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Sets a local variable <code>session</code> to either the first argument you passed (<code>$1</code>) <strong>or</strong>, if you didn’t pass one, the default <code>jbm_node</code>. So <code>livenode</code> uses the default, <code>livenode mywork</code> uses <code>mywork</code>. Pick a name per project.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ex">tmux</span> has-session <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null<span class="kw">;</span> <span class="cf">then</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Checks whether a tmux session with that name already exists. The <code>2&gt;/dev/null</code> suppresses the “no such session” error if it doesn’t.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> attach <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If a session does exist, <strong>attach to it</strong> — i.e.&nbsp;drop you back into the running compute-node session you started earlier.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> new-session <span class="at">-s</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="st">"sinteractive -m 48000 -t 72:00:00; bash"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If a session doesn’t exist, <strong>create one</strong> and immediately run <code>sinteractive -m 48000 -t 72:00:00</code> inside it (requesting 48 GB of memory for 72 hours). After <code>sinteractive</code> finishes (either because the allocation expires or you <code>exit</code> it), the <code>; bash</code> keeps a regular shell open inside the tmux session so the window doesn’t vanish.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="er">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>End of the function.</p>
+</section>
+<section id="the-workflow-it-enables" class="level3">
+<h3 class="anchored" data-anchor-id="the-workflow-it-enables">3.2 The workflow it enables</h3>
+<p><strong>Day 1, from your office:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>              <span class="co"># creates session, requests a node, attaches</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># … you're now on a compute node, e.g. u170 …</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">claude</span>                <span class="co"># start Claude Code</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># … work for an hour …</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Ctrl+b d            # detach from tmux</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># close laptop, go home</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Day 1, evening, from home:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>              <span class="co"># session exists — reattach</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># … you're back on u170, with claude still running, same chat history</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Day 2, from your phone via a terminal app:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>              <span class="co"># still attaches you to the same node</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># … check on a long-running task, type a follow-up to claude …</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Until the 72-hour Slurm allocation expires or you <code>tmux kill-session -t jbm_node</code>, the session keeps living.</p>
+</section>
+<section id="multiple-parallel-sessions" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-parallel-sessions">3.3 Multiple parallel sessions</h3>
+<p>The default name <code>jbm_node</code> works for one project. For a second project running simultaneously:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span> soda          <span class="co"># new session named 'soda'</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># … in another SSH session, later:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span> bathy         <span class="co"># new session named 'bathy', different compute node</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>tmux ls</code> shows all of them. Each gets its own Slurm allocation.</p>
+</section>
+<section id="caveats" class="level3">
+<h3 class="anchored" data-anchor-id="caveats">3.4 Caveats</h3>
+<ul>
+<li><strong>The allocation can still expire.</strong> If you ask for 72 hours and don’t reattach within 72 hours, the node goes back to the pool. The tmux session keeps existing, but it’ll be sitting at a regular login-node shell.</li>
+<li><strong><code>sinteractive</code> queues if the cluster is busy.</strong> Your <code>livenode</code> invocation may sit “waiting for resources” for a while before actually putting you on a compute node. That’s normal — let it sit.</li>
+<li><strong>One Slurm partition at a time.</strong> If you want a GPU node sometimes and a CPU node other times, write <strong>two</strong> functions:</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livegpu()</span> <span class="kw">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">local</span> <span class="va">session</span><span class="op">=</span><span class="st">"</span><span class="va">${1</span><span class="op">:-</span>jbm_gpu<span class="va">}</span><span class="st">"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ex">tmux</span> has-session <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> attach <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> new-session <span class="at">-s</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="st">"sinteractive -p mygroup -g 1 -t 24:00:00; bash"</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">livecpu()</span> <span class="kw">{</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">local</span> <span class="va">session</span><span class="op">=</span><span class="st">"</span><span class="va">${1</span><span class="op">:-</span>jbm_cpu<span class="va">}</span><span class="st">"</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ex">tmux</span> has-session <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> attach <span class="at">-t</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tmux</span> new-session <span class="at">-s</span> <span class="st">"</span><span class="va">$session</span><span class="st">"</span> <span class="st">"sinteractive -c 48 -t 48:00:00; bash"</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="nohup-fire-and-forget-for-one-shot-commands" class="level1">
+<h1>4. <code>nohup</code>: Fire-and-Forget for One-Shot Commands</h1>
+<p><code>tmux</code> is overkill for “I want this command to keep running after I log out, I don’t need to interact with it.” For that, use <code>nohup</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nohup</span> python long_simulation.py <span class="op">&gt;</span> sim.log <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">&amp;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What each piece does:</p>
+<ul>
+<li><strong><code>nohup</code></strong> — “no hangup”: runs the command in a way that ignores <code>SIGHUP</code> when the shell dies</li>
+<li><strong><code>python long_simulation.py</code></strong> — the actual command</li>
+<li><strong><code>&gt; sim.log 2&gt;&amp;1</code></strong> — redirect both stdout and stderr into <code>sim.log</code> (since the terminal is going away, the output needs to go somewhere)</li>
+<li><strong><code>&amp;</code></strong> — run in the background, return the prompt immediately</li>
+</ul>
+<p>You can now <code>exit</code> the SSH session, and the Python process keeps going. Check on it later by SSH-ing back in and looking at <code>sim.log</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-f</span> sim.log</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="checking-and-managing-nohup-jobs" class="level3">
+<h3 class="anchored" data-anchor-id="checking-and-managing-nohup-jobs">4.1 Checking and managing nohup jobs</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ps</span> <span class="at">-u</span> <span class="va">$USER</span> <span class="kw">|</span> <span class="fu">grep</span> python      <span class="co"># find running Python processes</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="bu">kill</span> <span class="op">&lt;</span>PID<span class="op">&gt;</span>                     <span class="co"># stop one</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>There’s no “reattach” — once it’s running under nohup, you can’t get back to its terminal. You can only watch its output file.</p>
+</section>
+<section id="disown-for-already-running-jobs" class="level3">
+<h3 class="anchored" data-anchor-id="disown-for-already-running-jobs">4.2 <code>disown</code> for already-running jobs</h3>
+<p>What if you started something <em>without</em> nohup and now realize you need to disconnect?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Already running in the foreground, say a 4-hour python script</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Ctrl+Z</span>                <span class="co"># pause it</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="bu">bg</span>                    <span class="co"># resume in background</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="bu">disown</span> <span class="at">-h</span> %1          <span class="co"># detach from the shell (so SIGHUP won't kill it)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After this, you can safely log out. Output that was going to the terminal is now lost (it had no log file). For programs that need stdin or interactive output, use <code>tmux</code> instead.</p>
+</section>
+<section id="nohup-vs-tmux" class="level3">
+<h3 class="anchored" data-anchor-id="nohup-vs-tmux">4.3 <code>nohup</code> vs <code>tmux</code></h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Use case</th>
+<th>Pick</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Single batch-style command, output goes to a log file, no interaction needed</td>
+<td><code>nohup</code></td>
+</tr>
+<tr class="even">
+<td>Interactive program (Claude Code, Python REPL, <code>htop</code>), or you want to reattach later</td>
+<td><code>tmux</code> (or <code>livenode</code>)</td>
+</tr>
+<tr class="odd">
+<td>Reproducible job-shaped work</td>
+<td>Actually use Slurm <code>sbatch</code> — see <a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a></td>
+</tr>
+</tbody>
+</table>
+<p>A common heuristic: if you’d want to scroll back through the terminal history of the program, use <code>tmux</code>. If you’d never look at it interactively, <code>nohup</code> is fine.</p>
+<hr>
+</section>
+</section>
+<section id="reconnecting-to-a-running-claude-code-session" class="level1">
+<h1>5. Reconnecting to a Running Claude Code Session</h1>
+<p>A specific workflow this all enables:</p>
+<ol type="1">
+<li>From any laptop, SSH to Unity and run <code>livenode</code></li>
+<li>The first time, this allocates a compute node and drops you on it inside tmux</li>
+<li>Inside that, run <code>cd /path/to/project &amp;&amp; claude</code></li>
+<li>Work with Claude as usual</li>
+<li>Walk away — close your laptop, kill your VPN, whatever</li>
+<li>The Slurm allocation persists, the tmux session persists, the <code>claude</code> process persists, the entire chat history is in memory</li>
+<li>Next time: <code>ssh unity → livenode → attached to the same session with claude still running</code></li>
+</ol>
+<p>This is the killer feature: <strong>conversational state with Claude survives across days, networks, and machines</strong>. No need to recap context to Claude after every disconnect.</p>
+<p>If you ever need to <em>end</em> the Claude session cleanly, type <code>/exit</code> inside Claude (which exits Claude but keeps the shell alive inside tmux). To end the whole session: <code>tmux kill-session -t jbm_node</code>.</p>
+<hr>
+</section>
+<section id="tmuxlivenode-vs-vs-code-remote-ssh" class="level1">
+<h1>6. tmux/livenode vs VS Code Remote-SSH</h1>
+<p>You now have <strong>two complementary</strong> ways to handle disconnects:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>tmux / livenode</th>
+<th>VS Code Remote-SSH</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>What it preserves</td>
+<td>Whole shell session, including running processes</td>
+<td>VS Code server, open files, integrated terminals</td>
+</tr>
+<tr class="even">
+<td>Best for</td>
+<td>Long-running interactive jobs you want to reattach to from <em>any</em> machine</td>
+<td>Active development with editor, diff review, selection prompting</td>
+</tr>
+<tr class="odd">
+<td>Survives full quit of client?</td>
+<td>✅ Yes — session lives on the cluster</td>
+<td>⚠ Partial — server lives, but terminals close on full quit</td>
+</tr>
+<tr class="even">
+<td>Reattach from a different laptop?</td>
+<td>✅ Yes, trivial</td>
+<td>⚠ You can reconnect to the same server but terminals are fresh</td>
+</tr>
+<tr class="odd">
+<td>Editor included?</td>
+<td>❌ No (terminal-only)</td>
+<td>✅ Yes — full VS Code</td>
+</tr>
+<tr class="even">
+<td>Best for Claude Code chat persistence?</td>
+<td>✅ Best</td>
+<td>⚠ Good while you stay on one laptop</td>
+</tr>
+</tbody>
+</table>
+<p><strong>You can combine them.</strong> Open VS Code Remote-SSH to Unity, open the integrated terminal, run <code>livenode</code> inside it. Now you have VS Code’s editor <em>and</em> a tmux-protected Claude Code session. If VS Code crashes or your laptop dies, the tmux session still has your work. Best of both.</p>
+<p>See <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a> for the editor side of this.</p>
+<hr>
+</section>
+<section id="common-pitfalls" class="level1">
+<h1>7. Common Pitfalls</h1>
+<section id="i-detached-and-now-i-cant-find-my-session" class="level3">
+<h3 class="anchored" data-anchor-id="i-detached-and-now-i-cant-find-my-session">❌ “I detached and now I can’t find my session”</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> ls</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If nothing’s listed, the session was killed (cluster restarted, allocation expired, you accidentally typed <code>exit</code> in the last pane). Sessions don’t survive node reboots — they’re processes, not persistent state.</p>
+</section>
+<section id="mouse-scroll-doesnt-work-inside-tmux" class="level3">
+<h3 class="anchored" data-anchor-id="mouse-scroll-doesnt-work-inside-tmux">❌ Mouse scroll doesn’t work inside tmux</h3>
+<p>By default, tmux only scrolls via copy mode. To enable mouse scrolling globally, add to <code>~/.tmux.conf</code>:</p>
+<pre><code>set -g mouse on</code></pre>
+<p>Then <code>tmux kill-server</code> once, restart your sessions, and mouse scrolling works.</p>
+</section>
+<section id="frozen-terminal-after-running-less-vim-htop-inside-tmux" class="level3">
+<h3 class="anchored" data-anchor-id="frozen-terminal-after-running-less-vim-htop-inside-tmux">❌ Frozen terminal after running <code>less</code> / <code>vim</code> / <code>htop</code> inside tmux</h3>
+<p>Alternate-screen-buffer leftover. Type <code>reset</code> (blind — you may not see what you’re typing) and press Enter.</p>
+</section>
+<section id="nested-tmux-sessions-should-be-nested-with-care" class="level3">
+<h3 class="anchored" data-anchor-id="nested-tmux-sessions-should-be-nested-with-care">❌ Nested tmux: “sessions should be nested with care”</h3>
+<p>This warning means you’re already inside a tmux session and trying to start a new one. Detach first (<code>Ctrl+b d</code>), then start a new session from the outer shell.</p>
+</section>
+<section id="livenode-says-no-such-session-but-i-just-made-one" class="level3">
+<h3 class="anchored" data-anchor-id="livenode-says-no-such-session-but-i-just-made-one">❌ <code>livenode</code> says “no such session” but I just made one</h3>
+<p>Did you exit the inner shell? When the <code>bash</code> at the end of <code>sinteractive ...; bash</code> exits, the tmux pane closes, and an empty session may close too. To prevent accidental closure: don’t type <code>exit</code> at the tmux pane — detach with <code>Ctrl+b d</code> instead.</p>
+</section>
+<section id="nohup-output-isnt-appearing-in-sim.log" class="level3">
+<h3 class="anchored" data-anchor-id="nohup-output-isnt-appearing-in-sim.log">❌ <code>nohup</code> output isn’t appearing in <code>sim.log</code></h3>
+<p>Your program is probably buffering its output. For Python: <code>python -u long_simulation.py &gt; sim.log 2&gt;&amp;1 &amp;</code> (<code>-u</code> = unbuffered). For other languages, look up “unbuffered stdout” or pipe through <code>stdbuf -oL</code>.</p>
+</section>
+<section id="forgot-to-start-with-nohup-and-now-im-afraid-to-disconnect" class="level3">
+<h3 class="anchored" data-anchor-id="forgot-to-start-with-nohup-and-now-im-afraid-to-disconnect">❌ Forgot to start with <code>nohup</code> and now I’m afraid to disconnect</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Ctrl+Z</span>           <span class="co"># suspend</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="bu">bg</span>               <span class="co"># resume in background</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="bu">disown</span> <span class="at">-h</span> %1     <span class="co"># detach so SIGHUP won't kill it</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Now safe to log out. Output that was on-terminal before disowning is lost, but the process continues.</p>
+<hr>
+</section>
+</section>
+<section id="quick-reference" class="level1">
+<h1>8. Quick Reference</h1>
+<p><strong>Start a persistent compute-node session (assuming <code>livenode</code> is in <code>~/.bashrc</code>):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>             <span class="co"># default session</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span> myproject   <span class="co"># named session</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Manual tmux:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> new <span class="at">-s</span> NAME           <span class="co"># start</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Ctrl+b</span> d                   <span class="co"># detach</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> ls                    <span class="co"># list</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> a <span class="at">-t</span> NAME             <span class="co"># reattach</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tmux</span> kill-session <span class="at">-t</span> NAME  <span class="co"># kill</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Fire-and-forget background command:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nohup</span> python script.py <span class="op">&gt;</span> out.log <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">&amp;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Rescue an already-running foreground job:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Ctrl+Z</span><span class="kw">;</span> <span class="bu">bg</span><span class="kw">;</span> <span class="bu">disown</span> <span class="at">-h</span> %1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="summary" class="level1">
+<h1>9. Summary</h1>
+<ul>
+<li>✔ <code>tmux</code> makes terminal sessions survive disconnects and lets you reattach from any machine</li>
+<li>✔ The <code>livenode</code> function in your <code>~/.bashrc</code> packages tmux + <code>sinteractive</code> into a single command</li>
+<li>✔ Once you’ve <code>livenode</code>’d in, you can detach (<code>Ctrl+b d</code>), close your laptop, and reattach later — Claude Code’s chat history and all</li>
+<li>✔ Use <code>nohup ... &amp;</code> for one-shot commands that just need to keep running, no reattaching</li>
+<li>✔ tmux/livenode and <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a> are complementary — combine them for the best workflow</li>
+</ul>
+<p>Next up: <a href="../hpc/conda_envs.html">Conda Environments</a> for managing Python packages on Unity.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../hpc/shell_environment.html" class="pagination-link" aria-label="The Shell Environment: .bashrc, PATH, aliases, and umask">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">The Shell Environment: .bashrc, PATH, aliases, and umask</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../hpc/modules.html" class="pagination-link" aria-label="Modules System">
+        <span class="nav-page-text">Modules System</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

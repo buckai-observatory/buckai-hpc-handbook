@@ -1,0 +1,500 @@
+---
+title: "The Shell Environment: .bashrc, PATH, aliases, and umask"
+---
+
+# Introduction
+
+When you log into Unity (or any Linux cluster), you don't just get a generic terminal — you get a **personalized environment**. Your prompt, your `PATH`, your aliases, the conda environment that's active, the umask that controls file permissions: all of these are set by a handful of small files in your home directory that the shell reads on startup.
+
+Most students and new postdocs treat these files as magic. They aren't. Once you know what they do, you can:
+
+✔ Type `getgpu` instead of `sinteractive -p mygroup -t 06:00:00 -g 1 -w u126`
+✔ Type `unity` on your laptop instead of `ssh unity`
+✔ Have your conda env active automatically on every login
+✔ Make sure files you create are **readable by your group collaborators** by default
+✔ Have `claude`, `nvcc`, custom Python tools, etc. all just *work* without typing full paths
+
+This page covers everything you need to make those things happen.
+
+The companion page [Persistent Sessions: tmux, nohup, and livenode](persistent_sessions.qmd) builds on top of this — once you have a working `.bashrc`, you can define functions like `livenode` that survive disconnects.
+
+---
+
+# 1. What Is a Shell, Anyway?
+
+A **shell** is the program that turns what you type into actions. On Unity (and most Linux clusters) the default shell is **bash**.
+
+When you `ssh unity` and see a prompt, **a fresh bash process started for you**. That process reads one or two startup files from your home directory, sets things up, then waits for your commands. When you log out, the process ends — but the **files** stick around for the next login.
+
+Two important distinctions:
+
+- **Login vs non-login shell:** SSH-ing in starts a login shell. Opening a new pane in `tmux` or VS Code's integrated terminal sometimes does, sometimes doesn't.
+- **Interactive vs non-interactive shell:** A normal SSH session is interactive (it shows you a prompt). A `bash my_script.sh` invocation is non-interactive.
+
+This matters because different startup files run in different cases (see Section 2).
+
+---
+
+# 2. Startup Files: `.bash_profile` vs `.bashrc`
+
+These two files live in your home directory (`~/.bash_profile` and `~/.bashrc`). Both are just plain text files full of shell commands.
+
+The rules are slightly weird:
+
+| File | When it runs |
+|---|---|
+| `~/.bash_profile` | When you start a **login** shell (e.g. you SSH in) |
+| `~/.bashrc` | When you start a **non-login interactive** shell (e.g. open a new terminal pane *inside* an existing session) |
+
+The annoying part: by default `.bash_profile` does **not** run `.bashrc`. So if you put your aliases in `.bashrc`, an SSH session won't see them.
+
+### The fix: source `.bashrc` from `.bash_profile`
+
+Put this at the bottom of your `~/.bash_profile`:
+
+```bash
+# Source .bashrc on login so aliases / functions / env vars are always loaded
+[ -f ~/.bashrc ] && source ~/.bashrc
+```
+
+After this, **everything goes in `.bashrc`** and you can forget `.bash_profile` exists.
+
+### Editing the files safely
+
+```bash
+nano ~/.bashrc
+```
+
+After editing, you can **reload it without logging out**:
+
+```bash
+source ~/.bashrc
+```
+
+(Older equivalent: `. ~/.bashrc`.)
+
+✅ Tip: when you're experimenting, open **two** SSH sessions to Unity. Edit in one, source-and-test in the other. If you break your `.bashrc` so badly you can't log in, the second session is your lifeline.
+
+---
+
+# 3. Aliases — The Single Highest-ROI Thing in Your `.bashrc`
+
+An **alias** is a shorthand for a longer command. The syntax is:
+
+```bash
+alias short='long command goes here'
+```
+
+Once defined, typing `short` runs the long command.
+
+### Examples that pay for themselves on day one
+
+**On your laptop's `~/.bashrc` (or `~/.zshrc` on macOS):**
+
+```bash
+# So you can just type 'unity' instead of 'ssh unity'
+alias unity='ssh unity'
+alias u126='ssh u126'
+alias u170='ssh u170'
+
+# Forward Jupyter from a GPU node to localhost:9099
+alias jup170='ssh -L 9099:127.0.0.1:8888 u170'
+```
+
+**On the cluster's `~/.bashrc`:**
+
+```bash
+# Grab an interactive node, configured the way you actually want it
+alias getnode='sinteractive -m 48000 -t 48:00:00'
+alias getgpu='sinteractive -p mygroup -t 06:00:00 -g 1 -w u126'
+alias get170='sinteractive -p mygroup -w u170 -c 48 -t 12:00:00'
+
+# Check your queue without typing your username every time
+alias runs='squeue -u $USER'
+
+# A long ls that sorts by modification time, with sizes
+alias lst='ls -lhtr'
+
+# Print the absolute path of the current directory
+alias rpwd='realpath .'
+
+# Open the most recently-modified file in $PWD with `more`
+alias more_last='more "$(ls -t | head -n1)"'
+
+# Jump to favorite project directories
+alias proj='cd /fs/project/<group>/<username>/'
+alias data='cd /fs/project/<group>/shared_data/'
+```
+
+After `source ~/.bashrc`, just type `getgpu` or `proj` and the long command runs.
+
+### Functions: aliases that take arguments
+
+Aliases can't take arguments cleanly. When you need them, define a **function**:
+
+```bash
+# Show the working directory of one of your Slurm jobs:
+#   slinfo 5067189
+slinfo() {
+    scontrol show jobid -dd "$1" | grep 'WorkDir' | sed 's/WorkDir=//' | sed 's/[[:blank:]]//'
+}
+```
+
+You'd call it as `slinfo 5067189` — `"$1"` is replaced with `5067189` at runtime.
+
+Functions are also the right tool for anything that involves conditional logic, multiple commands, or wrapping `tmux` (see the `livenode` example in [Persistent Sessions](persistent_sessions.qmd)).
+
+---
+
+# 4. Environment Variables and `PATH`
+
+An **environment variable** is a name-value pair that programs running inside your shell can see.
+
+```bash
+echo $HOME             # /home/yourname.##
+echo $USER             # yourname.##
+echo $PATH             # a long colon-separated list
+```
+
+Setting one:
+
+```bash
+MY_VAR="hello"
+```
+
+This sets it for *your* shell only. To make it visible to programs you launch:
+
+```bash
+export MY_VAR="hello"
+```
+
+The `export` keyword is the whole reason this is its own concept — without it, child processes don't inherit the variable.
+
+### The `PATH` variable
+
+`PATH` is a colon-separated list of directories that the shell searches when you type a command:
+
+```bash
+echo $PATH
+# /home/yourname.##/miniconda3/bin:/usr/local/bin:/usr/bin:/bin
+```
+
+When you type `python`, bash walks the list **left to right** and runs the first `python` it finds. So **order matters** — the directory listed first wins.
+
+#### Adding a directory to `PATH`
+
+The standard pattern:
+
+```bash
+export PATH=/path/to/my/tools:$PATH
+```
+
+This **prepends** the new directory, so your tool wins over any system version.
+
+To append (lower priority):
+
+```bash
+export PATH=$PATH:/path/to/my/tools
+```
+
+### Other common environment variables on HPC
+
+| Variable | Purpose |
+|---|---|
+| `LD_LIBRARY_PATH` | Where the dynamic linker looks for shared libraries (`.so` files). Often needed when running self-compiled code |
+| `CUDA_HOME` | Where the CUDA toolkit is installed |
+| `ANTHROPIC_API_KEY` | Used by Claude Code (see warning below) |
+| `OMP_NUM_THREADS` | OpenMP thread count for multithreaded code |
+| `TMPDIR` | Where temp files go — Unity typically wants this pointed at a fast scratch filesystem |
+| `umask` | Default file/directory permissions (Section 6) |
+
+### ⚠ A note on secrets in `.bashrc`
+
+It's common to put API keys in `.bashrc`:
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+This works, but be aware:
+
+- ❌ `chmod 644 ~/.bashrc` would expose the key to other users on the cluster
+- ❌ Checking your `.bashrc` into a git repo (even by accident) would publish the key
+- ❌ Sharing your home dir with a backup tool that uploads anywhere will leak it
+
+Mitigations:
+
+```bash
+chmod 600 ~/.bashrc                      # only you can read it
+ls -l ~/.bashrc                          # confirm
+```
+
+For maximum safety, store sensitive tokens in a separate file you `source` only when needed, and never commit that file:
+
+```bash
+# In ~/.bashrc:
+[ -f ~/.secrets ] && source ~/.secrets   # only your shell loads it
+
+# In ~/.secrets (chmod 600):
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+If you ever notice a secret has leaked, **rotate it immediately** — assume it's compromised.
+
+---
+
+# 5. `module load`: The Cluster's Software Toolkit
+
+HPC clusters host many versions of compilers, libraries, and applications simultaneously — Python 3.9 and Python 3.11, multiple CUDA toolkits, several Intel compiler releases, etc. Hard-coding paths to all of these would be a mess.
+
+The **Lmod modules system** solves this. Inside your `.bashrc` (or interactively at the prompt):
+
+```bash
+module avail                 # what's available?
+module avail cuda            # filter to just cuda modules
+module load intel/2024.2.0   # set PATH/LD_LIBRARY_PATH/etc. for this Intel compiler
+module list                  # what's currently loaded?
+module purge                 # unload everything
+```
+
+When you `module load X`, the system silently appends to your `PATH` and `LD_LIBRARY_PATH` and sets a few environment variables. **It's just a fancy way of setting environment variables** — there's no magic.
+
+If you always want a specific module on every login, put the `module load` line in your `.bashrc`:
+
+```bash
+module load intel/2024.2.0
+```
+
+See the [Modules](modules.qmd) page for more.
+
+---
+
+# 6. `umask`: Default Permissions for New Files
+
+Every file you create gets a set of permissions decided by your **umask**. The umask is a *subtractive* mask — it tells the OS which permission bits to **strip** from new files.
+
+| umask value | New file permissions | New directory permissions | Meaning |
+|---|---|---|---|
+| `022` (default on most systems) | `rw-r--r--` (644) | `rwxr-xr-x` (755) | Owner can write, others can read |
+| `002` | `rw-rw-r--` (664) | `rwxrwxr-x` (775) | **Group can write too** |
+| `077` | `rw-------` (600) | `rwx------` (700) | Only owner can read |
+
+### ✅ Why `umask 002` is important for collaborative groups
+
+On HPC clusters, lab members often share `/fs/project/<group>/...` directories. With the default `022` umask:
+
+- You write a file → permissions are `rw-r--r--`
+- Your collaborator tries to edit it → ❌ permission denied
+- You have to manually `chmod g+w file` after every save
+- Conda envs you create can't be activated by labmates
+
+With `umask 002`:
+
+- You write a file → permissions are `rw-rw-r--`
+- Your collaborator has the same Unix group → ✅ they can edit it
+- Conda envs you create in a shared project dir → ✅ everyone in the group can activate them
+- No `chmod` ceremony
+
+To enable it, add to your `~/.bashrc`:
+
+```bash
+umask 002
+```
+
+This is **strongly recommended** for any user working in a shared lab directory.
+
+### What about the "world" (other) bits?
+
+`umask 002` leaves `r--` for the world, which means anyone with a Unity account can read your files. That's usually fine on a trusted research cluster, but if you have genuinely sensitive data, use `umask 027` (group can read, world can't see at all) or store it under a directory chmodded `700`.
+
+---
+
+# 7. The Conda/Mamba Initialization Block
+
+After you (or the cluster) install Miniconda or Mambaforge, an automatic block gets added to your `.bashrc` that looks like this:
+
+```bash
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/yourname.##/mambaforge/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/yourname.##/mambaforge/etc/profile.d/conda.sh" ]; then
+        . "/home/yourname.##/mambaforge/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/yourname.##/mambaforge/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+
+if [ -f "/home/yourname.##/mambaforge/etc/profile.d/mamba.sh" ]; then
+    . "/home/yourname.##/mambaforge/etc/profile.d/mamba.sh"
+fi
+# <<< conda initialize <<<
+```
+
+**Don't delete this.** It's what makes `conda activate` and `mamba activate` work. The block adds conda's shell functions, sets up your prompt, and puts the `conda` command on your `PATH`.
+
+If you want a specific environment active on every login, add this **after** the block:
+
+```bash
+mamba activate myproject
+```
+
+(Or `conda activate` — either works.)
+
+See the [Conda Environments](conda_envs.qmd) page for the bigger picture on environments.
+
+---
+
+# 8. Putting It All Together: An Annotated Example `.bashrc`
+
+This is a realistic, sanitized example showing common patterns. Replace `<username>` and `<group>` with your own values, and **do not paste tokens** straight into a `.bashrc` — see Section 4.
+
+```bash
+# ───────────────────────────────────────────────────────────────────────
+# Source global definitions (system-wide bashrc)
+# ───────────────────────────────────────────────────────────────────────
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+
+# ───────────────────────────────────────────────────────────────────────
+# Default permissions: group can read+write files I create.
+# Critical for shared lab directories on Unity.
+# ───────────────────────────────────────────────────────────────────────
+umask 002
+
+# ───────────────────────────────────────────────────────────────────────
+# PATH: prepend my project tools so they win over system versions
+# ───────────────────────────────────────────────────────────────────────
+export PATH=/fs/project/<group>/<username>/Codes:$PATH
+export PATH=/home/<username>/local/bin:$PATH
+
+# ───────────────────────────────────────────────────────────────────────
+# Library paths for self-compiled code (CUDA, custom libs)
+# ───────────────────────────────────────────────────────────────────────
+export CUDA_HOME=/usr/local/cuda/12.2/
+export LD_LIBRARY_PATH=/usr/local/cuda/12.2/lib64:$LD_LIBRARY_PATH
+
+# ───────────────────────────────────────────────────────────────────────
+# Modules (compilers, libraries) loaded on every login
+# ───────────────────────────────────────────────────────────────────────
+module load intel/2024.2.0
+
+# ───────────────────────────────────────────────────────────────────────
+# Aliases: short names for things I do all the time
+# ───────────────────────────────────────────────────────────────────────
+# Interactive job allocation:
+alias getnode='sinteractive -m 48000 -t 48:00:00'
+alias getgpu='sinteractive -p <group> -t 06:00:00 -g 1 -w u126'
+alias get170='sinteractive -p <group> -w u170 -c 48 -t 12:00:00'
+
+# Check my queue / lab's queue:
+alias runs='squeue -u $USER'
+
+# Friendlier ls:
+alias lst='ls -lhtr'
+
+# Jump to project directories:
+alias proj='cd /fs/project/<group>/<username>/'
+alias data='cd /fs/project/<group>/shared_data/'
+
+# Mac-equivalent name for an editor:
+alias pico='nano'
+
+# Open the most recently modified file:
+alias more_last='more "$(ls -t | head -n1)"'
+
+# ───────────────────────────────────────────────────────────────────────
+# Functions: like aliases, but they take arguments
+# ───────────────────────────────────────────────────────────────────────
+# Print the working directory of a Slurm job ID
+slinfo() {
+    scontrol show jobid -dd "$1" | grep 'WorkDir' | sed 's/WorkDir=//' | sed 's/[[:blank:]]//'
+}
+
+# ───────────────────────────────────────────────────────────────────────
+# Conda/Mamba initialization (don't touch — managed by `conda init`)
+# ───────────────────────────────────────────────────────────────────────
+# (block omitted for brevity — see Section 7)
+
+# ───────────────────────────────────────────────────────────────────────
+# Activate the conda environment I use most often, on every login
+# ───────────────────────────────────────────────────────────────────────
+mamba activate myproject
+
+# ───────────────────────────────────────────────────────────────────────
+# Secrets: kept in a separate file so I don't accidentally commit them
+# ───────────────────────────────────────────────────────────────────────
+[ -f ~/.secrets ] && source ~/.secrets
+
+# ───────────────────────────────────────────────────────────────────────
+# Prevent core dumps (large files from crashed programs)
+# ───────────────────────────────────────────────────────────────────────
+ulimit -S -c 0
+
+# ───────────────────────────────────────────────────────────────────────
+# Misc tweaks
+# ───────────────────────────────────────────────────────────────────────
+export FORT_FMT_RECL=2000000      # large formatted Fortran I/O record length
+export OMP_NUM_THREADS=4          # default OpenMP thread count
+```
+
+After editing, `source ~/.bashrc` to apply.
+
+---
+
+# 9. Common Pitfalls
+
+### ❌ Aliases don't appear in scripts
+
+Aliases only work in **interactive** shells. Inside a `#!/bin/bash` script, `getgpu` won't resolve. Use the full command, or define a function instead (functions are exported via `export -f`).
+
+### ❌ "command not found" — but I just defined it
+
+You need to either restart the shell or `source ~/.bashrc`. Editing the file alone has no effect on running shells.
+
+### ❌ `PATH` change broke my shell
+
+If you accidentally wrote `export PATH=/some/path` (without `:$PATH`), you removed every standard directory from `PATH` and now nothing works. Recovery:
+
+```bash
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+nano ~/.bashrc        # fix the line
+```
+
+### ❌ "I added it to `.bash_profile` and it doesn't work in VS Code's terminal"
+
+VS Code's integrated terminal often starts a non-login shell — which reads `.bashrc`, not `.bash_profile`. Make sure `.bash_profile` sources `.bashrc` (Section 2).
+
+### ❌ Newly-created files are still 644 instead of 664
+
+Either:
+
+- `umask 002` is set but you're in a directory not owned by your collaborative group — check `ls -ld .`
+- A different `umask` line later in your `.bashrc` overrode it — check with `umask` at the prompt
+
+### ❌ Conda environment isn't active in scripts
+
+Slurm batch jobs source a stripped-down shell. Inside `myjob.slurm`, explicitly activate:
+
+```bash
+source ~/.bashrc          # or: source ~/mambaforge/etc/profile.d/conda.sh
+mamba activate myproject
+```
+
+---
+
+# 10. Summary
+
+- ✔ Put aliases, functions, and environment variables in **`~/.bashrc`**
+- ✔ Make sure **`~/.bash_profile`** sources `.bashrc` so login shells see everything
+- ✔ Use `alias` for shorthand, **functions** when you need arguments
+- ✔ Prepend to `PATH` for project tools; append for lower priority
+- ✔ Set `umask 002` for collaborative group work — saves endless `chmod` ceremony
+- ✔ Don't paste secrets straight into `.bashrc`; use a chmod-600 `~/.secrets` file
+- ✔ `source ~/.bashrc` to reload after edits
+
+Next up: [Persistent Sessions: tmux, nohup, and livenode](persistent_sessions.qmd) — using your shell environment to build sessions that survive disconnects.

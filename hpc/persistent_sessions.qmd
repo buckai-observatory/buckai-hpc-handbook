@@ -1,0 +1,446 @@
+---
+title: "Persistent Sessions: tmux, nohup, and livenode"
+---
+
+# Introduction
+
+You've started a long computation, or you're in the middle of a Claude Code session that has a lot of context, and then —
+
+- your laptop sleeps
+- WiFi blips
+- a coffee shop kicks you off their network
+- you commute home and want to pick up where you left off, from a different machine
+
+In a plain SSH session, **all of that work dies**. The shell on the cluster sees the SSH connection drop, gets sent a `HUP` (hangup) signal, and tears down every process you launched. Your interactive Slurm allocation goes back to the pool. Your Claude Code chat history is gone.
+
+This page covers three solutions, each suited to a different situation:
+
+1. **`tmux`** — start a session on the cluster that you can detach from and re-attach to from anywhere, with all running processes intact.
+2. **`nohup`** — fire off a one-shot command that survives the disconnect, no session to reattach to.
+3. **`livenode`** — a small function you put in your `.bashrc` that combines tmux with `sinteractive` to give you a persistent, reattachable compute-node session. **This is the headline pattern.**
+
+This page assumes you've read [The Shell Environment](shell_environment.qmd) and have a working `.bashrc`. It's complementary to [VS Code Remote-SSH](../ssh/vscode_remote_ssh.qmd) — see Section 6 for when to use which.
+
+---
+
+# 1. The Disconnect Problem in More Detail
+
+When you `ssh unity` and then run `claude` (or `python long_script.py`, or `sinteractive`), there's a process tree:
+
+```
+sshd (cluster)
+ └── bash (your shell)
+      └── claude
+```
+
+When the SSH connection drops, the kernel notifies `sshd`, which sends `SIGHUP` to your shell, which by default kills its children. Your shell, your `claude`, your `python` — all gone.
+
+The three solutions in this page each break this chain in a different way:
+
+| Solution | How it survives | Reattachable? |
+|---|---|---|
+| `tmux` | Your shell runs inside a tmux session, not under sshd | ✅ Yes |
+| `nohup` | The command is detached from your shell's signal group | ❌ No (it just runs in the background) |
+| `livenode` | tmux + sinteractive combined into one function | ✅ Yes |
+
+---
+
+# 2. `tmux`: Sessions That Survive Disconnects
+
+`tmux` ("terminal multiplexer") is the canonical tool for this. The mental model: tmux is a **persistent terminal** running on the cluster that you can hook into and unhook from.
+
+### 2.1 Starting a session
+
+After SSHing to Unity:
+
+```bash
+tmux new -s mywork
+```
+
+The prompt now looks the same as before — but you're inside a tmux session named `mywork`. Anything you run here lives inside the session.
+
+### 2.2 Detaching
+
+While inside the session, type **`Ctrl+b` then `d`** (release Ctrl+b first, then press d). You'll see:
+
+```
+[detached (from session mywork)]
+```
+
+You're back at the regular Unity prompt. The tmux session is still alive, and so is everything you were running inside it.
+
+You can now safely close your SSH connection. The session keeps running.
+
+### 2.3 Reattaching from anywhere
+
+Next day, from any machine that can `ssh unity`:
+
+```bash
+ssh unity
+tmux attach -t mywork    # or: tmux a -t mywork
+```
+
+You're back exactly where you left off. The processes you started are still running, the scrollback is intact, the working directory is the same.
+
+### 2.4 Listing sessions
+
+```bash
+tmux ls
+# mywork: 1 windows (created Thu Nov 14 09:23:11 2024) [194x52]
+# train: 1 windows (created Fri Nov 15 14:01:33 2024) [194x52]
+```
+
+### 2.5 Killing a session
+
+```bash
+tmux kill-session -t mywork
+```
+
+Or, from inside the session: `Ctrl+b` then type `:kill-session` and Enter.
+
+### 2.6 The minimum tmux you actually need
+
+The full tmux feature set is enormous (windows, panes, scripting, copy mode, etc.). For day-to-day HPC use, this is enough:
+
+| Action | Keys |
+|---|---|
+| Start a new session | `tmux new -s NAME` |
+| Detach (leave it running) | `Ctrl+b` then `d` |
+| List sessions | `tmux ls` |
+| Reattach | `tmux a -t NAME` |
+| Scroll back in history | `Ctrl+b` then `[`, then arrow keys / PgUp ; `q` to exit |
+| Kill a session | `tmux kill-session -t NAME` |
+
+### 2.7 Known rough edges
+
+`tmux` has a few annoyances that people often complain about:
+
+- **Scrolling weirdness:** by default, scrolling in your terminal doesn't see tmux's scrollback. Use `Ctrl+b` then `[` to enter "copy mode" where arrow keys / PgUp / PgDn actually scroll.
+- **Alternate screen buffer leftover:** programs like `less`, `vim`, `htop` use a "second screen" that's supposed to be cleaned up on exit. Sometimes a crash leaves it visible. Fix: type `reset` (blind — you may not see the letters) and press Enter.
+- **A slightly steep learning curve** if you go beyond the basic detach/attach pattern.
+
+These are real but minor — for the "I want my work to survive disconnects" use case, tmux is rock solid.
+
+---
+
+# 3. The `livenode` Pattern: tmux + sinteractive
+
+This is the pattern that ties it all together. The goal:
+
+> I want a persistent compute-node session — a real Slurm allocation, running Claude Code or Python, that I can connect to from any laptop, leave running overnight, and come back to.
+
+Put this in your `~/.bashrc` on Unity:
+
+```bash
+livenode() {
+    local session="${1:-jbm_node}"
+    if tmux has-session -t "$session" 2>/dev/null; then
+        tmux attach -t "$session"
+    else
+        tmux new-session -s "$session" "sinteractive -m 48000 -t 72:00:00; bash"
+    fi
+}
+```
+
+After `source ~/.bashrc`, you can just type:
+
+```bash
+livenode
+```
+
+and it Does The Right Thing.
+
+### 3.1 What each line does
+
+```bash
+livenode() {
+```
+
+Defines a shell **function** called `livenode`. Unlike an alias, this can take arguments and have logic.
+
+```bash
+    local session="${1:-jbm_node}"
+```
+
+Sets a local variable `session` to either the first argument you passed (`$1`) **or**, if you didn't pass one, the default `jbm_node`. So `livenode` uses the default, `livenode mywork` uses `mywork`. Pick a name per project.
+
+```bash
+    if tmux has-session -t "$session" 2>/dev/null; then
+```
+
+Checks whether a tmux session with that name already exists. The `2>/dev/null` suppresses the "no such session" error if it doesn't.
+
+```bash
+        tmux attach -t "$session"
+```
+
+If a session does exist, **attach to it** — i.e. drop you back into the running compute-node session you started earlier.
+
+```bash
+    else
+        tmux new-session -s "$session" "sinteractive -m 48000 -t 72:00:00; bash"
+```
+
+If a session doesn't exist, **create one** and immediately run `sinteractive -m 48000 -t 72:00:00` inside it (requesting 48 GB of memory for 72 hours). After `sinteractive` finishes (either because the allocation expires or you `exit` it), the `; bash` keeps a regular shell open inside the tmux session so the window doesn't vanish.
+
+```bash
+    fi
+}
+```
+
+End of the function.
+
+### 3.2 The workflow it enables
+
+**Day 1, from your office:**
+
+```bash
+ssh unity
+livenode              # creates session, requests a node, attaches
+# … you're now on a compute node, e.g. u170 …
+claude                # start Claude Code
+# … work for an hour …
+# Ctrl+b d            # detach from tmux
+# close laptop, go home
+```
+
+**Day 1, evening, from home:**
+
+```bash
+ssh unity
+livenode              # session exists — reattach
+# … you're back on u170, with claude still running, same chat history
+```
+
+**Day 2, from your phone via a terminal app:**
+
+```bash
+ssh unity
+livenode              # still attaches you to the same node
+# … check on a long-running task, type a follow-up to claude …
+```
+
+Until the 72-hour Slurm allocation expires or you `tmux kill-session -t jbm_node`, the session keeps living.
+
+### 3.3 Multiple parallel sessions
+
+The default name `jbm_node` works for one project. For a second project running simultaneously:
+
+```bash
+livenode soda          # new session named 'soda'
+# … in another SSH session, later:
+livenode bathy         # new session named 'bathy', different compute node
+```
+
+`tmux ls` shows all of them. Each gets its own Slurm allocation.
+
+### 3.4 Caveats
+
+- **The allocation can still expire.** If you ask for 72 hours and don't reattach within 72 hours, the node goes back to the pool. The tmux session keeps existing, but it'll be sitting at a regular login-node shell.
+- **`sinteractive` queues if the cluster is busy.** Your `livenode` invocation may sit "waiting for resources" for a while before actually putting you on a compute node. That's normal — let it sit.
+- **One Slurm partition at a time.** If you want a GPU node sometimes and a CPU node other times, write **two** functions:
+
+```bash
+livegpu() {
+    local session="${1:-jbm_gpu}"
+    if tmux has-session -t "$session" 2>/dev/null; then
+        tmux attach -t "$session"
+    else
+        tmux new-session -s "$session" "sinteractive -p mygroup -g 1 -t 24:00:00; bash"
+    fi
+}
+
+livecpu() {
+    local session="${1:-jbm_cpu}"
+    if tmux has-session -t "$session" 2>/dev/null; then
+        tmux attach -t "$session"
+    else
+        tmux new-session -s "$session" "sinteractive -c 48 -t 48:00:00; bash"
+    fi
+}
+```
+
+---
+
+# 4. `nohup`: Fire-and-Forget for One-Shot Commands
+
+`tmux` is overkill for "I want this command to keep running after I log out, I don't need to interact with it." For that, use `nohup`:
+
+```bash
+nohup python long_simulation.py > sim.log 2>&1 &
+```
+
+What each piece does:
+
+- **`nohup`** — "no hangup": runs the command in a way that ignores `SIGHUP` when the shell dies
+- **`python long_simulation.py`** — the actual command
+- **`> sim.log 2>&1`** — redirect both stdout and stderr into `sim.log` (since the terminal is going away, the output needs to go somewhere)
+- **`&`** — run in the background, return the prompt immediately
+
+You can now `exit` the SSH session, and the Python process keeps going. Check on it later by SSH-ing back in and looking at `sim.log`:
+
+```bash
+tail -f sim.log
+```
+
+### 4.1 Checking and managing nohup jobs
+
+```bash
+ps -u $USER | grep python      # find running Python processes
+kill <PID>                     # stop one
+```
+
+There's no "reattach" — once it's running under nohup, you can't get back to its terminal. You can only watch its output file.
+
+### 4.2 `disown` for already-running jobs
+
+What if you started something *without* nohup and now realize you need to disconnect?
+
+```bash
+# Already running in the foreground, say a 4-hour python script
+Ctrl+Z                # pause it
+bg                    # resume in background
+disown -h %1          # detach from the shell (so SIGHUP won't kill it)
+```
+
+After this, you can safely log out. Output that was going to the terminal is now lost (it had no log file). For programs that need stdin or interactive output, use `tmux` instead.
+
+### 4.3 `nohup` vs `tmux`
+
+| Use case | Pick |
+|---|---|
+| Single batch-style command, output goes to a log file, no interaction needed | `nohup` |
+| Interactive program (Claude Code, Python REPL, `htop`), or you want to reattach later | `tmux` (or `livenode`) |
+| Reproducible job-shaped work | Actually use Slurm `sbatch` — see [Slurm Best Practices](../slurm/slurm_best_practices.qmd) |
+
+A common heuristic: if you'd want to scroll back through the terminal history of the program, use `tmux`. If you'd never look at it interactively, `nohup` is fine.
+
+---
+
+# 5. Reconnecting to a Running Claude Code Session
+
+A specific workflow this all enables:
+
+1. From any laptop, SSH to Unity and run `livenode`
+2. The first time, this allocates a compute node and drops you on it inside tmux
+3. Inside that, run `cd /path/to/project && claude`
+4. Work with Claude as usual
+5. Walk away — close your laptop, kill your VPN, whatever
+6. The Slurm allocation persists, the tmux session persists, the `claude` process persists, the entire chat history is in memory
+7. Next time: `ssh unity → livenode → attached to the same session with claude still running`
+
+This is the killer feature: **conversational state with Claude survives across days, networks, and machines**. No need to recap context to Claude after every disconnect.
+
+If you ever need to *end* the Claude session cleanly, type `/exit` inside Claude (which exits Claude but keeps the shell alive inside tmux). To end the whole session: `tmux kill-session -t jbm_node`.
+
+---
+
+# 6. tmux/livenode vs VS Code Remote-SSH
+
+You now have **two complementary** ways to handle disconnects:
+
+| | tmux / livenode | VS Code Remote-SSH |
+|---|---|---|
+| What it preserves | Whole shell session, including running processes | VS Code server, open files, integrated terminals |
+| Best for | Long-running interactive jobs you want to reattach to from *any* machine | Active development with editor, diff review, selection prompting |
+| Survives full quit of client? | ✅ Yes — session lives on the cluster | ⚠ Partial — server lives, but terminals close on full quit |
+| Reattach from a different laptop? | ✅ Yes, trivial | ⚠ You can reconnect to the same server but terminals are fresh |
+| Editor included? | ❌ No (terminal-only) | ✅ Yes — full VS Code |
+| Best for Claude Code chat persistence? | ✅ Best | ⚠ Good while you stay on one laptop |
+
+**You can combine them.** Open VS Code Remote-SSH to Unity, open the integrated terminal, run `livenode` inside it. Now you have VS Code's editor *and* a tmux-protected Claude Code session. If VS Code crashes or your laptop dies, the tmux session still has your work. Best of both.
+
+See [VS Code Remote-SSH + Claude Code](../ssh/vscode_remote_ssh.qmd) for the editor side of this.
+
+---
+
+# 7. Common Pitfalls
+
+### ❌ "I detached and now I can't find my session"
+
+```bash
+tmux ls
+```
+
+If nothing's listed, the session was killed (cluster restarted, allocation expired, you accidentally typed `exit` in the last pane). Sessions don't survive node reboots — they're processes, not persistent state.
+
+### ❌ Mouse scroll doesn't work inside tmux
+
+By default, tmux only scrolls via copy mode. To enable mouse scrolling globally, add to `~/.tmux.conf`:
+
+```
+set -g mouse on
+```
+
+Then `tmux kill-server` once, restart your sessions, and mouse scrolling works.
+
+### ❌ Frozen terminal after running `less` / `vim` / `htop` inside tmux
+
+Alternate-screen-buffer leftover. Type `reset` (blind — you may not see what you're typing) and press Enter.
+
+### ❌ Nested tmux: "sessions should be nested with care"
+
+This warning means you're already inside a tmux session and trying to start a new one. Detach first (`Ctrl+b d`), then start a new session from the outer shell.
+
+### ❌ `livenode` says "no such session" but I just made one
+
+Did you exit the inner shell? When the `bash` at the end of `sinteractive ...; bash` exits, the tmux pane closes, and an empty session may close too. To prevent accidental closure: don't type `exit` at the tmux pane — detach with `Ctrl+b d` instead.
+
+### ❌ `nohup` output isn't appearing in `sim.log`
+
+Your program is probably buffering its output. For Python: `python -u long_simulation.py > sim.log 2>&1 &` (`-u` = unbuffered). For other languages, look up "unbuffered stdout" or pipe through `stdbuf -oL`.
+
+### ❌ Forgot to start with `nohup` and now I'm afraid to disconnect
+
+```bash
+Ctrl+Z           # suspend
+bg               # resume in background
+disown -h %1     # detach so SIGHUP won't kill it
+```
+
+Now safe to log out. Output that was on-terminal before disowning is lost, but the process continues.
+
+---
+
+# 8. Quick Reference
+
+**Start a persistent compute-node session (assuming `livenode` is in `~/.bashrc`):**
+
+```bash
+livenode             # default session
+livenode myproject   # named session
+```
+
+**Manual tmux:**
+
+```bash
+tmux new -s NAME           # start
+Ctrl+b d                   # detach
+tmux ls                    # list
+tmux a -t NAME             # reattach
+tmux kill-session -t NAME  # kill
+```
+
+**Fire-and-forget background command:**
+
+```bash
+nohup python script.py > out.log 2>&1 &
+```
+
+**Rescue an already-running foreground job:**
+
+```bash
+Ctrl+Z; bg; disown -h %1
+```
+
+---
+
+# 9. Summary
+
+- ✔ `tmux` makes terminal sessions survive disconnects and lets you reattach from any machine
+- ✔ The `livenode` function in your `~/.bashrc` packages tmux + `sinteractive` into a single command
+- ✔ Once you've `livenode`'d in, you can detach (`Ctrl+b d`), close your laptop, and reattach later — Claude Code's chat history and all
+- ✔ Use `nohup ... &` for one-shot commands that just need to keep running, no reattaching
+- ✔ tmux/livenode and [VS Code Remote-SSH](../ssh/vscode_remote_ssh.qmd) are complementary — combine them for the best workflow
+
+Next up: [Conda Environments](conda_envs.qmd) for managing Python packages on Unity.

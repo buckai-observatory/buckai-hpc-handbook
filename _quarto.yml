@@ -31,9 +31,11 @@ website:
       - section: "HPC"
         icon: "server"
         contents:
-          - hpc/conda_envs.qmd
+          - hpc/shell_environment.qmd
+          - hpc/persistent_sessions.qmd
           - hpc/modules.qmd
           - hpc/storage_and_paths.qmd
+          - hpc/conda_envs.qmd
 
 format:
   html:
