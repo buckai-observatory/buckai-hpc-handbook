@@ -11,7 +11,7 @@ Because OSU clusters are protected behind institutional firewalls, you **cannot 
 Instead, you must:
 
 1. connect first to a **jump host** (a secure gateway machine), then
-2. from there connect to **Unity** or compute nodes like `u126`, `u170`, `u181`, etc.
+2. from there connect to **Unity** or specific compute nodes you've been allocated.
 
 SSH can automatically perform these multi-step hops *for you* — and skip extra Duo prompts along the way — **but only if your setup is correct**.
 
@@ -303,9 +303,10 @@ Students often log into specific compute nodes for debugging interactive jobs.
 Each compute node gets its own `Host` block that uses `unity` as a `ProxyJump`:
 
 ```sshconfig
-### Template for a compute node
-Host u126
-    HostName u126.asc.ohio-state.edu
+### Template for a compute node — replace `mynode` with the real
+### hostname of a node you've been allocated (e.g. `u500.asc.ohio-state.edu`).
+Host mynode
+    HostName mynode.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
@@ -314,20 +315,20 @@ Host u126
     ProxyJump unity
 ```
 
-The `ProxyJump unity` chains through the Unity definition you already wrote (which itself chains through `ascjumphost`). So a single `ssh u126` does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.
+The `ProxyJump unity` chains through the Unity definition you already wrote (which itself chains through `ascjumphost`). So a single `ssh mynode` does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.
 
-Repeat for other nodes (`u170`, `u181`, etc.). Usage:
+Repeat for any other nodes you have access to. Usage:
 
 ```bash
-ssh u170
+ssh mynode
 ```
 
 ## Multi-hop multiplexing in practice
 
-With three levels of hops (`laptop → ascjumphost → unity → u170`), the multiplexing in the global `Host *` block helps each hop independently:
+With three levels of hops (`laptop → ascjumphost → unity → mynode`), the multiplexing in the global `Host *` block helps each hop independently:
 
-- **First time:** Duo prompt at `ascjumphost`, key auth at `unity`, key auth at `u170`
-- **Subsequent `ssh u170`, `ssh u139`, etc. within 10 minutes:** zero prompts — the `ascjumphost` socket is reused, the `unity` socket is reused, only the final hop's key auth happens
+- **First time:** Duo prompt at `ascjumphost`, key auth at `unity`, key auth at `mynode`
+- **Subsequent `ssh mynode`, `ssh anothernode`, etc. within 10 minutes:** zero prompts — the `ascjumphost` socket is reused, the `unity` socket is reused, only the final hop's key auth happens
 
 This is what makes a half-dozen named compute-node aliases practical.
 

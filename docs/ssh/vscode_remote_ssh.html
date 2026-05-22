@@ -749,9 +749,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-pattern" class="level2">
 <h2 class="anchored" data-anchor-id="the-pattern">8.1 The pattern</h2>
 <p>Each compute node gets its own <code>Host</code> block in <code>~/.ssh/config</code> that uses Unity as a <code>ProxyJump</code>:</p>
-<pre class="sshconfig"><code>### Template for a compute node
-Host u170
-    HostName u170.asc.ohio-state.edu
+<pre class="sshconfig"><code>### Template for a compute node — replace `mynode` with the real
+### hostname of a node you've been allocated.
+Host mynode
+    HostName mynode.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
@@ -762,12 +763,12 @@ Host u170
 </section>
 <section id="opening-vs-code-directly-on-a-compute-node" class="level2">
 <h2 class="anchored" data-anchor-id="opening-vs-code-directly-on-a-compute-node">8.2 Opening VS Code directly on a compute node</h2>
-<p>You can use VS Code Remote-SSH to connect to a compute node directly: in the <strong>Remote-SSH: Connect to Host</strong> dialog, type <code>u170</code> (the alias) instead of <code>unity</code>. This gives you the <strong>full</strong> VS Code experience — editor, integrated terminal, Claude Code — running on the GPU node, with <strong>no port forwarding ceremony</strong>.</p>
+<p>You can use VS Code Remote-SSH to connect to a compute node directly: in the <strong>Remote-SSH: Connect to Host</strong> dialog, type your node alias (e.g.&nbsp;<code>mynode</code>) instead of <code>unity</code>. This gives you the <strong>full</strong> VS Code experience — editor, integrated terminal, Claude Code — running on the compute node, with <strong>no port forwarding ceremony</strong>.</p>
 </section>
 <section id="port-forwarding-shortcuts-for-jupyter" class="level2">
 <h2 class="anchored" data-anchor-id="port-forwarding-shortcuts-for-jupyter">8.3 Port-forwarding shortcuts for Jupyter</h2>
 <p>If you’re running Jupyter on a compute node and want to view it in a browser on your laptop, a handy shell alias is:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup170=<span class="st">'ssh -L 9099:127.0.0.1:8888 u170'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'ssh -L 9099:127.0.0.1:8888 mynode'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This forwards your laptop’s port <code>9099</code> to the compute node’s port <code>8888</code> (where Jupyter listens). Open <code>http://127.0.0.1:9099</code> in your browser to use the notebook.</p>
 </section>
 <section id="when-you-dont-know-the-node-in-advance" class="level2">

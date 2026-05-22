@@ -513,7 +513,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Because OSU clusters are protected behind institutional firewalls, you <strong>cannot log in directly</strong>. Instead, you must:</p>
 <ol type="1">
 <li>connect first to a <strong>jump host</strong> (a secure gateway machine), then</li>
-<li>from there connect to <strong>Unity</strong> or compute nodes like <code>u126</code>, <code>u170</code>, <code>u181</code>, etc.</li>
+<li>from there connect to <strong>Unity</strong> or specific compute nodes you’ve been allocated.</li>
 </ol>
 <p>SSH can automatically perform these multi-step hops <em>for you</em> — and skip extra Duo prompts along the way — <strong>but only if your setup is correct</strong>.</p>
 <p>This guide walks through <em>everything</em> you need:</p>
@@ -722,24 +722,25 @@ ServerAliveCountMax 4</code></pre>
 <h1>8. Direct Shortcuts to Compute Nodes</h1>
 <p>Students often log into specific compute nodes for debugging interactive jobs.</p>
 <p>Each compute node gets its own <code>Host</code> block that uses <code>unity</code> as a <code>ProxyJump</code>:</p>
-<pre class="sshconfig"><code>### Template for a compute node
-Host u126
-    HostName u126.asc.ohio-state.edu
+<pre class="sshconfig"><code>### Template for a compute node — replace `mynode` with the real
+### hostname of a node you've been allocated (e.g. `u500.asc.ohio-state.edu`).
+Host mynode
+    HostName mynode.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
     HostKeyAlgorithms +ssh-rsa
     PubkeyAcceptedAlgorithms +ssh-rsa
     ProxyJump unity</code></pre>
-<p>The <code>ProxyJump unity</code> chains through the Unity definition you already wrote (which itself chains through <code>ascjumphost</code>). So a single <code>ssh u126</code> does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.</p>
-<p>Repeat for other nodes (<code>u170</code>, <code>u181</code>, etc.). Usage:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u170</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>ProxyJump unity</code> chains through the Unity definition you already wrote (which itself chains through <code>ascjumphost</code>). So a single <code>ssh mynode</code> does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.</p>
+<p>Repeat for any other nodes you have access to. Usage:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> mynode</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="multi-hop-multiplexing-in-practice" class="level2">
 <h2 class="anchored" data-anchor-id="multi-hop-multiplexing-in-practice">Multi-hop multiplexing in practice</h2>
-<p>With three levels of hops (<code>laptop → ascjumphost → unity → u170</code>), the multiplexing in the global <code>Host *</code> block helps each hop independently:</p>
+<p>With three levels of hops (<code>laptop → ascjumphost → unity → mynode</code>), the multiplexing in the global <code>Host *</code> block helps each hop independently:</p>
 <ul>
-<li><strong>First time:</strong> Duo prompt at <code>ascjumphost</code>, key auth at <code>unity</code>, key auth at <code>u170</code></li>
-<li><strong>Subsequent <code>ssh u170</code>, <code>ssh u139</code>, etc. within 10 minutes:</strong> zero prompts — the <code>ascjumphost</code> socket is reused, the <code>unity</code> socket is reused, only the final hop’s key auth happens</li>
+<li><strong>First time:</strong> Duo prompt at <code>ascjumphost</code>, key auth at <code>unity</code>, key auth at <code>mynode</code></li>
+<li><strong>Subsequent <code>ssh mynode</code>, <code>ssh anothernode</code>, etc. within 10 minutes:</strong> zero prompts — the <code>ascjumphost</code> socket is reused, the <code>unity</code> socket is reused, only the final hop’s key auth happens</li>
 </ul>
 <p>This is what makes a half-dozen named compute-node aliases practical.</p>
 <hr>

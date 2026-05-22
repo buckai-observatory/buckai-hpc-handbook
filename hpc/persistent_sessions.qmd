@@ -197,7 +197,7 @@ End of the function.
 ```bash
 ssh unity
 livenode              # creates session, requests a node, attaches
-# … you're now on a compute node, e.g. u170 …
+# … Slurm picks a compute node for you and drops you on it …
 claude                # start Claude Code
 # … work for an hour …
 # Ctrl+b d            # detach from tmux
@@ -209,7 +209,7 @@ claude                # start Claude Code
 ```bash
 ssh unity
 livenode              # session exists — reattach
-# … you're back on u170, with claude still running, same chat history
+# … you're back on the same compute node, with claude still running, same chat history
 ```
 
 **Day 2, from your phone via a terminal app:**
@@ -246,7 +246,7 @@ livegpu() {
     if tmux has-session -t "$session" 2>/dev/null; then
         tmux attach -t "$session"
     else
-        tmux new-session -s "$session" "sinteractive -p mygroup -g 1 -t 24:00:00; bash"
+        tmux new-session -s "$session" "sinteractive -p <group> -g 1 -t 24:00:00; bash"
     fi
 }
 

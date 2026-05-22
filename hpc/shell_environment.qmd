@@ -8,7 +8,7 @@ When you log into Unity (or any Linux cluster), you don't just get a generic ter
 
 Most students and new postdocs treat these files as magic. They aren't. Once you know what they do, you can:
 
-✔ Type `getgpu` instead of `sinteractive -p mygroup -t 06:00:00 -g 1 -w u126`
+✔ Type `getgpu` instead of `sinteractive -p <group> -g 1 -t 06:00:00`
 ✔ Type `unity` on your laptop instead of `ssh unity`
 ✔ Have your conda env active automatically on every login
 ✔ Make sure files you create are **readable by your group collaborators** by default
@@ -129,20 +129,23 @@ Once defined, typing `short` runs the long command.
 ```bash
 # So you can just type 'unity' instead of 'ssh unity'
 alias unity='ssh unity'
-alias u126='ssh u126'
-alias u170='ssh u170'
 
-# Forward Jupyter from a GPU node to localhost:9099
-alias jup170='ssh -L 9099:127.0.0.1:8888 u170'
+# If you've added a specific compute-node entry to your ~/.ssh/config,
+# you can alias that too. Replace `mynode` with the node's actual name.
+alias mynode='ssh mynode'
+
+# Forward Jupyter from a compute node to localhost:9099
+alias jup='ssh -L 9099:127.0.0.1:8888 mynode'
 ```
 
 **On the cluster's `~/.bashrc`:**
 
 ```bash
-# Grab an interactive node, configured the way you actually want it
+# Grab an interactive node, configured the way you actually want it.
+# Replace <group> with your Slurm partition name — for new users this
+# is usually `batch` (see Section 4 for how to find out what you can use).
 alias getnode='sinteractive -m 48000 -t 48:00:00'
-alias getgpu='sinteractive -p mygroup -t 06:00:00 -g 1 -w u126'
-alias get170='sinteractive -p mygroup -w u170 -c 48 -t 12:00:00'
+alias getgpu='sinteractive -p <group> -g 1 -t 06:00:00'
 
 # Check your queue without typing your username every time
 alias runs='squeue -u $USER'
@@ -150,13 +153,17 @@ alias runs='squeue -u $USER'
 # A long ls that sorts by modification time, with sizes
 alias lst='ls -lhtr'
 
-# Print the absolute path of the current directory
+# Print the absolute, canonical path of the current directory.
+# Useful because plain `pwd` can return paths *through* symlinks, which
+# look right but cause trouble when fed to scripts or shared with others
+# who can't resolve the symlink the same way you can.
 alias rpwd='realpath .'
 
 # Open the most recently-modified file in $PWD with `more`
 alias more_last='more "$(ls -t | head -n1)"'
 
 # Jump to favorite project directories
+# Replace <group> and <username> with your actual values (Section 4).
 alias proj='cd /fs/project/<group>/<username>/'
 alias data='cd /fs/project/<group>/shared_data/'
 ```
@@ -168,20 +175,99 @@ After `source ~/.bashrc`, just type `getgpu` or `proj` and the long command runs
 Aliases can't take arguments cleanly. When you need them, define a **function**:
 
 ```bash
-# Show the working directory of one of your Slurm jobs:
-#   slinfo 5067189
+# Show the working directory of one of your Slurm jobs.
+# First find a job ID with `squeue -u $USER` (or the `runs` alias above) —
+# the output lists each of your running/queued jobs. Then pass the ID:
+#   slinfo 5067189        # 5067189 is just an example ID
 slinfo() {
     scontrol show jobid -dd "$1" | grep 'WorkDir' | sed 's/WorkDir=//' | sed 's/[[:blank:]]//'
 }
 ```
 
-You'd call it as `slinfo 5067189` — `"$1"` is replaced with `5067189` at runtime.
+`5067189` is just an arbitrary placeholder job ID — you'd substitute one you actually got from `squeue` or `runs`. The function receives the ID as `"$1"` at runtime.
 
 Functions are also the right tool for anything that involves conditional logic, multiple commands, or wrapping `tmux` (see the `livenode` example in [Persistent Sessions](persistent_sessions.qmd)).
 
 ---
 
-# 4. Environment Variables and `PATH`
+# 4. Your Unix Groups and Slurm Partitions
+
+Several of the alias examples above used `<group>` as a placeholder — e.g. `sinteractive -p <group>`. **That is something you have to replace with your actual group/partition name** before the alias will work. But what *is* a group? And what's a "partition"? They're separate-but-related concepts, and both matter on a shared HPC system.
+
+### 4.1 Unix groups: who can read/edit your files
+
+In Linux, every user belongs to one or more **Unix groups**. Every file has a single *group owner*, and the file's permissions decide what members of that group can read, write, or execute (see Section 7 on `umask`).
+
+On Unity, your **labmates and collaborators** are typically gathered into a shared group so you can all access `/fs/project/<group>/...` directories.
+
+To see which Unix groups *you* belong to:
+
+```bash
+groups
+# example output:  yourname.##  somelab  somelab-students
+```
+
+Or, more verbose:
+
+```bash
+id
+# example output:  uid=12345(yourname.##) gid=12345(yourname.##) groups=12345(yourname.##),5678(somelab)
+```
+
+Each entry is one group you can access files of. Your **primary group** is the one new files will be created with by default (it's the first one `groups` prints).
+
+To see who else is in a given group (e.g. who your labmates are):
+
+```bash
+getent group somelab
+# example output:  somelab:x:5678:alice.1,bob.123,yourname.##
+```
+
+If you have no idea which group(s) you should be in, ask your PI or the project owner — they'll know the lab's official group name.
+
+### 4.2 Slurm partitions: who can use which compute hardware
+
+A **Slurm partition** is a named pool of compute nodes that Slurm schedules jobs onto. Partitions and Unix groups overlap conceptually but aren't the same thing — a partition controls *compute resource* access, not file access.
+
+On Unity, there are typically two flavors of partition:
+
+| Partition | Who can submit | Notes |
+|---|---|---|
+| `batch` | **Everyone with a Unity account** | The free, public partition. Anyone can submit; jobs share the available public hardware via fair-share scheduling. **If you're new and have no idea what to use, use `batch`.** |
+| Lab partitions (named after a lab or PI) | Members of that lab's billing account only | Nodes a research group has purchased and reserved for itself. Higher priority for that lab's members, no access for everyone else. |
+
+To list every partition on Unity:
+
+```bash
+sinfo                                  # one-line summary per partition
+sinfo -o "%P %a %D %N"                 # partition name, state, node count, node list
+```
+
+To see which partitions *you* are authorized to submit to:
+
+```bash
+sacctmgr show association user=$USER format=Account,Partition
+```
+
+If a partition doesn't appear in that output, you can't submit jobs to it. To get added to a lab partition, request access through your PI or the cluster admins.
+
+### 4.3 What `<group>` means in the alias examples
+
+When you see `<group>` in `sinteractive -p <group>` in this handbook, it means **the name of a Slurm partition you have access to**. For most readers that will literally be `batch`:
+
+```bash
+alias getgpu='sinteractive -p batch -g 1 -t 06:00:00'
+```
+
+Once you're added to a lab partition, switch the `-p` value to that lab partition's name (e.g. `-p howat`) for higher priority and access to the lab's reserved nodes.
+
+The same `<group>` placeholder also appears in `/fs/project/<group>/...` paths — that's the **Unix group name** for the shared lab directory, which your PI will tell you.
+
+The [Slurm Basics](../slurm/slurm_basics.qmd) and [Slurm Best Practices](../slurm/slurm_best_practices.qmd) pages cover partitions, accounts, and job submission in much more depth.
+
+---
+
+# 5. Environment Variables and `PATH`
 
 An **environment variable** is a name-value pair that programs running inside your shell can see.
 
@@ -241,7 +327,7 @@ export PATH=$PATH:/path/to/my/tools
 | `ANTHROPIC_API_KEY` | Used by Claude Code (see warning below) |
 | `OMP_NUM_THREADS` | OpenMP thread count for multithreaded code |
 | `TMPDIR` | Where temp files go — Unity typically wants this pointed at a fast scratch filesystem |
-| `umask` | Default file/directory permissions (Section 6) |
+| `umask` | Default file/directory permissions (Section 7) |
 
 ### ⚠ A note on secrets in `.bashrc`
 
@@ -278,7 +364,7 @@ If you ever notice a secret has leaked, **rotate it immediately** — assume it'
 
 ---
 
-# 5. `module load`: The Cluster's Software Toolkit
+# 6. `module load`: The Cluster's Software Toolkit
 
 HPC clusters host many versions of compilers, libraries, and applications simultaneously — Python 3.9 and Python 3.11, multiple CUDA toolkits, several Intel compiler releases, etc. Hard-coding paths to all of these would be a mess.
 
@@ -304,7 +390,7 @@ See the [Modules](modules.qmd) page for more.
 
 ---
 
-# 6. `umask`: Default Permissions for New Files
+# 7. `umask`: Default Permissions for New Files
 
 Every file you create gets a set of permissions decided by your **umask**. The umask is a *subtractive* mask — it tells the OS which permission bits to **strip** from new files.
 
@@ -344,7 +430,7 @@ This is **strongly recommended** for any user working in a shared lab directory.
 
 ---
 
-# 7. The Conda/Mamba Initialization Block
+# 8. The Conda/Mamba Initialization Block
 
 After you (or the cluster) install Miniconda or Mambaforge, an automatic block gets added to your `.bashrc` that looks like this:
 
@@ -383,9 +469,9 @@ See the [Conda Environments](conda_envs.qmd) page for the bigger picture on envi
 
 ---
 
-# 8. Putting It All Together: An Annotated Example `.bashrc`
+# 9. Putting It All Together: An Annotated Example `.bashrc`
 
-This is a realistic, sanitized example showing common patterns. Replace `<username>` and `<group>` with your own values, and **do not paste tokens** straight into a `.bashrc` — see Section 4.
+This is a realistic, sanitized example showing common patterns. Replace `<username>` and `<group>` with your own values (see Section 4 if you don't know what those should be), and **do not paste tokens** straight into a `.bashrc` — see Section 5.
 
 ```bash
 # ───────────────────────────────────────────────────────────────────────
@@ -421,10 +507,10 @@ module load intel/2024.2.0
 # ───────────────────────────────────────────────────────────────────────
 # Aliases: short names for things I do all the time
 # ───────────────────────────────────────────────────────────────────────
-# Interactive job allocation:
+# Interactive job allocation. Replace <group> with your partition
+# (often `batch` for new users — see Section 4).
 alias getnode='sinteractive -m 48000 -t 48:00:00'
-alias getgpu='sinteractive -p <group> -t 06:00:00 -g 1 -w u126'
-alias get170='sinteractive -p <group> -w u170 -c 48 -t 12:00:00'
+alias getgpu='sinteractive -p <group> -g 1 -t 06:00:00'
 
 # Check my queue / lab's queue:
 alias runs='squeue -u $USER'
@@ -453,7 +539,7 @@ slinfo() {
 # ───────────────────────────────────────────────────────────────────────
 # Conda/Mamba initialization (don't touch — managed by `conda init`)
 # ───────────────────────────────────────────────────────────────────────
-# (block omitted for brevity — see Section 7)
+# (block omitted for brevity — see Section 8)
 
 # ───────────────────────────────────────────────────────────────────────
 # Activate the conda environment I use most often, on every login
@@ -481,7 +567,7 @@ After editing, `source ~/.bashrc` to apply.
 
 ---
 
-# 9. Common Pitfalls
+# 10. Common Pitfalls
 
 ### ❌ Aliases don't appear in scripts
 
@@ -522,7 +608,7 @@ mamba activate myproject
 
 ---
 
-# 10. Summary
+# 11. Summary
 
 - ✔ Put aliases, functions, and environment variables in **`~/.bashrc`**
 - ✔ Make sure **`~/.bash_profile`** sources `.bashrc` so login shells see everything
