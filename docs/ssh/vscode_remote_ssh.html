@@ -755,8 +755,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-pattern" class="level2">
 <h2 class="anchored" data-anchor-id="the-pattern">8.1 The pattern</h2>
 <p>Each compute node gets its own <code>Host</code> block in <code>~/.ssh/config</code> that uses Unity as a <code>ProxyJump</code>:</p>
-<pre class="sshconfig"><code>### Template for a compute node — replace `mynode` with the real
-### hostname of a node you've been allocated.
+<pre class="sshconfig"><code>### Template for a compute node. On Unity, real node hostnames follow
+### the pattern `uXXX` (a `u` followed by a number, e.g. u101, u250, u500).
+### Replace `mynode` below with the actual node hostname you have access to.
 Host mynode
     HostName mynode.asc.ohio-state.edu
     User yourname.##

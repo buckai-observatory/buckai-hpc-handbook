@@ -240,8 +240,9 @@ For interactive sessions on a specific compute node — e.g. running a Jupyter n
 Each compute node gets its own `Host` block in `~/.ssh/config` that uses Unity as a `ProxyJump`:
 
 ```sshconfig
-### Template for a compute node — replace `mynode` with the real
-### hostname of a node you've been allocated.
+### Template for a compute node. On Unity, real node hostnames follow
+### the pattern `uXXX` (a `u` followed by a number, e.g. u101, u250, u500).
+### Replace `mynode` below with the actual node hostname you have access to.
 Host mynode
     HostName mynode.asc.ohio-state.edu
     User yourname.##

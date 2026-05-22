@@ -93,7 +93,7 @@ sinteractive -p <group> -g 1 -m 16000 -t 06:00:00
 
 Replace `<group>` with your Slurm partition (often `batch` — see [Shell Environment §4](shell_environment.qmd)). The `-m 16000` requests 16 GB of memory, `-t 06:00:00` asks for 6 hours, and `-g 1` (optional) requests one GPU. Tune all three to your actual needs — many notebooks need much less than 16 GB and don't need a GPU at all.
 
-Once allocated, your shell prompt will change to indicate you're on a compute node — note the hostname (e.g. `u500` — I'll use `mynode` as a placeholder throughout this page).
+Once allocated, your shell prompt will change to indicate you're on a compute node — note the hostname. On Unity these follow the pattern `uXXX`: a `u` followed by a number, like `u101`, `u250`, `u500`, etc. Throughout this page I'll use **`mynode`** as a generic placeholder — substitute the actual `uXXX` hostname you've been allocated.
 
 ### 2.2 Step 2 — Start Jupyter on the compute node
 

@@ -728,8 +728,10 @@ ServerAliveCountMax 4</code></pre>
 <h1>8. Direct Shortcuts to Compute Nodes</h1>
 <p>Students often log into specific compute nodes for debugging interactive jobs.</p>
 <p>Each compute node gets its own <code>Host</code> block that uses <code>unity</code> as a <code>ProxyJump</code>:</p>
-<pre class="sshconfig"><code>### Template for a compute node — replace `mynode` with the real
-### hostname of a node you've been allocated (e.g. `u500.asc.ohio-state.edu`).
+<pre class="sshconfig"><code>### Template for a compute node. On Unity, real node hostnames follow
+### the pattern `uXXX` — a `u` followed by a number, like u101, u250,
+### u500, etc. (full FQDN: u101.asc.ohio-state.edu). Replace `mynode`
+### below with the actual node hostname you have access to.
 Host mynode
     HostName mynode.asc.ohio-state.edu
     User yourname.##
