@@ -1,10 +1,583 @@
+---
+title: "Python Environments on Unity: Mamba, Conda, and Pip"
+---
+
+# Introduction
+
+Almost every research project on Unity eventually needs Python packages — NumPy, PyTorch, GDAL, rasterio, scikit-learn, you name it. The simple-looking command `pip install numpy` hides a lot of complexity, and getting it wrong on a shared HPC system can leave you with a broken environment that takes hours to untangle.
+
+This page covers how to manage Python environments **the right way** on Unity:
+
+✔ Why isolated environments matter, and why "I'll just install it globally" is a trap
+✔ Why **mamba** is much better than plain `conda` (faster solver, same packages)
+✔ How to install mamba on Unity, create environments, and activate them
+✔ The dangers of mixing **pip** with conda — and how to do it safely when you must
+✔ How to **share** a working environment with collaborators on Unity
+✔ How to put a reproducible environment spec in a public GitHub repo
+
+Prerequisites: [Shell Environment](shell_environment.qmd) (for `.bashrc`, `PATH`, groups, umask) and [Persistent Sessions](persistent_sessions.qmd) (helpful for long installs).
 
 ---
-title: "Conda Environments"
+
+# 1. Why Use Environments at All?
+
+You probably *could* run `pip install numpy pandas torch` straight into Unity's system Python — and many newcomers do. Here's why that's a bad idea:
+
+- **Project drift.** Project A needs PyTorch 2.1; Project B needs PyTorch 1.13 for a specific paper's reproducibility. You can't have both globally.
+- **Dependency cascades.** Installing one package upgrades half its dependencies, which silently breaks an unrelated piece of code you wrote six months ago.
+- **No way back.** "I installed five things, two of them turned out to be the wrong package, now nothing imports correctly." Without a clean environment to nuke, recovery is painful.
+- **Sharing is impossible.** When a student joins your project and asks "what versions are you using?", you have to remember.
+- **No `sudo`.** On Unity (and any shared cluster), you can't install system-wide anyway, so packages end up in `~/.local/lib/python3.x/site-packages/`, which has its own problems.
+
+**Environments solve all of this.** An environment is a self-contained directory with its own Python interpreter and its own set of packages. You can have ten of them, you can throw any one of them away, and they don't interfere with each other.
+
+The standard tool for managing environments in scientific Python is **conda** (the package manager). And the standard way to use conda in 2025 is via **mamba** (a fast drop-in replacement for conda's solver). The rest of this page assumes mamba.
+
 ---
 
-# Create
+# 2. Why Mamba Instead of Conda?
+
+`conda` is a great package manager but historically had one big problem: its dependency solver is *slow*. For a non-trivial environment with PyTorch, CUDA, GDAL, and friends, you can wait **minutes** (sometimes tens of minutes) on "Solving environment..." while conda tries to find a compatible set of versions.
+
+**Mamba is a drop-in replacement** written in C++ that solves the same problem in **seconds**.
+
+- ✔ Same package format
+- ✔ Same channels (conda-forge, bioconda, etc.)
+- ✔ Same environment files (`environment.yml`)
+- ✔ Same env directories on disk
+- ✔ Mamba and conda **can both manage the same environment**
+
+The recommendation is: **install mamba once, then use `mamba` everywhere instead of `conda`.** Anything you've seen documented as `conda install X` just becomes `mamba install X`.
+
+---
+
+# 3. Installing Mamba on Unity (via Miniforge)
+
+The easiest way to get mamba on Unity is to install **Miniforge** — a minimal installer that ships with mamba pre-configured and `conda-forge` set as the default channel.
+
+(In older guides you'll see "Mambaforge"; that's the same project under its old name. If you already have a `~/mambaforge/` directory from years ago, leave it — it still works.)
+
+### 3.1 Download and run the installer
 
 ```bash
-conda create -n buckai python=3.11
+cd ~                          # do this in your home directory
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash Miniforge3-Linux-x86_64.sh
 ```
+
+The installer asks a few questions:
+
+1. **Accept the license** — type `yes`
+2. **Install location** — accept the default (`~/miniforge3`)
+3. **Initialize Miniforge3?** — type `yes` (this edits your `~/.bashrc`)
+
+Then close and re-open your SSH session (or `source ~/.bashrc`) so the conda/mamba shell functions are loaded.
+
+### 3.2 Verify
+
+```bash
+which mamba             # should print something like /home/yourname.##/miniforge3/bin/mamba
+mamba --version         # prints the mamba version
+```
+
+### 3.3 What the installer added to your `.bashrc`
+
+It appended the **conda/mamba init block** described in [Shell Environment §8](shell_environment.qmd). Don't delete it — that block is what makes `mamba activate` work. (Yours will have `miniforge3` in place of `mambaforge`, but the structure is identical.)
+
+### 3.4 (Optional) Set strict channel priority
+
+Channels are the package repositories conda/mamba pull from. The default after Miniforge install is `conda-forge` only, which is what you want — it's the largest community channel and has the most up-to-date versions of scientific packages.
+
+To enforce that **only conda-forge** is used (preventing accidental mixing with the older `defaults` channel), run once:
+
+```bash
+conda config --set channel_priority strict
+```
+
+This avoids subtle dependency-resolution problems caused by packages with the same name living on different channels with different binary builds.
+
+---
+
+# 4. Creating and Using Environments
+
+The basic lifecycle:
+
+```bash
+# Create a new environment with Python 3.11
+mamba create -n myproject python=3.11
+
+# Activate it (your prompt prefix changes to show the active env)
+mamba activate myproject
+
+# Install packages
+mamba install numpy pandas matplotlib
+
+# Run things — Python now points at the env's Python
+python -c "import numpy; print(numpy.__version__)"
+
+# Deactivate when done
+mamba deactivate
+```
+
+### 4.1 Useful commands
+
+| Command | Effect |
+|---|---|
+| `mamba env list` | List all environments on this system |
+| `mamba list` | List packages in the currently active environment |
+| `mamba list -n myproject` | List packages in a specific environment without activating it |
+| `mamba search <package>` | Search conda-forge for available versions of a package |
+| `mamba install <pkg>=<version>` | Pin a specific version |
+| `mamba update <pkg>` | Upgrade one package |
+| `mamba update --all` | Upgrade everything in the active env (use carefully) |
+| `mamba env remove -n myproject` | Delete the environment entirely |
+
+### 4.2 Activating an environment automatically on login
+
+If you spend 90% of your time in one environment, put this at the end of your `~/.bashrc`:
+
+```bash
+mamba activate myproject
+```
+
+(See [Shell Environment](shell_environment.qmd).) Every new SSH session lands in that environment.
+
+### 4.3 Activating environments inside Slurm batch scripts
+
+Slurm jobs run a stripped-down non-interactive shell that doesn't inherit your activated env. Inside `myjob.slurm`:
+
+```bash
+#!/bin/bash
+#SBATCH --time=04:00:00
+#SBATCH --partition=batch
+#SBATCH --mem=16G
+
+# Load conda/mamba shell functions, then activate the env
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+python train.py
+```
+
+The `source ~/miniforge3/etc/profile.d/conda.sh` step is the same machinery your `.bashrc` runs automatically in interactive shells — batch scripts need it explicit.
+
+---
+
+# 5. Where Environments Live (And How to Share Them)
+
+By default, `mamba create -n myproject ...` puts the environment in `~/miniforge3/envs/myproject/`. That's fine for personal projects, but **only you can read it** — your labmates and collaborators can't.
+
+For environments meant to be **shared across a lab**, install them into a group-writable location on `/fs/project/`.
+
+### 5.1 Creating a shared environment
+
+Use `-p` (path) instead of `-n` (name):
+
+```bash
+mamba create -p /fs/project/<group>/envs/<envname> python=3.11 ...
+```
+
+Activate it the same way, but with the path:
+
+```bash
+mamba activate /fs/project/<group>/envs/<envname>
+```
+
+Or, **register the prefix as a named env** so you can use the short form:
+
+```bash
+echo "envs_dirs:
+  - /fs/project/<group>/envs" >> ~/.condarc
+```
+
+After that, `mamba env list` will list `/fs/project/<group>/envs/<envname>` and `mamba activate <envname>` will find it.
+
+### 5.2 Make sure your collaborators can actually use it
+
+For other lab members to be able to activate the env you created, the files under it need group-readable (and ideally group-executable) permissions. This is exactly the case [Shell Environment §7](shell_environment.qmd) made for `umask 002` — set that in your `.bashrc` **before** creating the env, and every file mamba writes will be group-accessible.
+
+If you forgot and the env was created with the default `umask 022`:
+
+```bash
+chmod -R g+rX /fs/project/<group>/envs/<envname>
+```
+
+(`g+rX` adds group-read to everything and group-execute only to directories and already-executable files, which is exactly what you want.)
+
+### 5.3 Communicate it
+
+Tell collaborators:
+
+> The shared `<envname>` environment lives at `/fs/project/<group>/envs/<envname>`. Run `mamba activate <envname>` (assuming you've added `/fs/project/<group>/envs/` to your `envs_dirs`), or use the full path: `mamba activate /fs/project/<group>/envs/<envname>`.
+
+---
+
+# 6. ⚠ Mamba vs Pip — Where Things Go Wrong
+
+**This is the most important section on this page.** Mixing pip and conda incorrectly is the single biggest source of "my environment is mysteriously broken" tickets in scientific Python.
+
+### 6.1 What pip and mamba each do
+
+| | mamba | pip |
+|---|---|---|
+| Package format | Conda packages (`.conda`/`.tar.bz2`) | Python wheels (`.whl`) and source dists |
+| Package sources | conda-forge, bioconda, etc. | PyPI (pypi.org) |
+| Can install non-Python deps | ✅ Yes (C libraries, CUDA, GDAL, etc.) | ❌ Python-only, mostly |
+| Dependency resolver | Full SAT-solver — checks the whole env is consistent | Greedy per-install — doesn't re-check other packages |
+| Tracks what's installed | ✅ Yes, in env metadata | ✅ Yes, but separately |
+| Can break the env? | Rarely (solver catches conflicts) | **Frequently** (especially with C extensions) |
+
+### 6.2 The nightmare scenario
+
+You create a clean env:
+
+```bash
+mamba create -n myenv python=3.11
+mamba activate myenv
+mamba install numpy scipy pandas
+```
+
+Mamba installs NumPy from conda-forge, **linked against the conda-forge OpenBLAS** for optimized linear algebra. Everything works.
+
+Now you do:
+
+```bash
+pip install some-niche-package
+```
+
+That package depends on NumPy, and pip says "Oh, NumPy isn't installed *from my perspective*" (because pip and conda track packages separately), and **reinstalls NumPy from PyPI** — built against a different BLAS, possibly a different ABI version.
+
+Now half your previously-working imports either crash with cryptic linker errors, or worse: silently produce wrong numerical results.
+
+Recovery typically means **nuking the environment and starting over**:
+
+```bash
+mamba deactivate
+mamba env remove -n myenv
+mamba create -n myenv python=3.11 ...    # redo, more carefully this time
+```
+
+### 6.3 ✅ Rules for safely mixing pip and mamba
+
+If a package you need really isn't available on conda-forge, follow these rules:
+
+1. **Install everything mamba can provide FIRST**, in one `mamba install` (or one `environment.yml`).
+2. **Only after that**, install pip-only packages with `pip install --no-deps <package>` — the `--no-deps` flag is critical, because it tells pip *not* to "fix" packages that conda already installed.
+3. **Never `pip install --upgrade <something-conda-installed>`** — pip will gleefully overwrite the conda-managed copy with an incompatible version.
+4. **Check `mamba list`** afterwards — packages installed via pip show up with a `pypi` channel marker, so you can see what's tracked where.
+
+### 6.4 When pip is unavoidable
+
+Some packages — particularly fast-moving ML libraries, internal lab tools, or anything from GitHub — only exist on PyPI or in a git repo. For those:
+
+```bash
+# In an active mamba env, after mamba-installing everything else:
+pip install --no-deps some-pypi-only-package
+pip install --no-deps git+https://github.com/myorg/mytool.git@v0.3.1
+```
+
+If a pip-only package *itself* needs a binary dependency (like NumPy or PyTorch), make sure mamba has installed a compatible version of it first.
+
+---
+
+# 7. Sharing an Environment via `environment.yml`
+
+The standard way to publish an environment is a YAML file.
+
+### 7.1 Exporting your current environment
+
+The naive way (exports literally every package and version, including transitive dependencies):
+
+```bash
+mamba env export -n myproject > environment.yml
+```
+
+The **better way** for sharing with humans (only the packages *you* explicitly asked for, leaving dependency resolution to whoever recreates the env):
+
+```bash
+mamba env export -n myproject --from-history > environment.yml
+```
+
+Inspect the result — it's plain text:
+
+```yaml
+name: myproject
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - matplotlib
+  - pip
+  - pip:
+      - some-pypi-only-package==0.3.1
+```
+
+### 7.2 Recreating an environment from YAML
+
+On any machine with mamba installed:
+
+```bash
+mamba env create -f environment.yml
+mamba activate myproject
+```
+
+Mamba reads the file, resolves a compatible set of versions, and installs everything.
+
+### 7.3 ⚠ `environment.yml` is *not* fully reproducible
+
+The same `environment.yml` recreated **today** vs **next month** can produce different package versions, because:
+
+- conda-forge updates packages daily
+- Loose pinning (`numpy` without a version) means "whatever's latest"
+- New transitive dependencies appear
+
+For most daily work, this is fine — you want bug-fix updates. For paper-reproducibility, you need a **lock file** (Section 8).
+
+---
+
+# 8. Lock Files for True Reproducibility (`conda-lock`)
+
+When you need an environment that recreates **exactly** — same versions, same builds, same hashes — use [`conda-lock`](https://github.com/conda/conda-lock).
+
+### 8.1 Install conda-lock
+
+```bash
+mamba install -n base conda-lock     # one-time, install into base env
+```
+
+### 8.2 Generate a lock file
+
+Starting from your `environment.yml`:
+
+```bash
+conda-lock lock -f environment.yml --platform linux-64
+```
+
+This produces `conda-lock.yml` with every package pinned to a specific build + hash:
+
+```yaml
+package:
+  - name: numpy
+    version: 1.26.4
+    build: py311h64a7726_0
+    sha256: 1d2bf6...
+    ...
+```
+
+### 8.3 Recreate from the lock file
+
+```bash
+conda-lock install --name myproject conda-lock.yml
+```
+
+Same versions every time, regardless of when you run it.
+
+### 8.4 When to bother
+
+- ✅ Paper code that needs to reproduce results
+- ✅ Sharing with reviewers who must run your code as you ran it
+- ✅ Deploying the same env on multiple compute nodes
+- ❌ Your day-to-day exploratory work — the rigidity is annoying
+
+---
+
+# 9. Putting an Environment Spec in a Public GitHub Repo
+
+When your project goes public (paper code, lab tool, tutorial repo), the right artifacts to commit:
+
+### ✔ DO commit
+
+- **`environment.yml`** — the human-readable, loosely-pinned spec
+- **`conda-lock.yml`** (or platform-specific `*.conda-lock.yml`) — for exact reproducibility
+- A **`README` section** explaining how to recreate the env. For example:
+
+````markdown
+## Setup
+
+Install [Miniforge](https://github.com/conda-forge/miniforge), then:
+
+```bash
+mamba env create -f environment.yml
+mamba activate myproject
+```
+
+For exact reproduction of the published results:
+
+```bash
+conda-lock install --name myproject conda-lock.yml
+```
+````
+
+### ❌ DON'T commit
+
+- **The env directory itself** (`envs/myproject/`) — hundreds of MB to GB, platform-specific binaries, useless to others
+- **`~/.condarc`** — may contain tokens for private channels
+- **`~/.pip/pip.conf`** — same reason
+- **`__pycache__/`**, `.ipynb_checkpoints/`, etc. — the usual Python noise
+
+### A sensible `.gitignore` snippet for a Python project
+
+```gitignore
+# Conda / mamba envs
+envs/
+*.conda-lock.yml.bak
+
+# Python noise
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# Local data dumps you don't want public
+data/raw/
+*.h5
+*.npy
+
+# Secrets
+.env
+.secrets
+```
+
+---
+
+# 10. Using Your Mamba Env in Jupyter
+
+If you ran [Jupyter via OnDemand or an SSH tunnel](jupyter_and_tensorboard.qmd) and your notebook needs `myproject`'s packages, you need to **register the env as a Jupyter kernel** once:
+
+```bash
+mamba activate myproject
+mamba install ipykernel               # if not already installed
+python -m ipykernel install --user --name myproject --display-name "Python (myproject)"
+```
+
+Then refresh Jupyter and select **"Python (myproject)"** from the Kernel menu.
+
+To list installed kernels:
+
+```bash
+jupyter kernelspec list
+```
+
+To remove one:
+
+```bash
+jupyter kernelspec remove myproject
+```
+
+---
+
+# 11. Common Pitfalls
+
+### ❌ "command not found: mamba"
+
+Either:
+
+- You haven't `source ~/.bashrc`'d since installing — open a new shell
+- The init block didn't make it into `.bashrc` — re-run `~/miniforge3/bin/mamba init bash`
+
+### ❌ "Solving environment: failed" — even with mamba
+
+You've asked for an impossible combination (e.g. two packages that pin conflicting versions of the same dep). Mamba's error message usually shows the conflict — read it. Sometimes the fix is loosening a pin; sometimes it's adding `conda-forge` if you've accidentally fallen back to the `defaults` channel.
+
+### ❌ "ModuleNotFoundError: No module named 'mypackage'" right after activating
+
+You may have a different `python` on your `PATH` that's winning over the env's Python. Run `which python` — it should point at `~/miniforge3/envs/myproject/bin/python` (or the path-based equivalent). If not, check `.bashrc` for stale `PATH=...` lines that prepend the wrong directory.
+
+### ❌ "Disk quota exceeded" — conda envs eating my home directory
+
+```bash
+mamba clean -a              # clean caches, tarballs, indexes
+du -sh ~/miniforge3/envs/*  # which envs are biggest?
+mamba env remove -n old_unused_env
+```
+
+For lab-wide installs, consider creating envs under `/fs/project/<group>/envs/` (Section 5) where the storage quota is much larger.
+
+### ❌ Pip install broke my env
+
+See Section 6.2. Easiest fix: `mamba env remove -n broken_env && mamba env create -f environment.yml`. (And next time, install everything mamba can provide *first*, then `pip install --no-deps`.)
+
+### ❌ "Conda is configured to use the channel `pkgs/main` ..."
+
+You've been hit by Anaconda's default channel showing up. Mitigation:
+
+```bash
+conda config --remove channels defaults
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+
+### ❌ Jupyter "kernel won't start" after env update
+
+Reinstall the kernel:
+
+```bash
+mamba activate myproject
+python -m ipykernel install --user --name myproject --display-name "Python (myproject)" --force
+```
+
+---
+
+# 12. Quick Reference
+
+**Setup (once):**
+
+```bash
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash Miniforge3-Linux-x86_64.sh
+source ~/.bashrc
+conda config --set channel_priority strict
+```
+
+**Per-project:**
+
+```bash
+mamba create -n myproject python=3.11 numpy pandas matplotlib
+mamba activate myproject
+mamba env export --from-history > environment.yml
+```
+
+**Shared lab env:**
+
+```bash
+mamba create -p /fs/project/<group>/envs/sharedenv python=3.11 ...
+```
+
+**Recreate from a spec:**
+
+```bash
+mamba env create -f environment.yml
+```
+
+**Lock for reproducibility:**
+
+```bash
+conda-lock lock -f environment.yml --platform linux-64
+conda-lock install --name myproject conda-lock.yml
+```
+
+**Pip the right way:**
+
+```bash
+# AFTER all mamba installs are done:
+pip install --no-deps some-pypi-only-package
+```
+
+---
+
+# 13. Summary
+
+- ✔ Use **mamba**, not `conda` (same packages, dramatically faster)
+- ✔ One **environment per project** — never install into the system Python
+- ✔ Install via **Miniforge** (`conda-forge` channel by default)
+- ✔ For lab-shared envs, use `-p /fs/project/<group>/envs/<name>` + `umask 002`
+- ⚠ Mixing pip and conda is dangerous — **mamba first**, then `pip install --no-deps`
+- ✔ Export with `mamba env export --from-history > environment.yml` for sharing
+- ✔ Use **`conda-lock`** when you need exact reproducibility (papers, reviewers)
+- ✔ Commit `environment.yml` (and optionally `conda-lock.yml`) to your public repo; **don't** commit the env directory
+- ✔ Register your env as a Jupyter kernel for [notebook work](jupyter_and_tensorboard.qmd)
+
+Back to [Shell Environment](shell_environment.qmd) for the `.bashrc` patterns, or onward to the [Slurm](../slurm/slurm_basics.qmd) section for running your env's code on the cluster's compute nodes.

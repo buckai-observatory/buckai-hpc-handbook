@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Conda Environments – BuckAI HPC Handbook</title>
+<title>Python Environments on Unity: Mamba, Conda, and Pip – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,6 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
+<link href="../slurm/slurm_basics.html" rel="next">
 <link href="../hpc/storage_and_paths.html" rel="prev">
 <link href="../images/BuckAI_logo_transp.png" rel="icon" type="image/png">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
@@ -285,7 +286,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/conda_envs.html">Conda Environments</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/conda_envs.html">Python Environments on Unity: Mamba, Conda, and Pip</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -352,50 +353,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true"><i class="bi bi-cpu" role="img">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true"><i class="bi bi-server" role="img">
 </i> 
- <span class="menu-text">Slurm</span></a>
+ <span class="menu-text">HPC</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Basics</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Best Practices</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../slurm/slurm_gpu_templates.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">GPU Job Templates</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../slurm/slurm_cpu_templates.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">CPU Job Templates</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true"><i class="bi bi-server" role="img">
-</i> 
- <span class="menu-text">HPC</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../hpc/shell_environment.html" class="sidebar-item-text sidebar-link">
@@ -429,7 +394,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../hpc/conda_envs.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Conda Environments</span></a>
+ <span class="menu-text">Python Environments on Unity: Mamba, Conda, and Pip</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true"><i class="bi bi-cpu" role="img">
+</i> 
+ <span class="menu-text">Slurm</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Basics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Best Practices</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_gpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GPU Job Templates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_cpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CPU Job Templates</span></a>
   </div>
 </li>
       </ul>
@@ -444,7 +445,67 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#create" id="toc-create" class="nav-link active" data-scroll-target="#create">Create</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#why-use-environments-at-all" id="toc-why-use-environments-at-all" class="nav-link" data-scroll-target="#why-use-environments-at-all">1. Why Use Environments at All?</a></li>
+  <li><a href="#why-mamba-instead-of-conda" id="toc-why-mamba-instead-of-conda" class="nav-link" data-scroll-target="#why-mamba-instead-of-conda">2. Why Mamba Instead of Conda?</a></li>
+  <li><a href="#installing-mamba-on-unity-via-miniforge" id="toc-installing-mamba-on-unity-via-miniforge" class="nav-link" data-scroll-target="#installing-mamba-on-unity-via-miniforge">3. Installing Mamba on Unity (via Miniforge)</a>
+  <ul class="collapse">
+  <li><a href="#download-and-run-the-installer" id="toc-download-and-run-the-installer" class="nav-link" data-scroll-target="#download-and-run-the-installer">3.1 Download and run the installer</a></li>
+  <li><a href="#verify" id="toc-verify" class="nav-link" data-scroll-target="#verify">3.2 Verify</a></li>
+  <li><a href="#what-the-installer-added-to-your-.bashrc" id="toc-what-the-installer-added-to-your-.bashrc" class="nav-link" data-scroll-target="#what-the-installer-added-to-your-.bashrc">3.3 What the installer added to your <code>.bashrc</code></a></li>
+  <li><a href="#optional-set-strict-channel-priority" id="toc-optional-set-strict-channel-priority" class="nav-link" data-scroll-target="#optional-set-strict-channel-priority">3.4 (Optional) Set strict channel priority</a></li>
+  </ul></li>
+  <li><a href="#creating-and-using-environments" id="toc-creating-and-using-environments" class="nav-link" data-scroll-target="#creating-and-using-environments">4. Creating and Using Environments</a>
+  <ul class="collapse">
+  <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">4.1 Useful commands</a></li>
+  <li><a href="#activating-an-environment-automatically-on-login" id="toc-activating-an-environment-automatically-on-login" class="nav-link" data-scroll-target="#activating-an-environment-automatically-on-login">4.2 Activating an environment automatically on login</a></li>
+  <li><a href="#activating-environments-inside-slurm-batch-scripts" id="toc-activating-environments-inside-slurm-batch-scripts" class="nav-link" data-scroll-target="#activating-environments-inside-slurm-batch-scripts">4.3 Activating environments inside Slurm batch scripts</a></li>
+  </ul></li>
+  <li><a href="#where-environments-live-and-how-to-share-them" id="toc-where-environments-live-and-how-to-share-them" class="nav-link" data-scroll-target="#where-environments-live-and-how-to-share-them">5. Where Environments Live (And How to Share Them)</a>
+  <ul class="collapse">
+  <li><a href="#creating-a-shared-environment" id="toc-creating-a-shared-environment" class="nav-link" data-scroll-target="#creating-a-shared-environment">5.1 Creating a shared environment</a></li>
+  <li><a href="#make-sure-your-collaborators-can-actually-use-it" id="toc-make-sure-your-collaborators-can-actually-use-it" class="nav-link" data-scroll-target="#make-sure-your-collaborators-can-actually-use-it">5.2 Make sure your collaborators can actually use it</a></li>
+  <li><a href="#communicate-it" id="toc-communicate-it" class="nav-link" data-scroll-target="#communicate-it">5.3 Communicate it</a></li>
+  </ul></li>
+  <li><a href="#mamba-vs-pip-where-things-go-wrong" id="toc-mamba-vs-pip-where-things-go-wrong" class="nav-link" data-scroll-target="#mamba-vs-pip-where-things-go-wrong">6. ⚠ Mamba vs Pip — Where Things Go Wrong</a>
+  <ul class="collapse">
+  <li><a href="#what-pip-and-mamba-each-do" id="toc-what-pip-and-mamba-each-do" class="nav-link" data-scroll-target="#what-pip-and-mamba-each-do">6.1 What pip and mamba each do</a></li>
+  <li><a href="#the-nightmare-scenario" id="toc-the-nightmare-scenario" class="nav-link" data-scroll-target="#the-nightmare-scenario">6.2 The nightmare scenario</a></li>
+  <li><a href="#rules-for-safely-mixing-pip-and-mamba" id="toc-rules-for-safely-mixing-pip-and-mamba" class="nav-link" data-scroll-target="#rules-for-safely-mixing-pip-and-mamba">6.3 ✅ Rules for safely mixing pip and mamba</a></li>
+  <li><a href="#when-pip-is-unavoidable" id="toc-when-pip-is-unavoidable" class="nav-link" data-scroll-target="#when-pip-is-unavoidable">6.4 When pip is unavoidable</a></li>
+  </ul></li>
+  <li><a href="#sharing-an-environment-via-environment.yml" id="toc-sharing-an-environment-via-environment.yml" class="nav-link" data-scroll-target="#sharing-an-environment-via-environment.yml">7. Sharing an Environment via <code>environment.yml</code></a>
+  <ul class="collapse">
+  <li><a href="#exporting-your-current-environment" id="toc-exporting-your-current-environment" class="nav-link" data-scroll-target="#exporting-your-current-environment">7.1 Exporting your current environment</a></li>
+  <li><a href="#recreating-an-environment-from-yaml" id="toc-recreating-an-environment-from-yaml" class="nav-link" data-scroll-target="#recreating-an-environment-from-yaml">7.2 Recreating an environment from YAML</a></li>
+  <li><a href="#environment.yml-is-not-fully-reproducible" id="toc-environment.yml-is-not-fully-reproducible" class="nav-link" data-scroll-target="#environment.yml-is-not-fully-reproducible">7.3 ⚠ <code>environment.yml</code> is <em>not</em> fully reproducible</a></li>
+  </ul></li>
+  <li><a href="#lock-files-for-true-reproducibility-conda-lock" id="toc-lock-files-for-true-reproducibility-conda-lock" class="nav-link" data-scroll-target="#lock-files-for-true-reproducibility-conda-lock">8. Lock Files for True Reproducibility (<code>conda-lock</code>)</a>
+  <ul class="collapse">
+  <li><a href="#install-conda-lock" id="toc-install-conda-lock" class="nav-link" data-scroll-target="#install-conda-lock">8.1 Install conda-lock</a></li>
+  <li><a href="#generate-a-lock-file" id="toc-generate-a-lock-file" class="nav-link" data-scroll-target="#generate-a-lock-file">8.2 Generate a lock file</a></li>
+  <li><a href="#recreate-from-the-lock-file" id="toc-recreate-from-the-lock-file" class="nav-link" data-scroll-target="#recreate-from-the-lock-file">8.3 Recreate from the lock file</a></li>
+  <li><a href="#when-to-bother" id="toc-when-to-bother" class="nav-link" data-scroll-target="#when-to-bother">8.4 When to bother</a></li>
+  </ul></li>
+  <li><a href="#putting-an-environment-spec-in-a-public-github-repo" id="toc-putting-an-environment-spec-in-a-public-github-repo" class="nav-link" data-scroll-target="#putting-an-environment-spec-in-a-public-github-repo">9. Putting an Environment Spec in a Public GitHub Repo</a>
+  <ul class="collapse">
+  <li><a href="#do-commit" id="toc-do-commit" class="nav-link" data-scroll-target="#do-commit">✔ DO commit</a></li>
+  <li><a href="#dont-commit" id="toc-dont-commit" class="nav-link" data-scroll-target="#dont-commit">❌ DON’T commit</a></li>
+  <li><a href="#a-sensible-.gitignore-snippet-for-a-python-project" id="toc-a-sensible-.gitignore-snippet-for-a-python-project" class="nav-link" data-scroll-target="#a-sensible-.gitignore-snippet-for-a-python-project">A sensible <code>.gitignore</code> snippet for a Python project</a></li>
+  </ul></li>
+  <li><a href="#using-your-mamba-env-in-jupyter" id="toc-using-your-mamba-env-in-jupyter" class="nav-link" data-scroll-target="#using-your-mamba-env-in-jupyter">10. Using Your Mamba Env in Jupyter</a></li>
+  <li><a href="#common-pitfalls" id="toc-common-pitfalls" class="nav-link" data-scroll-target="#common-pitfalls">11. Common Pitfalls</a>
+  <ul class="collapse">
+  <li><a href="#command-not-found-mamba" id="toc-command-not-found-mamba" class="nav-link" data-scroll-target="#command-not-found-mamba">❌ “command not found: mamba”</a></li>
+  <li><a href="#solving-environment-failed-even-with-mamba" id="toc-solving-environment-failed-even-with-mamba" class="nav-link" data-scroll-target="#solving-environment-failed-even-with-mamba">❌ “Solving environment: failed” — even with mamba</a></li>
+  <li><a href="#modulenotfounderror-no-module-named-mypackage-right-after-activating" id="toc-modulenotfounderror-no-module-named-mypackage-right-after-activating" class="nav-link" data-scroll-target="#modulenotfounderror-no-module-named-mypackage-right-after-activating">❌ “ModuleNotFoundError: No module named ‘mypackage’” right after activating</a></li>
+  <li><a href="#disk-quota-exceeded-conda-envs-eating-my-home-directory" id="toc-disk-quota-exceeded-conda-envs-eating-my-home-directory" class="nav-link" data-scroll-target="#disk-quota-exceeded-conda-envs-eating-my-home-directory">❌ “Disk quota exceeded” — conda envs eating my home directory</a></li>
+  <li><a href="#pip-install-broke-my-env" id="toc-pip-install-broke-my-env" class="nav-link" data-scroll-target="#pip-install-broke-my-env">❌ Pip install broke my env</a></li>
+  <li><a href="#conda-is-configured-to-use-the-channel-pkgsmain" id="toc-conda-is-configured-to-use-the-channel-pkgsmain" class="nav-link" data-scroll-target="#conda-is-configured-to-use-the-channel-pkgsmain">❌ “Conda is configured to use the channel <code>pkgs/main</code> …”</a></li>
+  <li><a href="#jupyter-kernel-wont-start-after-env-update" id="toc-jupyter-kernel-wont-start-after-env-update" class="nav-link" data-scroll-target="#jupyter-kernel-wont-start-after-env-update">❌ Jupyter “kernel won’t start” after env update</a></li>
+  </ul></li>
+  <li><a href="#quick-reference" id="toc-quick-reference" class="nav-link" data-scroll-target="#quick-reference">12. Quick Reference</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">13. Summary</a></li>
   </ul>
 </nav>
     </div>
@@ -452,9 +513,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/conda_envs.html">Conda Environments</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/conda_envs.html">Python Environments on Unity: Mamba, Conda, and Pip</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Conda Environments</h1>
+<h1 class="title">Python Environments on Unity: Mamba, Conda, and Pip</h1>
 </div>
 
 
@@ -471,9 +532,513 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="create" class="level1">
-<h1>Create</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">-n</span> buckai python=3.11</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Almost every research project on Unity eventually needs Python packages — NumPy, PyTorch, GDAL, rasterio, scikit-learn, you name it. The simple-looking command <code>pip install numpy</code> hides a lot of complexity, and getting it wrong on a shared HPC system can leave you with a broken environment that takes hours to untangle.</p>
+<p>This page covers how to manage Python environments <strong>the right way</strong> on Unity:</p>
+<p>✔ Why isolated environments matter, and why “I’ll just install it globally” is a trap ✔ Why <strong>mamba</strong> is much better than plain <code>conda</code> (faster solver, same packages) ✔ How to install mamba on Unity, create environments, and activate them ✔ The dangers of mixing <strong>pip</strong> with conda — and how to do it safely when you must ✔ How to <strong>share</strong> a working environment with collaborators on Unity ✔ How to put a reproducible environment spec in a public GitHub repo</p>
+<p>Prerequisites: <a href="../hpc/shell_environment.html">Shell Environment</a> (for <code>.bashrc</code>, <code>PATH</code>, groups, umask) and <a href="../hpc/persistent_sessions.html">Persistent Sessions</a> (helpful for long installs).</p>
+<hr>
+</section>
+<section id="why-use-environments-at-all" class="level1">
+<h1>1. Why Use Environments at All?</h1>
+<p>You probably <em>could</em> run <code>pip install numpy pandas torch</code> straight into Unity’s system Python — and many newcomers do. Here’s why that’s a bad idea:</p>
+<ul>
+<li><strong>Project drift.</strong> Project A needs PyTorch 2.1; Project B needs PyTorch 1.13 for a specific paper’s reproducibility. You can’t have both globally.</li>
+<li><strong>Dependency cascades.</strong> Installing one package upgrades half its dependencies, which silently breaks an unrelated piece of code you wrote six months ago.</li>
+<li><strong>No way back.</strong> “I installed five things, two of them turned out to be the wrong package, now nothing imports correctly.” Without a clean environment to nuke, recovery is painful.</li>
+<li><strong>Sharing is impossible.</strong> When a student joins your project and asks “what versions are you using?”, you have to remember.</li>
+<li><strong>No <code>sudo</code>.</strong> On Unity (and any shared cluster), you can’t install system-wide anyway, so packages end up in <code>~/.local/lib/python3.x/site-packages/</code>, which has its own problems.</li>
+</ul>
+<p><strong>Environments solve all of this.</strong> An environment is a self-contained directory with its own Python interpreter and its own set of packages. You can have ten of them, you can throw any one of them away, and they don’t interfere with each other.</p>
+<p>The standard tool for managing environments in scientific Python is <strong>conda</strong> (the package manager). And the standard way to use conda in 2025 is via <strong>mamba</strong> (a fast drop-in replacement for conda’s solver). The rest of this page assumes mamba.</p>
+<hr>
+</section>
+<section id="why-mamba-instead-of-conda" class="level1">
+<h1>2. Why Mamba Instead of Conda?</h1>
+<p><code>conda</code> is a great package manager but historically had one big problem: its dependency solver is <em>slow</em>. For a non-trivial environment with PyTorch, CUDA, GDAL, and friends, you can wait <strong>minutes</strong> (sometimes tens of minutes) on “Solving environment…” while conda tries to find a compatible set of versions.</p>
+<p><strong>Mamba is a drop-in replacement</strong> written in C++ that solves the same problem in <strong>seconds</strong>.</p>
+<ul>
+<li>✔ Same package format</li>
+<li>✔ Same channels (conda-forge, bioconda, etc.)</li>
+<li>✔ Same environment files (<code>environment.yml</code>)</li>
+<li>✔ Same env directories on disk</li>
+<li>✔ Mamba and conda <strong>can both manage the same environment</strong></li>
+</ul>
+<p>The recommendation is: <strong>install mamba once, then use <code>mamba</code> everywhere instead of <code>conda</code>.</strong> Anything you’ve seen documented as <code>conda install X</code> just becomes <code>mamba install X</code>.</p>
+<hr>
+</section>
+<section id="installing-mamba-on-unity-via-miniforge" class="level1">
+<h1>3. Installing Mamba on Unity (via Miniforge)</h1>
+<p>The easiest way to get mamba on Unity is to install <strong>Miniforge</strong> — a minimal installer that ships with mamba pre-configured and <code>conda-forge</code> set as the default channel.</p>
+<p>(In older guides you’ll see “Mambaforge”; that’s the same project under its old name. If you already have a <code>~/mambaforge/</code> directory from years ago, leave it — it still works.)</p>
+<section id="download-and-run-the-installer" class="level3">
+<h3 class="anchored" data-anchor-id="download-and-run-the-installer">3.1 Download and run the installer</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~                          <span class="co"># do this in your home directory</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> Miniforge3-Linux-x86_64.sh</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The installer asks a few questions:</p>
+<ol type="1">
+<li><strong>Accept the license</strong> — type <code>yes</code></li>
+<li><strong>Install location</strong> — accept the default (<code>~/miniforge3</code>)</li>
+<li><strong>Initialize Miniforge3?</strong> — type <code>yes</code> (this edits your <code>~/.bashrc</code>)</li>
+</ol>
+<p>Then close and re-open your SSH session (or <code>source ~/.bashrc</code>) so the conda/mamba shell functions are loaded.</p>
+</section>
+<section id="verify" class="level3">
+<h3 class="anchored" data-anchor-id="verify">3.2 Verify</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">which</span> mamba             <span class="co"># should print something like /home/yourname.##/miniforge3/bin/mamba</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> <span class="at">--version</span>         <span class="co"># prints the mamba version</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="what-the-installer-added-to-your-.bashrc" class="level3">
+<h3 class="anchored" data-anchor-id="what-the-installer-added-to-your-.bashrc">3.3 What the installer added to your <code>.bashrc</code></h3>
+<p>It appended the <strong>conda/mamba init block</strong> described in <a href="../hpc/shell_environment.html">Shell Environment §8</a>. Don’t delete it — that block is what makes <code>mamba activate</code> work. (Yours will have <code>miniforge3</code> in place of <code>mambaforge</code>, but the structure is identical.)</p>
+</section>
+<section id="optional-set-strict-channel-priority" class="level3">
+<h3 class="anchored" data-anchor-id="optional-set-strict-channel-priority">3.4 (Optional) Set strict channel priority</h3>
+<p>Channels are the package repositories conda/mamba pull from. The default after Miniforge install is <code>conda-forge</code> only, which is what you want — it’s the largest community channel and has the most up-to-date versions of scientific packages.</p>
+<p>To enforce that <strong>only conda-forge</strong> is used (preventing accidental mixing with the older <code>defaults</code> channel), run once:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> config <span class="at">--set</span> channel_priority strict</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This avoids subtle dependency-resolution problems caused by packages with the same name living on different channels with different binary builds.</p>
+<hr>
+</section>
+</section>
+<section id="creating-and-using-environments" class="level1">
+<h1>4. Creating and Using Environments</h1>
+<p>The basic lifecycle:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a new environment with Python 3.11</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> myproject python=3.11</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate it (your prompt prefix changes to show the active env)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Install packages</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install numpy pandas matplotlib</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Run things — Python now points at the env's Python</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"import numpy; print(numpy.__version__)"</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Deactivate when done</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> deactivate</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="useful-commands" class="level3">
+<h3 class="anchored" data-anchor-id="useful-commands">4.1 Useful commands</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>mamba env list</code></td>
+<td>List all environments on this system</td>
+</tr>
+<tr class="even">
+<td><code>mamba list</code></td>
+<td>List packages in the currently active environment</td>
+</tr>
+<tr class="odd">
+<td><code>mamba list -n myproject</code></td>
+<td>List packages in a specific environment without activating it</td>
+</tr>
+<tr class="even">
+<td><code>mamba search &lt;package&gt;</code></td>
+<td>Search conda-forge for available versions of a package</td>
+</tr>
+<tr class="odd">
+<td><code>mamba install &lt;pkg&gt;=&lt;version&gt;</code></td>
+<td>Pin a specific version</td>
+</tr>
+<tr class="even">
+<td><code>mamba update &lt;pkg&gt;</code></td>
+<td>Upgrade one package</td>
+</tr>
+<tr class="odd">
+<td><code>mamba update --all</code></td>
+<td>Upgrade everything in the active env (use carefully)</td>
+</tr>
+<tr class="even">
+<td><code>mamba env remove -n myproject</code></td>
+<td>Delete the environment entirely</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="activating-an-environment-automatically-on-login" class="level3">
+<h3 class="anchored" data-anchor-id="activating-an-environment-automatically-on-login">4.2 Activating an environment automatically on login</h3>
+<p>If you spend 90% of your time in one environment, put this at the end of your <code>~/.bashrc</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(See <a href="../hpc/shell_environment.html">Shell Environment</a>.) Every new SSH session lands in that environment.</p>
+</section>
+<section id="activating-environments-inside-slurm-batch-scripts" class="level3">
+<h3 class="anchored" data-anchor-id="activating-environments-inside-slurm-batch-scripts">4.3 Activating environments inside Slurm batch scripts</h3>
+<p>Slurm jobs run a stripped-down non-interactive shell that doesn’t inherit your activated env. Inside <code>myjob.slurm</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04:00:00</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=batch</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=16G</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Load conda/mamba shell functions, then activate the env</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>source ~/miniforge3/etc/profile.d/conda.sh</code> step is the same machinery your <code>.bashrc</code> runs automatically in interactive shells — batch scripts need it explicit.</p>
+<hr>
+</section>
+</section>
+<section id="where-environments-live-and-how-to-share-them" class="level1">
+<h1>5. Where Environments Live (And How to Share Them)</h1>
+<p>By default, <code>mamba create -n myproject ...</code> puts the environment in <code>~/miniforge3/envs/myproject/</code>. That’s fine for personal projects, but <strong>only you can read it</strong> — your labmates and collaborators can’t.</p>
+<p>For environments meant to be <strong>shared across a lab</strong>, install them into a group-writable location on <code>/fs/project/</code>.</p>
+<section id="creating-a-shared-environment" class="level3">
+<h3 class="anchored" data-anchor-id="creating-a-shared-environment">5.1 Creating a shared environment</h3>
+<p>Use <code>-p</code> (path) instead of <code>-n</code> (name):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-p</span> /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/envs/<span class="op">&lt;</span>envname<span class="op">&gt;</span> python=3.11 ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Activate it the same way, but with the path:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/envs/<span class="op">&lt;</span>envname<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or, <strong>register the prefix as a named env</strong> so you can use the short form:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"envs_dirs:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="st">  - /fs/project/&lt;group&gt;/envs"</span> <span class="op">&gt;&gt;</span> ~/.condarc</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After that, <code>mamba env list</code> will list <code>/fs/project/&lt;group&gt;/envs/&lt;envname&gt;</code> and <code>mamba activate &lt;envname&gt;</code> will find it.</p>
+</section>
+<section id="make-sure-your-collaborators-can-actually-use-it" class="level3">
+<h3 class="anchored" data-anchor-id="make-sure-your-collaborators-can-actually-use-it">5.2 Make sure your collaborators can actually use it</h3>
+<p>For other lab members to be able to activate the env you created, the files under it need group-readable (and ideally group-executable) permissions. This is exactly the case <a href="../hpc/shell_environment.html">Shell Environment §7</a> made for <code>umask 002</code> — set that in your <code>.bashrc</code> <strong>before</strong> creating the env, and every file mamba writes will be group-accessible.</p>
+<p>If you forgot and the env was created with the default <code>umask 022</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> <span class="at">-R</span> g+rX /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/envs/<span class="op">&lt;</span>envname<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(<code>g+rX</code> adds group-read to everything and group-execute only to directories and already-executable files, which is exactly what you want.)</p>
+</section>
+<section id="communicate-it" class="level3">
+<h3 class="anchored" data-anchor-id="communicate-it">5.3 Communicate it</h3>
+<p>Tell collaborators:</p>
+<blockquote class="blockquote">
+<p>The shared <code>&lt;envname&gt;</code> environment lives at <code>/fs/project/&lt;group&gt;/envs/&lt;envname&gt;</code>. Run <code>mamba activate &lt;envname&gt;</code> (assuming you’ve added <code>/fs/project/&lt;group&gt;/envs/</code> to your <code>envs_dirs</code>), or use the full path: <code>mamba activate /fs/project/&lt;group&gt;/envs/&lt;envname&gt;</code>.</p>
+</blockquote>
+<hr>
+</section>
+</section>
+<section id="mamba-vs-pip-where-things-go-wrong" class="level1">
+<h1>6. ⚠ Mamba vs Pip — Where Things Go Wrong</h1>
+<p><strong>This is the most important section on this page.</strong> Mixing pip and conda incorrectly is the single biggest source of “my environment is mysteriously broken” tickets in scientific Python.</p>
+<section id="what-pip-and-mamba-each-do" class="level3">
+<h3 class="anchored" data-anchor-id="what-pip-and-mamba-each-do">6.1 What pip and mamba each do</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>mamba</th>
+<th>pip</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Package format</td>
+<td>Conda packages (<code>.conda</code>/<code>.tar.bz2</code>)</td>
+<td>Python wheels (<code>.whl</code>) and source dists</td>
+</tr>
+<tr class="even">
+<td>Package sources</td>
+<td>conda-forge, bioconda, etc.</td>
+<td>PyPI (pypi.org)</td>
+</tr>
+<tr class="odd">
+<td>Can install non-Python deps</td>
+<td>✅ Yes (C libraries, CUDA, GDAL, etc.)</td>
+<td>❌ Python-only, mostly</td>
+</tr>
+<tr class="even">
+<td>Dependency resolver</td>
+<td>Full SAT-solver — checks the whole env is consistent</td>
+<td>Greedy per-install — doesn’t re-check other packages</td>
+</tr>
+<tr class="odd">
+<td>Tracks what’s installed</td>
+<td>✅ Yes, in env metadata</td>
+<td>✅ Yes, but separately</td>
+</tr>
+<tr class="even">
+<td>Can break the env?</td>
+<td>Rarely (solver catches conflicts)</td>
+<td><strong>Frequently</strong> (especially with C extensions)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="the-nightmare-scenario" class="level3">
+<h3 class="anchored" data-anchor-id="the-nightmare-scenario">6.2 The nightmare scenario</h3>
+<p>You create a clean env:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> myenv python=3.11</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myenv</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install numpy scipy pandas</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Mamba installs NumPy from conda-forge, <strong>linked against the conda-forge OpenBLAS</strong> for optimized linear algebra. Everything works.</p>
+<p>Now you do:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install some-niche-package</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That package depends on NumPy, and pip says “Oh, NumPy isn’t installed <em>from my perspective</em>” (because pip and conda track packages separately), and <strong>reinstalls NumPy from PyPI</strong> — built against a different BLAS, possibly a different ABI version.</p>
+<p>Now half your previously-working imports either crash with cryptic linker errors, or worse: silently produce wrong numerical results.</p>
+<p>Recovery typically means <strong>nuking the environment and starting over</strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> deactivate</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env remove <span class="at">-n</span> myenv</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> myenv python=3.11 ...    <span class="co"># redo, more carefully this time</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="rules-for-safely-mixing-pip-and-mamba" class="level3">
+<h3 class="anchored" data-anchor-id="rules-for-safely-mixing-pip-and-mamba">6.3 ✅ Rules for safely mixing pip and mamba</h3>
+<p>If a package you need really isn’t available on conda-forge, follow these rules:</p>
+<ol type="1">
+<li><strong>Install everything mamba can provide FIRST</strong>, in one <code>mamba install</code> (or one <code>environment.yml</code>).</li>
+<li><strong>Only after that</strong>, install pip-only packages with <code>pip install --no-deps &lt;package&gt;</code> — the <code>--no-deps</code> flag is critical, because it tells pip <em>not</em> to “fix” packages that conda already installed.</li>
+<li><strong>Never <code>pip install --upgrade &lt;something-conda-installed&gt;</code></strong> — pip will gleefully overwrite the conda-managed copy with an incompatible version.</li>
+<li><strong>Check <code>mamba list</code></strong> afterwards — packages installed via pip show up with a <code>pypi</code> channel marker, so you can see what’s tracked where.</li>
+</ol>
+</section>
+<section id="when-pip-is-unavoidable" class="level3">
+<h3 class="anchored" data-anchor-id="when-pip-is-unavoidable">6.4 When pip is unavoidable</h3>
+<p>Some packages — particularly fast-moving ML libraries, internal lab tools, or anything from GitHub — only exist on PyPI or in a git repo. For those:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In an active mamba env, after mamba-installing everything else:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--no-deps</span> some-pypi-only-package</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--no-deps</span> git+https://github.com/myorg/mytool.git@v0.3.1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If a pip-only package <em>itself</em> needs a binary dependency (like NumPy or PyTorch), make sure mamba has installed a compatible version of it first.</p>
+<hr>
+</section>
+</section>
+<section id="sharing-an-environment-via-environment.yml" class="level1">
+<h1>7. Sharing an Environment via <code>environment.yml</code></h1>
+<p>The standard way to publish an environment is a YAML file.</p>
+<section id="exporting-your-current-environment" class="level3">
+<h3 class="anchored" data-anchor-id="exporting-your-current-environment">7.1 Exporting your current environment</h3>
+<p>The naive way (exports literally every package and version, including transitive dependencies):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env export <span class="at">-n</span> myproject <span class="op">&gt;</span> environment.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <strong>better way</strong> for sharing with humans (only the packages <em>you</em> explicitly asked for, leaving dependency resolution to whoever recreates the env):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env export <span class="at">-n</span> myproject <span class="at">--from-history</span> <span class="op">&gt;</span> environment.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Inspect the result — it’s plain text:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> myproject</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">channels</span><span class="kw">:</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> conda-forge</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> python=3.11</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> numpy</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> pandas</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> matplotlib</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> pip</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">pip</span><span class="kw">:</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> some-pypi-only-package==0.3.1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="recreating-an-environment-from-yaml" class="level3">
+<h3 class="anchored" data-anchor-id="recreating-an-environment-from-yaml">7.2 Recreating an environment from YAML</h3>
+<p>On any machine with mamba installed:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> environment.yml</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Mamba reads the file, resolves a compatible set of versions, and installs everything.</p>
+</section>
+<section id="environment.yml-is-not-fully-reproducible" class="level3">
+<h3 class="anchored" data-anchor-id="environment.yml-is-not-fully-reproducible">7.3 ⚠ <code>environment.yml</code> is <em>not</em> fully reproducible</h3>
+<p>The same <code>environment.yml</code> recreated <strong>today</strong> vs <strong>next month</strong> can produce different package versions, because:</p>
+<ul>
+<li>conda-forge updates packages daily</li>
+<li>Loose pinning (<code>numpy</code> without a version) means “whatever’s latest”</li>
+<li>New transitive dependencies appear</li>
+</ul>
+<p>For most daily work, this is fine — you want bug-fix updates. For paper-reproducibility, you need a <strong>lock file</strong> (Section 8).</p>
+<hr>
+</section>
+</section>
+<section id="lock-files-for-true-reproducibility-conda-lock" class="level1">
+<h1>8. Lock Files for True Reproducibility (<code>conda-lock</code>)</h1>
+<p>When you need an environment that recreates <strong>exactly</strong> — same versions, same builds, same hashes — use <a href="https://github.com/conda/conda-lock"><code>conda-lock</code></a>.</p>
+<section id="install-conda-lock" class="level3">
+<h3 class="anchored" data-anchor-id="install-conda-lock">8.1 Install conda-lock</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> base conda-lock     <span class="co"># one-time, install into base env</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="generate-a-lock-file" class="level3">
+<h3 class="anchored" data-anchor-id="generate-a-lock-file">8.2 Generate a lock file</h3>
+<p>Starting from your <code>environment.yml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-lock</span> lock <span class="at">-f</span> environment.yml <span class="at">--platform</span> linux-64</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This produces <code>conda-lock.yml</code> with every package pinned to a specific build + hash:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">package</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> numpy</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.26.4</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> py311h64a7726_0</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">sha256</span><span class="kw">:</span><span class="at"> 1d2bf6...</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="recreate-from-the-lock-file" class="level3">
+<h3 class="anchored" data-anchor-id="recreate-from-the-lock-file">8.3 Recreate from the lock file</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-lock</span> install <span class="at">--name</span> myproject conda-lock.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Same versions every time, regardless of when you run it.</p>
+</section>
+<section id="when-to-bother" class="level3">
+<h3 class="anchored" data-anchor-id="when-to-bother">8.4 When to bother</h3>
+<ul>
+<li>✅ Paper code that needs to reproduce results</li>
+<li>✅ Sharing with reviewers who must run your code as you ran it</li>
+<li>✅ Deploying the same env on multiple compute nodes</li>
+<li>❌ Your day-to-day exploratory work — the rigidity is annoying</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="putting-an-environment-spec-in-a-public-github-repo" class="level1">
+<h1>9. Putting an Environment Spec in a Public GitHub Repo</h1>
+<p>When your project goes public (paper code, lab tool, tutorial repo), the right artifacts to commit:</p>
+<section id="do-commit" class="level3">
+<h3 class="anchored" data-anchor-id="do-commit">✔ DO commit</h3>
+<ul>
+<li><strong><code>environment.yml</code></strong> — the human-readable, loosely-pinned spec</li>
+<li><strong><code>conda-lock.yml</code></strong> (or platform-specific <code>*.conda-lock.yml</code>) — for exact reproducibility</li>
+<li>A <strong><code>README</code> section</strong> explaining how to recreate the env. For example:</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">## Setup</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>Install <span class="co">[</span><span class="ot">Miniforge</span><span class="co">](https://github.com/conda-forge/miniforge)</span>, then:</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> environment.yml</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>For exact reproduction of the published results:</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-lock</span> install <span class="at">--name</span> myproject conda-lock.yml</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="dont-commit" class="level3">
+<h3 class="anchored" data-anchor-id="dont-commit">❌ DON’T commit</h3>
+<ul>
+<li><strong>The env directory itself</strong> (<code>envs/myproject/</code>) — hundreds of MB to GB, platform-specific binaries, useless to others</li>
+<li><strong><code>~/.condarc</code></strong> — may contain tokens for private channels</li>
+<li><strong><code>~/.pip/pip.conf</code></strong> — same reason</li>
+<li><strong><code>__pycache__/</code></strong>, <code>.ipynb_checkpoints/</code>, etc. — the usual Python noise</li>
+</ul>
+</section>
+<section id="a-sensible-.gitignore-snippet-for-a-python-project" class="level3">
+<h3 class="anchored" data-anchor-id="a-sensible-.gitignore-snippet-for-a-python-project">A sensible <code>.gitignore</code> snippet for a Python project</h3>
+<pre class="gitignore"><code># Conda / mamba envs
+envs/
+*.conda-lock.yml.bak
+
+# Python noise
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# Local data dumps you don't want public
+data/raw/
+*.h5
+*.npy
+
+# Secrets
+.env
+.secrets</code></pre>
+<hr>
+</section>
+</section>
+<section id="using-your-mamba-env-in-jupyter" class="level1">
+<h1>10. Using Your Mamba Env in Jupyter</h1>
+<p>If you ran <a href="../hpc/jupyter_and_tensorboard.html">Jupyter via OnDemand or an SSH tunnel</a> and your notebook needs <code>myproject</code>’s packages, you need to <strong>register the env as a Jupyter kernel</strong> once:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install ipykernel               <span class="co"># if not already installed</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span> myproject <span class="at">--display-name</span> <span class="st">"Python (myproject)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then refresh Jupyter and select <strong>“Python (myproject)”</strong> from the Kernel menu.</p>
+<p>To list installed kernels:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> kernelspec list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To remove one:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> kernelspec remove myproject</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="common-pitfalls" class="level1">
+<h1>11. Common Pitfalls</h1>
+<section id="command-not-found-mamba" class="level3">
+<h3 class="anchored" data-anchor-id="command-not-found-mamba">❌ “command not found: mamba”</h3>
+<p>Either:</p>
+<ul>
+<li>You haven’t <code>source ~/.bashrc</code>’d since installing — open a new shell</li>
+<li>The init block didn’t make it into <code>.bashrc</code> — re-run <code>~/miniforge3/bin/mamba init bash</code></li>
+</ul>
+</section>
+<section id="solving-environment-failed-even-with-mamba" class="level3">
+<h3 class="anchored" data-anchor-id="solving-environment-failed-even-with-mamba">❌ “Solving environment: failed” — even with mamba</h3>
+<p>You’ve asked for an impossible combination (e.g.&nbsp;two packages that pin conflicting versions of the same dep). Mamba’s error message usually shows the conflict — read it. Sometimes the fix is loosening a pin; sometimes it’s adding <code>conda-forge</code> if you’ve accidentally fallen back to the <code>defaults</code> channel.</p>
+</section>
+<section id="modulenotfounderror-no-module-named-mypackage-right-after-activating" class="level3">
+<h3 class="anchored" data-anchor-id="modulenotfounderror-no-module-named-mypackage-right-after-activating">❌ “ModuleNotFoundError: No module named ‘mypackage’” right after activating</h3>
+<p>You may have a different <code>python</code> on your <code>PATH</code> that’s winning over the env’s Python. Run <code>which python</code> — it should point at <code>~/miniforge3/envs/myproject/bin/python</code> (or the path-based equivalent). If not, check <code>.bashrc</code> for stale <code>PATH=...</code> lines that prepend the wrong directory.</p>
+</section>
+<section id="disk-quota-exceeded-conda-envs-eating-my-home-directory" class="level3">
+<h3 class="anchored" data-anchor-id="disk-quota-exceeded-conda-envs-eating-my-home-directory">❌ “Disk quota exceeded” — conda envs eating my home directory</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> clean <span class="at">-a</span>              <span class="co"># clean caches, tarballs, indexes</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">du</span> <span class="at">-sh</span> ~/miniforge3/envs/<span class="pp">*</span>  <span class="co"># which envs are biggest?</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env remove <span class="at">-n</span> old_unused_env</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For lab-wide installs, consider creating envs under <code>/fs/project/&lt;group&gt;/envs/</code> (Section 5) where the storage quota is much larger.</p>
+</section>
+<section id="pip-install-broke-my-env" class="level3">
+<h3 class="anchored" data-anchor-id="pip-install-broke-my-env">❌ Pip install broke my env</h3>
+<p>See Section 6.2. Easiest fix: <code>mamba env remove -n broken_env &amp;&amp; mamba env create -f environment.yml</code>. (And next time, install everything mamba can provide <em>first</em>, then <code>pip install --no-deps</code>.)</p>
+</section>
+<section id="conda-is-configured-to-use-the-channel-pkgsmain" class="level3">
+<h3 class="anchored" data-anchor-id="conda-is-configured-to-use-the-channel-pkgsmain">❌ “Conda is configured to use the channel <code>pkgs/main</code> …”</h3>
+<p>You’ve been hit by Anaconda’s default channel showing up. Mitigation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> config <span class="at">--remove</span> channels defaults</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> config <span class="at">--add</span> channels conda-forge</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> config <span class="at">--set</span> channel_priority strict</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="jupyter-kernel-wont-start-after-env-update" class="level3">
+<h3 class="anchored" data-anchor-id="jupyter-kernel-wont-start-after-env-update">❌ Jupyter “kernel won’t start” after env update</h3>
+<p>Reinstall the kernel:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span> myproject <span class="at">--display-name</span> <span class="st">"Python (myproject)"</span> <span class="at">--force</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="quick-reference" class="level1">
+<h1>12. Quick Reference</h1>
+<p><strong>Setup (once):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> Miniforge3-Linux-x86_64.sh</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/.bashrc</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> config <span class="at">--set</span> channel_priority strict</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Per-project:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> myproject python=3.11 numpy pandas matplotlib</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env export <span class="at">--from-history</span> <span class="op">&gt;</span> environment.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Shared lab env:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-p</span> /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/envs/sharedenv python=3.11 ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Recreate from a spec:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> environment.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Lock for reproducibility:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-lock</span> lock <span class="at">-f</span> environment.yml <span class="at">--platform</span> linux-64</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-lock</span> install <span class="at">--name</span> myproject conda-lock.yml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Pip the right way:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AFTER all mamba installs are done:</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--no-deps</span> some-pypi-only-package</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="summary" class="level1">
+<h1>13. Summary</h1>
+<ul>
+<li>✔ Use <strong>mamba</strong>, not <code>conda</code> (same packages, dramatically faster)</li>
+<li>✔ One <strong>environment per project</strong> — never install into the system Python</li>
+<li>✔ Install via <strong>Miniforge</strong> (<code>conda-forge</code> channel by default)</li>
+<li>✔ For lab-shared envs, use <code>-p /fs/project/&lt;group&gt;/envs/&lt;name&gt;</code> + <code>umask 002</code></li>
+<li>⚠ Mixing pip and conda is dangerous — <strong>mamba first</strong>, then <code>pip install --no-deps</code></li>
+<li>✔ Export with <code>mamba env export --from-history &gt; environment.yml</code> for sharing</li>
+<li>✔ Use <strong><code>conda-lock</code></strong> when you need exact reproducibility (papers, reviewers)</li>
+<li>✔ Commit <code>environment.yml</code> (and optionally <code>conda-lock.yml</code>) to your public repo; <strong>don’t</strong> commit the env directory</li>
+<li>✔ Register your env as a Jupyter kernel for <a href="../hpc/jupyter_and_tensorboard.html">notebook work</a></li>
+</ul>
+<p>Back to <a href="../hpc/shell_environment.html">Shell Environment</a> for the <code>.bashrc</code> patterns, or onward to the <a href="../slurm/slurm_basics.html">Slurm</a> section for running your env’s code on the cluster’s compute nodes.</p>
 
 
 </section>
@@ -899,6 +1464,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
+      <a href="../slurm/slurm_basics.html" class="pagination-link" aria-label="Slurm Basics">
+        <span class="nav-page-text">Slurm Basics</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
   </div>
 </nav>
 </div> <!-- /content -->

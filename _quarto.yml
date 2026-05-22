@@ -21,13 +21,6 @@ website:
           - ssh/ssh_setup.qmd
           - ssh/ssh_keys.qmd
           - ssh/vscode_remote_ssh.qmd
-      - section: "Slurm"
-        icon: "cpu"
-        contents:
-          - slurm/slurm_basics.qmd
-          - slurm/slurm_best_practices.qmd
-          - slurm/slurm_gpu_templates.qmd
-          - slurm/slurm_cpu_templates.qmd
       - section: "HPC"
         icon: "server"
         contents:
@@ -37,6 +30,13 @@ website:
           - hpc/modules.qmd
           - hpc/storage_and_paths.qmd
           - hpc/conda_envs.qmd
+      - section: "Slurm"
+        icon: "cpu"
+        contents:
+          - slurm/slurm_basics.qmd
+          - slurm/slurm_best_practices.qmd
+          - slurm/slurm_gpu_templates.qmd
+          - slurm/slurm_cpu_templates.qmd
 
 format:
   html:
