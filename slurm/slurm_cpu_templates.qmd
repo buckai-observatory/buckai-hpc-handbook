@@ -1,12 +1,348 @@
-
 ---
 title: "CPU Job Templates"
 ---
 
-# CPU Job
+# Introduction
+
+This page collects **ready-to-adapt Slurm scripts** for the most common CPU-only workloads on Unity. Each template includes the diagnostic wrapper from [Best Practices §8](slurm_best_practices.qmd) so you can right-size after the first run.
+
+Replace placeholders:
+
+- `<group>` — your Slurm partition (often `batch`; see [Shell Environment §4](../hpc/shell_environment.qmd))
+- `yourname@osu.edu` — your email for completion notifications
+- `myproject` — your mamba env name
+- `~/miniforge3/...` — your mamba install path (might be `~/mambaforge/` on older setups)
+
+And always:
+
+- `mkdir -p logs` before submitting (so `--output=logs/...` can write)
+- Run on a tiny test first; let `seff <jobid>` tell you what to tighten for the real run
+
+Templates on this page:
+
+1. **Single-threaded Python** (the scikit-learn / pandas / plain-Python case)
+2. **Multi-threaded NumPy/BLAS** (linear algebra, FFTs)
+3. **`joblib.Parallel` / `sklearn(n_jobs=N)`** (embarrassingly parallel within one job)
+4. **Job arrays** (many independent tasks — e.g. processing 100 files)
+5. **Long-running with checkpoints** (multi-day jobs that survive wall-time kills)
+6. **MPI** (for the few who need it)
+
+---
+
+# 1. Single-Threaded Python
+
+The most common case: plain Python, pandas, sklearn with defaults, scientific scripts that don't internally parallelize.
 
 ```bash
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-python preprocess.py
+#!/bin/bash
+#SBATCH --job-name=fit_rf
+#SBATCH --partition=<group>
+#SBATCH --time=02:00:00
+#SBATCH --cpus-per-task=1                 # single-threaded
+#SBATCH --mem=36G                         # measured ~30 GB + headroom
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@osu.edu
+
+set -euo pipefail
+
+# Constrain numerical libraries to 1 thread (matches --cpus-per-task)
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+# ─── Vital signs ───────────────────────────────────────────
+echo "Job:    $SLURM_JOB_ID  ($SLURM_JOB_NAME) on $(hostname)"
+echo "CPUs:   $SLURM_CPUS_PER_TASK  |  Mem (MB): ${SLURM_MEM_PER_NODE:-?}"
+echo "Start:  $(date)"
+
+# ─── Environment ───────────────────────────────────────────
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+# ─── Work ─────────────────────────────────────────────────
+/usr/bin/time -v python fit_rf.py
+
+echo "End:    $(date)"
+echo "Run 'seff $SLURM_JOB_ID' for an efficiency report."
 ```
+
+Tips:
+
+- ✔ `OMP_NUM_THREADS=1` is critical here. Without it, NumPy operations called by sklearn can spawn 48 threads on a 48-core node *despite* your single-CPU allocation, causing thread-thrashing slowdowns.
+- ✔ `/usr/bin/time -v` gives you peak memory; use the result to tighten `--mem` next time.
+
+---
+
+# 2. Multi-Threaded NumPy / BLAS
+
+For code dominated by large matrix operations (linear algebra, FFTs, eigendecompositions), NumPy / SciPy can scale to multiple threads via the BLAS backend.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=svd_big
+#SBATCH --partition=<group>
+#SBATCH --time=04:00:00
+#SBATCH --cpus-per-task=8                 # BLAS will use 8 threads
+#SBATCH --mem=64G
+#SBATCH --output=logs/%x-%j.out
+
+set -euo pipefail
+
+# Tell BLAS / OpenMP / MKL how many threads to use — match SLURM_CPUS_PER_TASK
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OPENBLAS_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export NUMEXPR_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+echo "Job:    $SLURM_JOB_ID on $(hostname)"
+echo "CPUs:   $SLURM_CPUS_PER_TASK (threads exported to libraries)"
+echo "Start:  $(date)"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+/usr/bin/time -v python linalg_heavy.py
+
+echo "End:    $(date)"
+```
+
+Tuning:
+
+- Try 1, 2, 4, 8, 16 threads with `seff` to find diminishing returns
+- BLAS scaling is sub-linear past ~8 threads on most operations; going to 48 rarely helps
+- If you don't see speedup, the bottleneck isn't matrix math — check with profiling
+
+---
+
+# 3. `joblib.Parallel` or sklearn `n_jobs=N`
+
+For embarrassingly parallel work — fitting many small models, cross-validation folds, hyperparameter search — sklearn and joblib parallelize across CPUs in one Python process.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=cv_search
+#SBATCH --partition=<group>
+#SBATCH --time=06:00:00
+#SBATCH --cpus-per-task=16                # n_jobs will match this
+#SBATCH --mem=64G
+#SBATCH --output=logs/%x-%j.out
+
+set -euo pipefail
+
+# Per-thread BLAS should NOT also be 16 — that would 16×16 = 256-way nested
+# parallelism on a 48-core node. Force inner-loop BLAS to single thread.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+echo "Job: $SLURM_JOB_ID  CPUs: $SLURM_CPUS_PER_TASK  on $(hostname)"
+echo "Start: $(date)"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+/usr/bin/time -v python cv_search.py
+
+echo "End: $(date)"
+```
+
+Inside `cv_search.py`:
+
+```python
+import os
+N = int(os.environ.get("SLURM_CPUS_PER_TASK", 1))   # respect Slurm allocation
+
+from sklearn.model_selection import GridSearchCV
+search = GridSearchCV(estimator, param_grid, cv=5, n_jobs=N)
+search.fit(X, y)
+```
+
+Key insight: when **outer** parallelism (joblib / n_jobs) uses N workers, the **inner** BLAS threading should be 1 — otherwise you get nested parallelism that thrashes. The `OMP_NUM_THREADS=1` lines above enforce this.
+
+---
+
+# 4. Job Arrays — Many Similar Tasks
+
+If you need to run the same script on 100 different inputs, don't submit 100 separate jobs. Use a **job array**: one submission that Slurm fans out into many tasks, each with its own `$SLURM_ARRAY_TASK_ID`.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=process_files
+#SBATCH --partition=<group>
+#SBATCH --time=00:30:00                   # per task, not total
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=8G
+#SBATCH --output=logs/%x-%A_%a.out        # %A = array master, %a = task ID
+#SBATCH --array=0-99                      # 100 tasks, IDs 0–99
+#SBATCH --array=0-99%20                   # alternative: cap concurrent runs at 20
+
+set -euo pipefail
+
+echo "Array master: $SLURM_ARRAY_JOB_ID"
+echo "This task:    $SLURM_ARRAY_TASK_ID / $SLURM_ARRAY_TASK_COUNT"
+echo "Node:         $(hostname)"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+# Map the array index to an input file
+INPUT_DIR="/fs/project/<group>/raw"
+mapfile -t FILES < <(ls "$INPUT_DIR"/*.csv | sort)
+INPUT_FILE="${FILES[$SLURM_ARRAY_TASK_ID]}"
+
+echo "Processing:   $INPUT_FILE"
+
+/usr/bin/time -v python process_one.py "$INPUT_FILE"
+
+echo "Done at $(date)"
+```
+
+Notes:
+
+- `--array=0-99` runs 100 tasks. Use `--array=0-99%20` to cap concurrent tasks at 20 — important if each task uses non-trivial memory and you don't want to hog the cluster.
+- Inside the script, `$SLURM_ARRAY_TASK_ID` selects which input to process.
+- `--output=logs/%x-%A_%a.out` gives each task its own log file: e.g. `logs/process_files-12345_42.out`.
+- Monitor with `squeue -u $USER` — each task appears as `12345_42`, `12345_43`, etc.
+- Cancel the whole array with `scancel 12345`; one task with `scancel 12345_42`.
+
+---
+
+# 5. Long-Running Job With Checkpoints
+
+For multi-day work where a wall-time kill or node reboot would be catastrophic, **always checkpoint**.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=long_sim
+#SBATCH --partition=<group>
+#SBATCH --time=24:00:00                   # max walltime per submission
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --signal=USR1@300                 # send SIGUSR1 5 min before --time expires
+#SBATCH --requeue                         # automatically resubmit if pre-empted
+
+set -euo pipefail
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+echo "Job: $SLURM_JOB_ID on $(hostname) at $(date)"
+echo "Restart count: ${SLURM_RESTART_COUNT:-0}"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+# Pass the checkpoint directory and resume flag to Python.
+# The script should look for the latest checkpoint and resume from it.
+CHECKPOINT_DIR="/fs/project/<group>/<username>/checkpoints/$SLURM_JOB_NAME"
+mkdir -p "$CHECKPOINT_DIR"
+
+/usr/bin/time -v python long_sim.py \
+    --checkpoint-dir "$CHECKPOINT_DIR" \
+    --checkpoint-every 1000
+
+echo "Finished at $(date)"
+```
+
+Inside `long_sim.py`:
+
+```python
+import os, signal, sys
+from pathlib import Path
+
+ckpt_dir = Path(os.environ.get("CHECKPOINT_DIR", "ckpt"))
+ckpt_dir.mkdir(exist_ok=True, parents=True)
+
+# Handle SIGUSR1 (sent by Slurm 5 min before wall-time): save and exit cleanly
+def save_and_exit(signum, frame):
+    save_checkpoint(state, ckpt_dir / f"step_{state.step}.pt")
+    print(f"Got SIGUSR1; saved checkpoint at step {state.step}. Exiting.")
+    sys.exit(0)
+
+signal.signal(signal.SIGUSR1, save_and_exit)
+
+# Resume from latest checkpoint if any
+latest = max(ckpt_dir.glob("step_*.pt"), default=None, key=lambda p: int(p.stem.split("_")[1]))
+if latest:
+    state = load_checkpoint(latest)
+    print(f"Resumed from {latest}")
+else:
+    state = initial_state()
+
+while state.step < state.max_steps:
+    state = step(state)
+    if state.step % 1000 == 0:
+        save_checkpoint(state, ckpt_dir / f"step_{state.step}.pt")
+```
+
+With `--requeue` set, if the job is killed for any preemption reason, Slurm will resubmit it automatically. Your script then loads the latest checkpoint and picks up from there.
+
+---
+
+# 6. MPI (multi-process, possibly multi-node)
+
+Most Python workloads don't need MPI — joblib / multiprocessing handles the embarrassingly-parallel cases (Section 3) and threading handles the linear algebra (Section 2). But for tightly-coupled scientific computing or large simulations, MPI shines.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=mpi_run
+#SBATCH --partition=<group>
+#SBATCH --time=02:00:00
+#SBATCH --nodes=2                         # spread across 2 nodes
+#SBATCH --ntasks=96                       # 96 total MPI ranks
+#SBATCH --ntasks-per-node=48              # 48 per node
+#SBATCH --cpus-per-task=1                 # 1 CPU per rank
+#SBATCH --mem=0                           # 0 = give me all RAM on the node
+#SBATCH --output=logs/%x-%j.out
+
+set -euo pipefail
+
+echo "Job:    $SLURM_JOB_ID"
+echo "Nodes:  $SLURM_NNODES"
+echo "Tasks:  $SLURM_NTASKS"
+echo "Start:  $(date)"
+
+module load intel/2024.2.0                # or your favorite MPI-enabled compiler
+# (or activate a mamba env that contains mpi4py + openmpi/mpich)
+
+srun ./my_mpi_program                     # `srun` is MPI-aware on Slurm clusters
+
+echo "End:    $(date)"
+```
+
+Notes:
+
+- Use `srun`, not `mpirun`, on a Slurm cluster — it picks up the allocation automatically
+- `--mem=0` is a Slurm idiom for "all the memory on each allocated node"
+- For Python MPI (`mpi4py`), install it via mamba (`mamba install mpi4py openmpi`) so it's linked against a Slurm-aware MPI
+
+If you don't know whether you need MPI, you don't.
+
+---
+
+# 7. After the Job: Right-Sizing
+
+For every template above, after the first successful run:
+
+```bash
+seff <jobid>
+```
+
+Look at **CPU Efficiency** and **Memory Efficiency**. If either is much below 80–90%, your next submission should request less. See [Best Practices §9](slurm_best_practices.qmd).
+
+For arrays, `seff` only shows one task; use `sacct` for the whole array:
+
+```bash
+sacct -j 12345 --format=JobID,State,Elapsed,MaxRSS,CPUTime
+```
+
+---
+
+# 8. See Also
+
+- [Slurm Basics](slurm_basics.qmd) — `#SBATCH` directive reference, monitoring, cancellation
+- [Slurm Best Practices](slurm_best_practices.qmd) — the right-sizing methodology these templates lean on
+- [GPU Templates](slurm_gpu_templates.qmd) — same idea, for GPU workloads
+- [Python Environments](../hpc/conda_envs.qmd) — for the `mamba activate` setup inside batch scripts

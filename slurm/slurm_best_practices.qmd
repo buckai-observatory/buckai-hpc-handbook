@@ -1,14 +1,502 @@
+---
+title: "Slurm Best Practices: right-sizing requests and measuring what you need"
+---
+
+# Introduction
+
+The single most common mistake new HPC users make is **asking for too much** — too many CPUs, too much memory, too long a walltime. The intuition feels right ("better safe than sorry"), but on a shared cluster it backfires three ways:
+
+1. **Your own job waits longer.** Slurm's backfill scheduler runs small, short jobs first; a job asking for the whole node sits in the queue much longer than one asking for a fraction.
+2. **You block other users.** Every CPU and gigabyte you reserve is unavailable to the rest of the lab — even if your job is only using 5% of it.
+3. **It teaches you nothing.** You don't learn what your code actually needs, so the over-requesting just gets worse over time.
+
+This page is the antidote. It covers:
+
+✔ How Slurm scheduling decides what runs when (intuition for backfill)
+✔ A worked example: a single-threaded Python job that needs ~30 GB on a 96 GB node
+✔ How to **measure** how much CPU and RAM your code actually uses (the hard part on HPC)
+✔ Right-sizing CPUs for parallel vs serial code
+✔ Balancing CPU/RAM/GPU for deep-learning training
+✔ A drop-in **diagnostics wrapper** to put around every batch script
+✔ Reading `seff` reports for post-mortem right-sizing
+
+Prerequisites: [Slurm Basics](slurm_basics.qmd) for the mechanics.
 
 ---
-title: "Slurm Best Practices"
+
+# 1. Why Over-Requesting Hurts You (Not Just Others)
+
+Slurm doesn't just "run jobs first-come-first-served." It uses a **backfill scheduler**: when there's a gap in the schedule (e.g. 4 hours and 32 GB free on a node before a big reservation kicks in), Slurm scans the queue looking for jobs that fit in that gap.
+
+If your job asks for 24 hours and 96 GB, it doesn't fit in many gaps. So it waits for a big window to open up.
+
+If your job asks for 4 hours and 16 GB, it fits in *most* gaps. So it slips in much sooner.
+
+**Concrete example:** two identical jobs that actually take 2 hours and use 8 GB. One is submitted with `--time=24:00:00 --mem=64G`, the other with `--time=04:00:00 --mem=16G`. On a busy cluster, the second one typically starts running **hours** before the first one — even though the work is identical.
+
+The rule: **ask for what you actually need, plus a small safety margin** (~20–30%).
+
 ---
 
-# Avoid Over-Requesting
+# 2. The Resource Axes You Control
 
-Large allocations slow scheduling.
+Every batch script declares some combination of:
 
-# Suggested Resources
+| Resource | Slurm flag | What it limits |
+|---|---|---|
+| **Walltime** | `--time=` | Max wall-clock time; job is killed when it expires |
+| **CPUs** | `--cpus-per-task=` | Number of CPU cores your task can use |
+| **Memory** | `--mem=` or `--mem-per-cpu=` | Maximum RAM; exceeding it → instant OOM kill |
+| **GPUs** | `--gres=gpu:N` or `--gpus=N` | Number of GPUs |
+| **Nodes** | `--nodes=` | (Multi-node MPI only — usually 1 for Python/ML) |
 
-| Task | CPUs | Memory |
-|------|------|--------|
-| Preprocessing | 2–4 | 4–8 GB |
+The first three are the ones you tune. GPUs are binary (you need one or you don't).
+
+---
+
+# 3. Worked Example — A Single-Threaded scikit-learn Job
+
+Suppose you have this script, `fit_rf.py`:
+
+```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+
+df = pd.read_parquet("/fs/project/<group>/data/big_features.parquet")  # ~10 GB in memory
+X, y = df.drop("label", axis=1), df["label"]
+
+# Default n_jobs=1 — single-threaded
+clf = RandomForestClassifier(n_estimators=500, max_depth=20)
+clf.fit(X, y)
+
+import joblib
+joblib.dump(clf, "model.joblib")
+```
+
+Suppose this code uses about **30 GB** of peak RAM (mostly the loaded DataFrame plus the trained model) and runs **single-threaded** because `n_jobs=1` is the sklearn default.
+
+A typical Unity compute node has **48 CPUs and 96 GB RAM**. What should you request?
+
+### ❌ The wrong way: "I'll just grab the whole node"
+
+```bash
+#SBATCH --cpus-per-task=48
+#SBATCH --mem=96G
+#SBATCH --time=24:00:00
+```
+
+This:
+
+- Blocks all 48 CPUs and 96 GB of RAM — preventing **47 other people's small jobs** from running on that node
+- Sits in the queue much longer waiting for a full node to free up
+- Provides **zero benefit** to your job, since your Python uses 1 CPU and 30 GB no matter what you "reserve"
+
+### ✅ The right way: ask for what you need, plus headroom
+
+```bash
+#SBATCH --cpus-per-task=1                # the code is single-threaded
+#SBATCH --mem=36G                        # 30 GB measured + ~20% headroom
+#SBATCH --time=02:00:00                  # measured wall time + safety
+```
+
+This:
+
+- Fits in most queue gaps → starts running sooner
+- Lets 47 other jobs run alongside yours on the same node
+- Costs your lab less SU (service unit) charge
+- Does **exactly the same work** at exactly the same speed
+
+The catch: you have to **measure** to know that "30 GB" and "2 hours" are accurate. The next sections cover how.
+
+---
+
+# 4. How Much Memory Does My Code Actually Use?
+
+On a Mac you'd open Activity Monitor and watch the number climb. On a headless HPC node you don't have that — but there are five solid ways to find out.
+
+### 4.1 ✔ Best for new code: `/usr/bin/time -v`
+
+Wrap your command in GNU `time` (with the `-v` flag, not the bash builtin) to get a full resource report including peak memory:
+
+```bash
+/usr/bin/time -v python fit_rf.py
+```
+
+After the script finishes, you get:
+
+```
+Command being timed: "python fit_rf.py"
+User time (seconds): 4823.12
+System time (seconds): 87.45
+Percent of CPU this job got: 98%
+Elapsed (wall clock) time: 01:22:17
+Maximum resident set size (kbytes): 31245312       ← THIS LINE
+Major (requiring I/O) page faults: 23
+...
+```
+
+The **"Maximum resident set size"** is the peak RAM the process held. Divide by 1024² to get GB: `31245312 / 1024 / 1024 ≈ 29.8 GB`. Add ~20% headroom → request **36 GB**.
+
+(Note the explicit `/usr/bin/time` path — the bash builtin `time` is different and doesn't have `-v`.)
+
+### 4.2 ✔ Best inside Python: `psutil`
+
+For monitoring memory at specific moments (after data load, mid-loop, etc.):
+
+```python
+import psutil, os
+proc = psutil.Process(os.getpid())
+
+# ... do work ...
+print(f"RSS: {proc.memory_info().rss / 1e9:.2f} GB")
+```
+
+You can `print` this around the suspicious parts of your code. Especially useful for finding *which step* causes a memory spike.
+
+### 4.3 ✔ Interactively: `htop` on an `sinteractive` node
+
+If you're developing on a compute node via `sinteractive`:
+
+```bash
+sinteractive -p <group> --cpus-per-task=4 --mem=64G --time=02:00:00
+# ... once allocated:
+htop -u $USER          # interactive process viewer
+```
+
+Then in another terminal pane (use `tmux` or `livenode`), run your code and watch its `RES` column climb.
+
+### 4.4 ✔ During a running batch job: `sstat`
+
+While your `sbatch` job is running:
+
+```bash
+sstat -j <jobid> --format=JobID,MaxRSS,AveRSS,MaxVMSize
+```
+
+Returns live max-resident-set-size for the job so far.
+
+### 4.5 ✔ Post-mortem on a finished job: `seff`
+
+After the job ends:
+
+```bash
+seff 12345
+```
+
+Returns a one-page summary:
+
+```
+Job ID: 12345
+Cluster: unity
+User/Group: yourname.##/yourname.##
+State: COMPLETED (exit code 0)
+Cores: 1
+CPU Utilized: 01:21:43
+CPU Efficiency: 99.30% of 01:22:17 core-walltime
+Job Wall-clock time: 01:22:17
+Memory Utilized: 29.82 GB
+Memory Efficiency: 31.06% of 96.00 GB
+```
+
+Two efficiency numbers to read:
+
+- **CPU Efficiency** — close to 100% means you used all the cores you asked for. 25% means you used 1 of 4. Use fewer cores next time.
+- **Memory Efficiency** — close to 100% (with a small margin) is ideal. 31% means you asked for 3× too much memory.
+
+`seff` is the single most useful tool for right-sizing future jobs. **Get in the habit of running `seff <jobid>` after every long job.**
+
+### 4.6 What about `sacct`?
+
+`sacct` is the raw Slurm accounting interface — more verbose but works for any job, finished or running:
+
+```bash
+sacct -j 12345 --format=JobID,JobName,State,Elapsed,MaxRSS,ReqMem,CPUTime,ExitCode
+```
+
+Useful when `seff` isn't available or for batch-querying many jobs at once.
+
+---
+
+# 5. How Many CPUs Should I Request?
+
+A confusing thing about Python on HPC: many libraries silently default to **using every CPU they can see**, which means a 1-CPU allocation can become a "let me try to use all 48 CPUs" mess that thrashes and underperforms.
+
+The rule of thumb:
+
+| Workload | What to ask for |
+|---|---|
+| Pure single-threaded Python (sklearn defaults, plain loops, most pandas operations) | `--cpus-per-task=1` |
+| NumPy/SciPy with BLAS (matrix multiplies, linear algebra) | `--cpus-per-task=4–8` AND set `OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK` |
+| sklearn with `n_jobs=N` (Random Forest, cross-validation, etc.) | `--cpus-per-task=N` with `N` matching what you'll pass to sklearn |
+| `joblib.Parallel(n_jobs=N)` | `--cpus-per-task=N` matching |
+| PyTorch DataLoader with `num_workers=N` | Request `N + 1` or `N + 2` CPUs |
+| MPI / multi-process (rare for ML) | `--ntasks=N --cpus-per-task=1` |
+
+### Always tell your libraries about Slurm
+
+Inside your batch script, **before launching Python**, export the thread-count env vars so libraries respect your allocation instead of grabbing everything:
+
+```bash
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export NUMEXPR_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+```
+
+Without these, a NumPy `@` operator may try to use all 48 cores on the node — even though you only have 4 — and **slow down dramatically** due to thread thrashing while also being a bad citizen.
+
+---
+
+# 6. How Much Walltime?
+
+The strategy:
+
+1. **Run a tiny version first.** Subset your data to 1% or 10%, measure how long it takes.
+2. **Multiply linearly** (most ML training, batch processing, scientific simulation scales roughly linearly with input size).
+3. **Add a 30–50% safety margin** for the full run.
+4. Round up to a sensible chunk (1h, 4h, 12h, 24h).
+
+If you genuinely don't know and the job MUST finish, ask for more — but plan to use `seff` afterwards to right-size for next time. **`Elapsed` time in `seff` tells you what the run actually took.**
+
+For very-long-running things (multi-day training), use **checkpointing** so a wall-time-exceeded kill doesn't lose progress. See [CPU Templates §6](slurm_cpu_templates.qmd).
+
+---
+
+# 7. GPU Jobs: Balancing CPU, RAM, and GPU
+
+A GPU job has *two* memory budgets:
+
+| Memory | What lives there | How to size |
+|---|---|---|
+| **System RAM** (`--mem`) | The Python interpreter, NumPy arrays, dataset on CPU, batches being prepared by DataLoader workers | Measure with `seff`, like CPU jobs |
+| **GPU memory** | Your model weights, activations, gradients, current batch on GPU | Watch with `nvidia-smi` while training |
+
+And you still need **CPUs**, primarily for:
+
+- The PyTorch/TF DataLoader workers preparing batches in parallel (`num_workers=N` → request `N+1` or `N+2` CPUs)
+- Any preprocessing that happens in Python before tensors are moved to GPU
+
+### Sensible defaults for a single-GPU deep-learning job
+
+```bash
+#SBATCH --gres=gpu:1                     # one GPU
+#SBATCH --cpus-per-task=8                # 4 dataloader workers + slack
+#SBATCH --mem=48G                        # enough for typical image/audio batches
+#SBATCH --time=12:00:00
+```
+
+Then set DataLoader appropriately in the Python:
+
+```python
+loader = DataLoader(dataset, batch_size=64, num_workers=4, pin_memory=True)
+```
+
+Tuning:
+
+- **GPU OOM (CUDA out of memory)** — reduce `batch_size`, switch to mixed precision (`autocast` / `bfloat16`), use gradient accumulation, or use a bigger GPU
+- **GPU underutilized** (`nvidia-smi` shows <50% GPU util) — usually a data-loading bottleneck; increase `num_workers` (and bump `--cpus-per-task`)
+- **System RAM OOM** — reduce `num_workers`, or batch-prep less data on CPU
+
+### Watching GPU usage while training
+
+In a second SSH session to the same compute node:
+
+```bash
+nvidia-smi -l 1                  # update every 1 second
+# or, more compact:
+watch -n 1 nvidia-smi
+```
+
+Look at:
+
+- **`Memory-Usage`** column: how much GPU VRAM is in use (vs. total available on the card)
+- **`Volatile GPU-Util`** column: % of GPU compute time being used. 90%+ is great. <50% = data-loading bottleneck
+
+After training, `seff <jobid>` gives system-RAM and CPU efficiency. For GPU-side metrics during the run, you have to capture `nvidia-smi` output yourself (see Section 8 below).
+
+---
+
+# 8. The Diagnostics Wrapper Every Batch Script Should Have
+
+The script below is a drop-in template. Replace the contents of the "ACTUAL WORK" block with your `python` invocation; everything else helps you debug and right-size.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=fit_rf
+#SBATCH --partition=batch
+#SBATCH --time=02:00:00                   # see best-practices §6
+#SBATCH --cpus-per-task=1                 # see best-practices §5
+#SBATCH --mem=36G                         # see best-practices §4
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@osu.edu
+
+set -euo pipefail                         # fail loudly on any error
+
+# ───────────────────────────────────────────────────────────
+# Tell numerical libraries how many threads they may use.
+# Without this, NumPy/BLAS/MKL will try to grab every CPU
+# visible on the node — even ones not allocated to you.
+# ───────────────────────────────────────────────────────────
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export NUMEXPR_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+
+# ───────────────────────────────────────────────────────────
+# Vital signs — recorded at the top of the log for every job.
+# ───────────────────────────────────────────────────────────
+echo "=================== JOB INFO ===================="
+echo "Job ID:        $SLURM_JOB_ID"
+echo "Job name:      $SLURM_JOB_NAME"
+echo "Partition:     $SLURM_JOB_PARTITION"
+echo "Node:          $(hostname)"
+echo "CPUs:          $SLURM_CPUS_PER_TASK"
+echo "Memory (MB):   ${SLURM_MEM_PER_NODE:-${SLURM_MEM_PER_CPU:-unset}}"
+echo "GPUs:          ${SLURM_GPUS:-${SLURM_JOB_GPUS:-none}}"
+echo "Working dir:   $(pwd)"
+echo "Started:       $(date)"
+echo "================================================="
+
+# ───────────────────────────────────────────────────────────
+# Environment activation
+# ───────────────────────────────────────────────────────────
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+echo "Python:        $(which python)"
+python -c "import sys; print(f'Python version: {sys.version.split()[0]}')"
+
+# Optional but very useful for ML: log GPU specs and current versions
+if command -v nvidia-smi &> /dev/null; then
+    echo "--- nvidia-smi ---"
+    nvidia-smi
+fi
+
+# ───────────────────────────────────────────────────────────
+# Optional: snapshot GPU usage every 30s in the background
+# so you can review utilization after the job ends.
+# ───────────────────────────────────────────────────────────
+if command -v nvidia-smi &> /dev/null; then
+    (
+      while sleep 30; do
+        echo "--- $(date '+%H:%M:%S') ---"
+        nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total --format=csv,noheader
+      done
+    ) > "logs/gpu-${SLURM_JOB_ID}.log" 2>&1 &
+    GPU_LOGGER_PID=$!
+fi
+
+# ───────────────────────────────────────────────────────────
+# ACTUAL WORK — wrap in /usr/bin/time -v for a peak-memory readout
+# ───────────────────────────────────────────────────────────
+echo "===================== WORK ======================"
+/usr/bin/time -v python fit_rf.py
+echo "================================================="
+
+# Stop the GPU logger if we started one
+if [ -n "${GPU_LOGGER_PID:-}" ]; then
+    kill $GPU_LOGGER_PID 2>/dev/null || true
+fi
+
+echo "Finished:      $(date)"
+echo ""
+echo "Run 'seff $SLURM_JOB_ID' after the job's epilog completes"
+echo "for a one-page efficiency report (CPU% and Memory%)."
+```
+
+Why this matters:
+
+- The vital-signs block tells you instantly which node + how much was requested for any past job — no detective work
+- The thread-count exports stop libraries from oversubscribing the node
+- `/usr/bin/time -v` captures peak memory so you can right-size next time
+- The optional GPU-usage logger gives you per-30s GPU stats so you can spot dataloader bottlenecks
+
+Save it as `templates/diagnostic.slurm` and copy it for every new project.
+
+---
+
+# 9. The Post-Mortem Loop: Read `seff`, Adjust, Re-submit
+
+After every meaningful job, run:
+
+```bash
+seff 12345
+```
+
+Look at the two efficiency numbers and adjust:
+
+| What you see | What it means | What to change |
+|---|---|---|
+| CPU Efficiency 98% on `--cpus-per-task=4` | All 4 cores fully used | Allocation looks right; don't change |
+| CPU Efficiency 25% on `--cpus-per-task=4` | You used 1 of 4 cores | Drop to `--cpus-per-task=1` next time |
+| Memory Efficiency 31% on `--mem=96G` | Used ~30 GB of 96 | Drop to `--mem=36G` next time |
+| Memory Efficiency 99% with `OOM` exit | You hit the cap | Bump `--mem` by 50% next time |
+| Elapsed time 0:30 on `--time=24:00:00` | Massive over-ask | Drop `--time` to 1–2h next time |
+
+Iteration: first submission is a rough guess (always over-ask a bit if unsure); second submission uses the `seff` numbers to right-size; from then on you usually hit it right.
+
+---
+
+# 10. Other Practical Tips
+
+### Use `sinteractive` for development, `sbatch` for production
+
+Editing-and-running cycles belong in an interactive session ([Persistent Sessions](../hpc/persistent_sessions.qmd)). Once code works, write a batch script and submit it unattended.
+
+### Save Slurm logs to a dedicated `logs/` directory
+
+`mkdir -p logs` once per project. Use `--output=logs/%x-%j.out` so logs don't clutter the project root.
+
+### Use array jobs for "many similar tasks"
+
+If you have 100 input files to process the same way, **don't submit 100 separate jobs**. Use a job array — see [CPU Templates §4](slurm_cpu_templates.qmd).
+
+### Don't run heavy work on login nodes
+
+Login nodes are for editing, submitting, and light data inspection. Heavy `python` or `R` runs on the login node will be killed by sysadmins and annoy everyone. Use `sinteractive` or `sbatch`.
+
+### Email yourself on completion
+
+Add to your script:
+
+```bash
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@osu.edu
+```
+
+You'll get an email when the job finishes (or fails). Great for long-running training jobs.
+
+### Checkpoint anything long
+
+If a 24-hour job loses its last checkpoint to a wall-time kill, you've wasted a day. Save state every N epochs / iterations and write code that can resume from the latest checkpoint.
+
+---
+
+# 11. Summary Checklist
+
+Before submitting a job, ask yourself:
+
+- [ ] Have I run this on a tiny subset first and measured time + memory?
+- [ ] Is my `--mem` close to the measured peak RSS + ~20% headroom?
+- [ ] Is my `--cpus-per-task` actually used by my code, not just "requested"?
+- [ ] Have I exported `OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK` etc.?
+- [ ] Is my `--time` close to the measured wall time + ~30% safety, not a round 24h?
+- [ ] Does my script `mamba activate` the right env explicitly?
+- [ ] Does `logs/` exist before `sbatch`?
+- [ ] Will I check `seff <jobid>` after it finishes?
+
+After it runs:
+
+- [ ] `seff <jobid>` — what were CPU and Memory efficiency?
+- [ ] What should I change in next submission to right-size?
+
+---
+
+# 12. See Also
+
+- [Slurm Basics](slurm_basics.qmd) for `#SBATCH` syntax and the basic monitoring/cancel commands
+- [CPU Templates](slurm_cpu_templates.qmd) for concrete drop-in scripts for common CPU workloads
+- [GPU Templates](slurm_gpu_templates.qmd) for the same on the GPU side
+- [Python Environments §4.3](../hpc/conda_envs.qmd) for the standard mamba-activation block inside batch scripts
+- [Persistent Sessions](../hpc/persistent_sessions.qmd) for `sinteractive` patterns during development

@@ -400,13 +400,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Basics</span></a>
+ <span class="menu-text">Slurm Basics: jobs, scripts, and monitoring</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Best Practices</span></a>
+ <span class="menu-text">Slurm Best Practices: right-sizing requests and measuring what you need</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -433,7 +433,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#single-gpu" id="toc-single-gpu" class="nav-link active" data-scroll-target="#single-gpu">Single GPU</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#single-gpu-pytorch-training" id="toc-single-gpu-pytorch-training" class="nav-link" data-scroll-target="#single-gpu-pytorch-training">1. Single-GPU PyTorch Training</a></li>
+  <li><a href="#specifying-gpu-type-or-memory" id="toc-specifying-gpu-type-or-memory" class="nav-link" data-scroll-target="#specifying-gpu-type-or-memory">2. Specifying GPU Type or Memory</a></li>
+  <li><a href="#multi-gpu-on-one-node-pytorch-ddp" id="toc-multi-gpu-on-one-node-pytorch-ddp" class="nav-link" data-scroll-target="#multi-gpu-on-one-node-pytorch-ddp">3. Multi-GPU on One Node (PyTorch DDP)</a></li>
+  <li><a href="#gpu-job-array-for-hyperparameter-sweeps" id="toc-gpu-job-array-for-hyperparameter-sweeps" class="nav-link" data-scroll-target="#gpu-job-array-for-hyperparameter-sweeps">4. GPU Job Array for Hyperparameter Sweeps</a></li>
+  <li><a href="#interactive-gpu-session-for-development" id="toc-interactive-gpu-session-for-development" class="nav-link" data-scroll-target="#interactive-gpu-session-for-development">5. Interactive GPU Session for Development</a></li>
+  <li><a href="#running-jupyter-on-a-gpu-node" id="toc-running-jupyter-on-a-gpu-node" class="nav-link" data-scroll-target="#running-jupyter-on-a-gpu-node">6. Running Jupyter on a GPU Node</a></li>
+  <li><a href="#reading-gpu-diagnostics-after-a-job" id="toc-reading-gpu-diagnostics-after-a-job" class="nav-link" data-scroll-target="#reading-gpu-diagnostics-after-a-job">7. Reading GPU Diagnostics After a Job</a></li>
+  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">8. See Also</a></li>
   </ul>
 </nav>
     </div>
@@ -460,10 +468,319 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="single-gpu" class="level1">
-<h1>Single GPU</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:l40:1</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This page collects <strong>ready-to-adapt Slurm scripts</strong> for the most common GPU workloads on Unity. The structure mirrors the <a href="../slurm/slurm_cpu_templates.html">CPU Templates</a> page; the headline differences are the GPU resource flags and the <code>nvidia-smi</code>-based diagnostics.</p>
+<p>Replace placeholders:</p>
+<ul>
+<li><code>&lt;group&gt;</code> — your Slurm partition (often <code>batch</code>; see <a href="../hpc/shell_environment.html">Shell Environment §4</a>)</li>
+<li><code>yourname@osu.edu</code> — email for completion notifications</li>
+<li><code>myproject</code> — your mamba env name</li>
+<li><code>~/miniforge3/...</code> — your mamba install path</li>
+</ul>
+<p>And always:</p>
+<ul>
+<li><code>mkdir -p logs</code> before submitting</li>
+<li>Run a short test first; let <code>seff &lt;jobid&gt;</code> + <code>nvidia-smi</code> data tell you what to tighten</li>
+</ul>
+<p>Templates on this page:</p>
+<ol type="1">
+<li><strong>Single-GPU PyTorch training</strong> (the canonical case)</li>
+<li><strong>Single-GPU with heavy data loading</strong> (multiple DataLoader workers)</li>
+<li><strong>Multi-GPU on one node (DDP)</strong> — when you need it, and when you don’t</li>
+<li><strong>GPU job array</strong> for hyperparameter sweeps</li>
+<li><strong>Interactive GPU node for development</strong> (<code>sinteractive</code>)</li>
+<li><strong>GPU-using Jupyter</strong> — link to the existing page</li>
+</ol>
+<p>The right-sizing background (CPU/RAM/GPU balance, <code>nvidia-smi</code> interpretation) lives in <a href="../slurm/slurm_best_practices.html">Best Practices §7</a>.</p>
+<hr>
+</section>
+<section id="single-gpu-pytorch-training" class="level1">
+<h1>1. Single-GPU PyTorch Training</h1>
+<p>The most common ML workload.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=train_resnet</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=12:00:00</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:1                      # 1 GPU (any type)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=8                 # 4 DataLoader workers + slack</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=48G                         # CPU RAM (not GPU memory)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=yourname@osu.edu</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Thread limits for any CPU-side numerical work</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Vital signs ──────────────────────────────────────────</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job:    </span><span class="va">$SLURM_JOB_ID</span><span class="st"> (</span><span class="va">$SLURM_JOB_NAME</span><span class="st">) on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"CPUs:   </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st">  |  Mem (MB): </span><span class="va">${SLURM_MEM_PER_NODE</span><span class="op">:-</span><span class="pp">?</span><span class="va">}</span><span class="st">"</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"GPUs:   </span><span class="va">${SLURM_GPUS</span><span class="op">:-</span><span class="va">${SLURM_JOB_GPUS</span><span class="op">:-</span><span class="pp">?</span><span class="va">}}</span><span class="st">"</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start:  </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Environment ──────────────────────────────────────────</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Python:  </span><span class="va">$(</span><span class="fu">which</span> python<span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"import torch; print(f'PyTorch {torch.__version__}, CUDA {torch.version.cuda}, GPU: {torch.cuda.get_device_name(0)}')"</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Snapshot GPU at start ────────────────────────────────</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="ex">nvidia-smi</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Background logger: GPU util every 30s ────────────────</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="fu">sleep</span> 30<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"--- </span><span class="va">$(</span><span class="fu">date</span> <span class="st">'+%H:%M:%S'</span><span class="va">)</span><span class="st"> ---"</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="ex">nvidia-smi</span> <span class="at">--query-gpu</span><span class="op">=</span>utilization.gpu,memory.used,memory.total,temperature.gpu <span class="at">--format</span><span class="op">=</span>csv,noheader</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="kw">)</span> <span class="op">&gt;</span> <span class="st">"logs/gpu-</span><span class="va">${SLURM_JOB_ID}</span><span class="st">.log"</span> <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">&amp;</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="va">GPU_LOGGER_PID</span><span class="op">=</span><span class="va">$!</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Train ────────────────────────────────────────────────</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python train.py <span class="dt">\</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">--batch-size</span> 64 <span class="dt">\</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">--epochs</span> 100 <span class="dt">\</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">--workers</span> 4 <span class="dt">\</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">--checkpoint-dir</span> checkpoints</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Cleanup ──────────────────────────────────────────────</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="bu">kill</span> <span class="va">$GPU_LOGGER_PID</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">||</span> <span class="fu">true</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End:    </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Inspect logs/gpu-</span><span class="va">${SLURM_JOB_ID}</span><span class="st">.log for GPU utilization over time."</span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Run 'seff </span><span class="va">$SLURM_JOB_ID</span><span class="st">' for CPU/Mem efficiency."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Inside <code>train.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>dataset <span class="op">=</span> MyDataset(...)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>loader <span class="op">=</span> DataLoader(</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    dataset,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    batch_size<span class="op">=</span><span class="dv">64</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    num_workers<span class="op">=</span><span class="dv">4</span>,            <span class="co"># matches --cpus-per-task=8 minus a couple for slack</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    pin_memory<span class="op">=</span><span class="va">True</span>,          <span class="co"># speeds up CPU→GPU transfers</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> MyModel().cuda()</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>optim <span class="op">=</span> torch.optim.AdamW(model.parameters(), lr<span class="op">=</span><span class="fl">1e-4</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> epoch <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> batch <span class="kw">in</span> loader:</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        x, y <span class="op">=</span> batch[<span class="dv">0</span>].cuda(non_blocking<span class="op">=</span><span class="va">True</span>), batch[<span class="dv">1</span>].cuda(non_blocking<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        loss <span class="op">=</span> ...</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        loss.backward()</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        optim.step()</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        optim.zero_grad()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three reasons this template is the way it is:</p>
+<ul>
+<li><strong><code>--gres=gpu:1</code></strong> asks for any one GPU. If you specifically need (say) an A100, use <code>--gres=gpu:a100:1</code> — but only if you really need that capacity, since it’ll wait longer in queue.</li>
+<li><strong><code>--cpus-per-task=8</code></strong> — <code>num_workers=4</code> data-loader processes + the main Python process + breathing room. Each loader worker runs CPU-side data prep in parallel; without enough CPUs you’ll see GPU util sag.</li>
+<li><strong>The background <code>nvidia-smi</code> logger</strong> writes a separate file showing GPU util over time. If it shows long stretches of &lt;30% util, your data pipeline is the bottleneck — increase <code>num_workers</code> (and bump <code>--cpus-per-task</code> accordingly).</li>
+</ul>
+<hr>
+</section>
+<section id="specifying-gpu-type-or-memory" class="level1">
+<h1>2. Specifying GPU Type or Memory</h1>
+<p>When you need a particular GPU (e.g.&nbsp;an A100 for a 70B model, or just more VRAM than the default):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:a100:1                 # specifically an A100</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --constraint=a100                 # also works on many clusters</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># or, by memory:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:1 --mem-per-gpu=80G    # any GPU with ≥80 GB VRAM (cluster-dependent)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Available GPU types vary — check Unity’s documentation or <code>sinfo -o "%P %G"</code> to see what each partition offers. Common types on academic clusters include A100, A40, V100, L40, H100. <strong>Asking for a specific high-end card means longer queue waits</strong> — don’t ask for an A100 if an A40 would do.</p>
+<hr>
+</section>
+<section id="multi-gpu-on-one-node-pytorch-ddp" class="level1">
+<h1>3. Multi-GPU on One Node (PyTorch DDP)</h1>
+<p>If your model + batch genuinely doesn’t fit on one GPU, or training one GPU at a time is too slow, use <code>DistributedDataParallel</code> across multiple GPUs on the same node.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=ddp_train</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=24:00:00</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:4                      # 4 GPUs</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=32                # 8 dataloader workers per GPU + slack</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=128G</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job: </span><span class="va">$SLURM_JOB_ID</span><span class="st"> on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">. </span><span class="va">$SLURM_GPUS_ON_NODE</span><span class="st"> GPUs, </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st"> CPUs"</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start: </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="ex">nvidia-smi</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># torchrun handles the distributed launch automatically</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="ex">torchrun</span> <span class="at">--standalone</span> <span class="at">--nproc-per-node</span><span class="op">=</span><span class="va">$SLURM_GPUS_ON_NODE</span> train_ddp.py <span class="dt">\</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">--batch-size</span> 64 <span class="dt">\</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">--workers</span> 8</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End: </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Inside <code>train_ddp.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, torch, torch.distributed <span class="im">as</span> dist</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.nn.parallel <span class="im">import</span> DistributedDataParallel <span class="im">as</span> DDP</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data.distributed <span class="im">import</span> DistributedSampler</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>dist.init_process_group(backend<span class="op">=</span><span class="st">"nccl"</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>rank <span class="op">=</span> dist.get_rank()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>local_rank <span class="op">=</span> <span class="bu">int</span>(os.environ[<span class="st">"LOCAL_RANK"</span>])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>torch.cuda.set_device(local_rank)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> MyModel().cuda()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> DDP(model, device_ids<span class="op">=</span>[local_rank])</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>sampler <span class="op">=</span> DistributedSampler(dataset, shuffle<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>loader <span class="op">=</span> DataLoader(dataset, batch_size<span class="op">=</span><span class="dv">64</span>, sampler<span class="op">=</span>sampler, num_workers<span class="op">=</span><span class="dv">8</span>, pin_memory<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> epoch <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    sampler.set_epoch(epoch)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> batch <span class="kw">in</span> loader:</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        ...</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>dist.destroy_process_group()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Important:</strong> don’t reach for multi-GPU just because more GPUs sound better.</p>
+<ul>
+<li>Multi-GPU <strong>does not always help</strong> — for small models, the inter-GPU communication overhead dwarfs the speedup</li>
+<li>Most projects should be on <strong>one GPU until that’s a clear bottleneck</strong></li>
+<li>If your dataset is small and fits easily in one GPU’s VRAM, more GPUs won’t help unless you’re scaling batch size aggressively</li>
+</ul>
+<p>Multi-node (<code>--nodes=N</code> with <code>--ntasks-per-node=...</code>) adds another layer of complexity (NCCL networking, distributed launchers); 99% of the time, one node with multiple GPUs is the right ceiling.</p>
+<hr>
+</section>
+<section id="gpu-job-array-for-hyperparameter-sweeps" class="level1">
+<h1>4. GPU Job Array for Hyperparameter Sweeps</h1>
+<p>To sweep over hyperparameters (learning rates, model sizes, etc.), launch a job array where each task gets one GPU and trains with a different config.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=hp_sweep</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=06:00:00                   # per task</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:1</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=8</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=48G</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%A_%a.out</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --array=0-23%6                    # 24 configs, max 6 running at once</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Parameter grid: bash arrays you can index by SLURM_ARRAY_TASK_ID</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="va">LEARNING_RATES</span><span class="op">=</span><span class="va">(</span>1e-5 3e-5 1e-4 3e-4<span class="va">)</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="va">BATCH_SIZES</span><span class="op">=</span><span class="va">(</span>32 64 128<span class="va">)</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="va">WEIGHT_DECAYS</span><span class="op">=</span><span class="va">(</span>0.0 0.01<span class="va">)</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Decode array index → (lr, bs, wd) triple</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="va">IDX</span><span class="op">=</span><span class="va">$SLURM_ARRAY_TASK_ID</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="va">LR</span><span class="op">=</span><span class="va">${LEARNING_RATES</span><span class="op">[</span><span class="va">$((</span> <span class="va">IDX</span> <span class="op">/</span> <span class="dv">6</span> <span class="va">))</span><span class="op">]</span><span class="va">}</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="va">BS</span><span class="op">=</span><span class="va">${BATCH_SIZES</span><span class="op">[</span><span class="va">$((</span> (<span class="va">IDX</span> <span class="op">/</span> <span class="dv">2</span>) <span class="op">%</span> <span class="dv">3</span> <span class="va">))</span><span class="op">]</span><span class="va">}</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="va">WD</span><span class="op">=</span><span class="va">${WEIGHT_DECAYS</span><span class="op">[</span><span class="va">$((</span> <span class="va">IDX</span> <span class="op">%</span> <span class="dv">2</span> <span class="va">))</span><span class="op">]</span><span class="va">}</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Task </span><span class="va">$IDX</span><span class="st">:  lr=</span><span class="va">$LR</span><span class="st">  bs=</span><span class="va">$BS</span><span class="st">  wd=</span><span class="va">$WD</span><span class="st">  on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> train.py <span class="at">--lr</span> <span class="va">$LR</span> <span class="at">--batch-size</span> <span class="va">$BS</span> <span class="at">--weight-decay</span> <span class="va">$WD</span> <span class="dt">\</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>                <span class="at">--run-name</span> <span class="st">"sweep_</span><span class="va">${IDX}</span><span class="st">_lr</span><span class="va">${LR}</span><span class="st">_bs</span><span class="va">${BS}</span><span class="st">_wd</span><span class="va">${WD}</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notes:</p>
+<ul>
+<li><code>--array=0-23%6</code> says: 24 tasks total, at most 6 concurrent. The cap is critical for GPU arrays — without it, all 24 tasks might run simultaneously and starve other users (and yourself) of GPUs.</li>
+<li>Use a <a href="../hpc/jupyter_and_tensorboard.html">TensorBoard run</a> for visualizing all 24 results in one view.</li>
+</ul>
+<hr>
+</section>
+<section id="interactive-gpu-session-for-development" class="level1">
+<h1>5. Interactive GPU Session for Development</h1>
+<p>For exploratory work — debugging a model, iterating on a notebook, profiling a kernel — request an interactive GPU node and develop there.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> --gres=gpu:1 <span class="at">--cpus-per-task</span><span class="op">=</span>4 <span class="at">--mem</span><span class="op">=</span>32G <span class="at">--time</span><span class="op">=</span>06:00:00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once you’re on the node:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Confirm GPU is visible</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">nvidia-smi</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate your env, start working</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span>                              <span class="co"># REPL, or:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8888   <span class="co"># see Jupyter &amp; TensorBoard page</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To keep this session alive across disconnects, wrap it in <code>tmux</code> or use the <a href="../hpc/persistent_sessions.html"><code>livenode</code> function</a>. For Jupyter specifically, see the <a href="../hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard page</a>.</p>
+<hr>
+</section>
+<section id="running-jupyter-on-a-gpu-node" class="level1">
+<h1>6. Running Jupyter on a GPU Node</h1>
+<p>This is its own thing covered in detail elsewhere — the <a href="../hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard page</a> covers the full workflow: <code>sinteractive</code> with <code>--gres=gpu:1</code>, <code>jupyter notebook --no-browser --port=8888</code> inside <code>tmux</code>/<code>livenode</code>, then <code>ssh -L 9099:127.0.0.1:8888 mynode</code> from your Mac to tunnel the connection.</p>
+<hr>
+</section>
+<section id="reading-gpu-diagnostics-after-a-job" class="level1">
+<h1>7. Reading GPU Diagnostics After a Job</h1>
+<p>The script templates above write <code>logs/gpu-&lt;jobid&gt;.log</code> with <code>nvidia-smi</code> samples every 30 seconds. To analyze:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary of GPU utilization</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-v</span> <span class="st">"^---"</span> logs/gpu-12345.log <span class="kw">|</span> <span class="fu">head</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Sample output (one line per 30s):</p>
+<pre><code>50, 12345 MiB, 81920 MiB, 67
+75, 12345 MiB, 81920 MiB, 70
+98, 65432 MiB, 81920 MiB, 78
+...</code></pre>
+<p>Columns: <code>utilization.gpu(%)</code>, <code>memory.used</code>, <code>memory.total</code>, <code>temperature.gpu(°C)</code>.</p>
+<p>Interpretation:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Pattern</th>
+<th>Diagnosis</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GPU util sitting at ~95%</td>
+<td>🎉 Healthy — pipeline is fed</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td>GPU util oscillating 0% ↔︎ 90%</td>
+<td>Dataloader bottleneck — GPU waits for batches</td>
+<td>Increase <code>num_workers</code> (and <code>--cpus-per-task</code>); enable <code>pin_memory=True</code>; pre-cache the dataset on faster storage</td>
+</tr>
+<tr class="odd">
+<td>GPU util &lt;30% throughout</td>
+<td>Severe CPU bottleneck or tiny model</td>
+<td>More dataloader workers; larger batch size; bigger model; or you don’t actually need a GPU</td>
+</tr>
+<tr class="even">
+<td>GPU memory near 100%</td>
+<td>Risking OOM</td>
+<td>Reduce batch size; enable mixed precision (<code>autocast</code> / <code>bfloat16</code>); use gradient accumulation</td>
+</tr>
+<tr class="odd">
+<td>GPU memory near 100% <strong>and</strong> CUDA OOM</td>
+<td>Hit the cap</td>
+<td>Same; or request a bigger GPU</td>
+</tr>
+</tbody>
+</table>
+<p>Combined with <code>seff &lt;jobid&gt;</code> for system-RAM/CPU efficiency, this gives you the full picture for right-sizing the next run.</p>
+<hr>
+</section>
+<section id="see-also" class="level1">
+<h1>8. See Also</h1>
+<ul>
+<li><a href="../slurm/slurm_basics.html">Slurm Basics</a> — submission, monitoring, cancellation</li>
+<li><a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a> §7 — CPU/RAM/GPU balance methodology</li>
+<li><a href="../slurm/slurm_cpu_templates.html">CPU Templates</a> — the non-GPU counterparts of these patterns</li>
+<li><a href="../hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard</a> — running notebooks and dashboards on GPU nodes from your laptop</li>
+<li><a href="../hpc/conda_envs.html">Python Environments</a> — the mamba env setup these scripts assume</li>
+</ul>
 
 
 </section>
@@ -884,8 +1201,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../slurm/slurm_best_practices.html" class="pagination-link" aria-label="Slurm Best Practices">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Slurm Best Practices</span>
+      <a href="../slurm/slurm_best_practices.html" class="pagination-link" aria-label="Slurm Best Practices: right-sizing requests and measuring what you need">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Slurm Best Practices: right-sizing requests and measuring what you need</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

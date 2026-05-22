@@ -56,14 +56,12 @@ The shell, environments, and patterns that turn a raw cluster account into a pro
 ::: {.card-body}
 <h4 style="margin-top:0;"><i class="bi bi-cpu"></i> &nbsp;Slurm</h4>
 
-Submit jobs, request resources, and use partitions properly.
+Submit jobs, request the right resources, and avoid blocking the cluster for others.
 
-- [Slurm Basics](slurm/slurm_basics.qmd)
-- [Best Practices](slurm/slurm_best_practices.qmd)
-- [GPU Templates](slurm/slurm_gpu_templates.qmd)
-- [CPU Templates](slurm/slurm_cpu_templates.qmd)
-
-*This section is a work in progress — the polished versions are still being written.*
+- [Slurm Basics](slurm/slurm_basics.qmd) — `sbatch`, `squeue`, `#SBATCH` directives
+- [Best Practices](slurm/slurm_best_practices.qmd) — measuring memory and CPU needs; the diagnostics wrapper
+- [CPU Templates](slurm/slurm_cpu_templates.qmd) — drop-in scripts for the common cases
+- [GPU Templates](slurm/slurm_gpu_templates.qmd) — single-GPU, multi-GPU, hyperparameter sweeps
 :::
 :::
 :::
@@ -81,6 +79,8 @@ If you've just been given an OSU HPC account and want a sensible reading order, 
 5. **[Persistent Sessions](hpc/persistent_sessions.qmd)** — keep work alive across disconnects with `tmux` and the `livenode` function.
 6. **[Python Environments](hpc/conda_envs.qmd)** — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.
 7. **[Jupyter & TensorBoard](hpc/jupyter_and_tensorboard.qmd)** — run interactive notebooks and live training dashboards in your laptop's browser while compute happens on Unity.
+8. **[Slurm Basics](slurm/slurm_basics.qmd)** — how to submit unattended jobs with `sbatch`.
+9. **[Slurm Best Practices](slurm/slurm_best_practices.qmd)** — the *most important* Slurm skill: right-sizing memory, CPU, and walltime requests so your jobs run sooner and don't block others.
 
 Returning to look something up? Use the **search box at the top of the sidebar** — it indexes every page.
 

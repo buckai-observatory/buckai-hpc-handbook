@@ -1,11 +1,331 @@
-
 ---
 title: "GPU Job Templates"
 ---
 
-# Single GPU
+# Introduction
+
+This page collects **ready-to-adapt Slurm scripts** for the most common GPU workloads on Unity. The structure mirrors the [CPU Templates](slurm_cpu_templates.qmd) page; the headline differences are the GPU resource flags and the `nvidia-smi`-based diagnostics.
+
+Replace placeholders:
+
+- `<group>` — your Slurm partition (often `batch`; see [Shell Environment §4](../hpc/shell_environment.qmd))
+- `yourname@osu.edu` — email for completion notifications
+- `myproject` — your mamba env name
+- `~/miniforge3/...` — your mamba install path
+
+And always:
+
+- `mkdir -p logs` before submitting
+- Run a short test first; let `seff <jobid>` + `nvidia-smi` data tell you what to tighten
+
+Templates on this page:
+
+1. **Single-GPU PyTorch training** (the canonical case)
+2. **Single-GPU with heavy data loading** (multiple DataLoader workers)
+3. **Multi-GPU on one node (DDP)** — when you need it, and when you don't
+4. **GPU job array** for hyperparameter sweeps
+5. **Interactive GPU node for development** (`sinteractive`)
+6. **GPU-using Jupyter** — link to the existing page
+
+The right-sizing background (CPU/RAM/GPU balance, `nvidia-smi` interpretation) lives in [Best Practices §7](slurm_best_practices.qmd).
+
+---
+
+# 1. Single-GPU PyTorch Training
+
+The most common ML workload.
 
 ```bash
-#SBATCH --gres=gpu:l40:1
-python train.py
+#!/bin/bash
+#SBATCH --job-name=train_resnet
+#SBATCH --partition=<group>
+#SBATCH --time=12:00:00
+#SBATCH --gres=gpu:1                      # 1 GPU (any type)
+#SBATCH --cpus-per-task=8                 # 4 DataLoader workers + slack
+#SBATCH --mem=48G                         # CPU RAM (not GPU memory)
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@osu.edu
+
+set -euo pipefail
+
+# Thread limits for any CPU-side numerical work
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+# ─── Vital signs ──────────────────────────────────────────
+echo "Job:    $SLURM_JOB_ID ($SLURM_JOB_NAME) on $(hostname)"
+echo "CPUs:   $SLURM_CPUS_PER_TASK  |  Mem (MB): ${SLURM_MEM_PER_NODE:-?}"
+echo "GPUs:   ${SLURM_GPUS:-${SLURM_JOB_GPUS:-?}}"
+echo "Start:  $(date)"
+
+# ─── Environment ──────────────────────────────────────────
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+echo "Python:  $(which python)"
+python -c "import torch; print(f'PyTorch {torch.__version__}, CUDA {torch.version.cuda}, GPU: {torch.cuda.get_device_name(0)}')"
+
+# ─── Snapshot GPU at start ────────────────────────────────
+nvidia-smi
+
+# ─── Background logger: GPU util every 30s ────────────────
+(
+  while sleep 30; do
+    echo "--- $(date '+%H:%M:%S') ---"
+    nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader
+  done
+) > "logs/gpu-${SLURM_JOB_ID}.log" 2>&1 &
+GPU_LOGGER_PID=$!
+
+# ─── Train ────────────────────────────────────────────────
+/usr/bin/time -v python train.py \
+    --batch-size 64 \
+    --epochs 100 \
+    --workers 4 \
+    --checkpoint-dir checkpoints
+
+# ─── Cleanup ──────────────────────────────────────────────
+kill $GPU_LOGGER_PID 2>/dev/null || true
+
+echo "End:    $(date)"
+echo "Inspect logs/gpu-${SLURM_JOB_ID}.log for GPU utilization over time."
+echo "Run 'seff $SLURM_JOB_ID' for CPU/Mem efficiency."
 ```
+
+Inside `train.py`:
+
+```python
+import torch
+from torch.utils.data import DataLoader
+
+dataset = MyDataset(...)
+loader = DataLoader(
+    dataset,
+    batch_size=64,
+    num_workers=4,            # matches --cpus-per-task=8 minus a couple for slack
+    pin_memory=True,          # speeds up CPU→GPU transfers
+)
+
+model = MyModel().cuda()
+optim = torch.optim.AdamW(model.parameters(), lr=1e-4)
+
+for epoch in range(epochs):
+    for batch in loader:
+        x, y = batch[0].cuda(non_blocking=True), batch[1].cuda(non_blocking=True)
+        loss = ...
+        loss.backward()
+        optim.step()
+        optim.zero_grad()
+```
+
+Three reasons this template is the way it is:
+
+- **`--gres=gpu:1`** asks for any one GPU. If you specifically need (say) an A100, use `--gres=gpu:a100:1` — but only if you really need that capacity, since it'll wait longer in queue.
+- **`--cpus-per-task=8`** — `num_workers=4` data-loader processes + the main Python process + breathing room. Each loader worker runs CPU-side data prep in parallel; without enough CPUs you'll see GPU util sag.
+- **The background `nvidia-smi` logger** writes a separate file showing GPU util over time. If it shows long stretches of <30% util, your data pipeline is the bottleneck — increase `num_workers` (and bump `--cpus-per-task` accordingly).
+
+---
+
+# 2. Specifying GPU Type or Memory
+
+When you need a particular GPU (e.g. an A100 for a 70B model, or just more VRAM than the default):
+
+```bash
+#SBATCH --gres=gpu:a100:1                 # specifically an A100
+# or
+#SBATCH --constraint=a100                 # also works on many clusters
+# or, by memory:
+#SBATCH --gres=gpu:1 --mem-per-gpu=80G    # any GPU with ≥80 GB VRAM (cluster-dependent)
+```
+
+Available GPU types vary — check Unity's documentation or `sinfo -o "%P %G"` to see what each partition offers. Common types on academic clusters include A100, A40, V100, L40, H100. **Asking for a specific high-end card means longer queue waits** — don't ask for an A100 if an A40 would do.
+
+---
+
+# 3. Multi-GPU on One Node (PyTorch DDP)
+
+If your model + batch genuinely doesn't fit on one GPU, or training one GPU at a time is too slow, use `DistributedDataParallel` across multiple GPUs on the same node.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=ddp_train
+#SBATCH --partition=<group>
+#SBATCH --time=24:00:00
+#SBATCH --gres=gpu:4                      # 4 GPUs
+#SBATCH --cpus-per-task=32                # 8 dataloader workers per GPU + slack
+#SBATCH --mem=128G
+#SBATCH --output=logs/%x-%j.out
+
+set -euo pipefail
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+echo "Job: $SLURM_JOB_ID on $(hostname). $SLURM_GPUS_ON_NODE GPUs, $SLURM_CPUS_PER_TASK CPUs"
+echo "Start: $(date)"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+nvidia-smi
+
+# torchrun handles the distributed launch automatically
+torchrun --standalone --nproc-per-node=$SLURM_GPUS_ON_NODE train_ddp.py \
+    --batch-size 64 \
+    --workers 8
+
+echo "End: $(date)"
+```
+
+Inside `train_ddp.py`:
+
+```python
+import os, torch, torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data.distributed import DistributedSampler
+
+dist.init_process_group(backend="nccl")
+rank = dist.get_rank()
+local_rank = int(os.environ["LOCAL_RANK"])
+torch.cuda.set_device(local_rank)
+
+model = MyModel().cuda()
+model = DDP(model, device_ids=[local_rank])
+
+sampler = DistributedSampler(dataset, shuffle=True)
+loader = DataLoader(dataset, batch_size=64, sampler=sampler, num_workers=8, pin_memory=True)
+
+for epoch in range(epochs):
+    sampler.set_epoch(epoch)
+    for batch in loader:
+        ...
+
+dist.destroy_process_group()
+```
+
+**Important:** don't reach for multi-GPU just because more GPUs sound better.
+
+- Multi-GPU **does not always help** — for small models, the inter-GPU communication overhead dwarfs the speedup
+- Most projects should be on **one GPU until that's a clear bottleneck**
+- If your dataset is small and fits easily in one GPU's VRAM, more GPUs won't help unless you're scaling batch size aggressively
+
+Multi-node (`--nodes=N` with `--ntasks-per-node=...`) adds another layer of complexity (NCCL networking, distributed launchers); 99% of the time, one node with multiple GPUs is the right ceiling.
+
+---
+
+# 4. GPU Job Array for Hyperparameter Sweeps
+
+To sweep over hyperparameters (learning rates, model sizes, etc.), launch a job array where each task gets one GPU and trains with a different config.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=hp_sweep
+#SBATCH --partition=<group>
+#SBATCH --time=06:00:00                   # per task
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=48G
+#SBATCH --output=logs/%x-%A_%a.out
+#SBATCH --array=0-23%6                    # 24 configs, max 6 running at once
+
+set -euo pipefail
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+# Parameter grid: bash arrays you can index by SLURM_ARRAY_TASK_ID
+LEARNING_RATES=(1e-5 3e-5 1e-4 3e-4)
+BATCH_SIZES=(32 64 128)
+WEIGHT_DECAYS=(0.0 0.01)
+
+# Decode array index → (lr, bs, wd) triple
+IDX=$SLURM_ARRAY_TASK_ID
+LR=${LEARNING_RATES[$(( IDX / 6 ))]}
+BS=${BATCH_SIZES[$(( (IDX / 2) % 3 ))]}
+WD=${WEIGHT_DECAYS[$(( IDX % 2 ))]}
+
+echo "Task $IDX:  lr=$LR  bs=$BS  wd=$WD  on $(hostname)"
+
+source ~/miniforge3/etc/profile.d/conda.sh
+mamba activate myproject
+
+python train.py --lr $LR --batch-size $BS --weight-decay $WD \
+                --run-name "sweep_${IDX}_lr${LR}_bs${BS}_wd${WD}"
+```
+
+Notes:
+
+- `--array=0-23%6` says: 24 tasks total, at most 6 concurrent. The cap is critical for GPU arrays — without it, all 24 tasks might run simultaneously and starve other users (and yourself) of GPUs.
+- Use a [TensorBoard run](../hpc/jupyter_and_tensorboard.qmd) for visualizing all 24 results in one view.
+
+---
+
+# 5. Interactive GPU Session for Development
+
+For exploratory work — debugging a model, iterating on a notebook, profiling a kernel — request an interactive GPU node and develop there.
+
+```bash
+sinteractive -p <group> --gres=gpu:1 --cpus-per-task=4 --mem=32G --time=06:00:00
+```
+
+Once you're on the node:
+
+```bash
+# Confirm GPU is visible
+nvidia-smi
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+
+# Activate your env, start working
+mamba activate myproject
+python                              # REPL, or:
+jupyter notebook --no-browser --port=8888   # see Jupyter & TensorBoard page
+```
+
+To keep this session alive across disconnects, wrap it in `tmux` or use the [`livenode` function](../hpc/persistent_sessions.qmd). For Jupyter specifically, see the [Jupyter & TensorBoard page](../hpc/jupyter_and_tensorboard.qmd).
+
+---
+
+# 6. Running Jupyter on a GPU Node
+
+This is its own thing covered in detail elsewhere — the [Jupyter & TensorBoard page](../hpc/jupyter_and_tensorboard.qmd) covers the full workflow: `sinteractive` with `--gres=gpu:1`, `jupyter notebook --no-browser --port=8888` inside `tmux`/`livenode`, then `ssh -L 9099:127.0.0.1:8888 mynode` from your Mac to tunnel the connection.
+
+---
+
+# 7. Reading GPU Diagnostics After a Job
+
+The script templates above write `logs/gpu-<jobid>.log` with `nvidia-smi` samples every 30 seconds. To analyze:
+
+```bash
+# Summary of GPU utilization
+grep -v "^---" logs/gpu-12345.log | head
+```
+
+Sample output (one line per 30s):
+
+```
+50, 12345 MiB, 81920 MiB, 67
+75, 12345 MiB, 81920 MiB, 70
+98, 65432 MiB, 81920 MiB, 78
+...
+```
+
+Columns: `utilization.gpu(%)`, `memory.used`, `memory.total`, `temperature.gpu(°C)`.
+
+Interpretation:
+
+| Pattern | Diagnosis | Fix |
+|---|---|---|
+| GPU util sitting at ~95% | 🎉 Healthy — pipeline is fed | None |
+| GPU util oscillating 0% ↔ 90% | Dataloader bottleneck — GPU waits for batches | Increase `num_workers` (and `--cpus-per-task`); enable `pin_memory=True`; pre-cache the dataset on faster storage |
+| GPU util <30% throughout | Severe CPU bottleneck or tiny model | More dataloader workers; larger batch size; bigger model; or you don't actually need a GPU |
+| GPU memory near 100% | Risking OOM | Reduce batch size; enable mixed precision (`autocast` / `bfloat16`); use gradient accumulation |
+| GPU memory near 100% **and** CUDA OOM | Hit the cap | Same; or request a bigger GPU |
+
+Combined with `seff <jobid>` for system-RAM/CPU efficiency, this gives you the full picture for right-sizing the next run.
+
+---
+
+# 8. See Also
+
+- [Slurm Basics](slurm_basics.qmd) — submission, monitoring, cancellation
+- [Slurm Best Practices](slurm_best_practices.qmd) §7 — CPU/RAM/GPU balance methodology
+- [CPU Templates](slurm_cpu_templates.qmd) — the non-GPU counterparts of these patterns
+- [Jupyter & TensorBoard](../hpc/jupyter_and_tensorboard.qmd) — running notebooks and dashboards on GPU nodes from your laptop
+- [Python Environments](../hpc/conda_envs.qmd) — the mamba env setup these scripts assume

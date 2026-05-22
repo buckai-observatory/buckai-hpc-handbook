@@ -399,13 +399,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Basics</span></a>
+ <span class="menu-text">Slurm Basics: jobs, scripts, and monitoring</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Best Practices</span></a>
+ <span class="menu-text">Slurm Best Practices: right-sizing requests and measuring what you need</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -432,7 +432,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#cpu-job" id="toc-cpu-job" class="nav-link active" data-scroll-target="#cpu-job">CPU Job</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#single-threaded-python" id="toc-single-threaded-python" class="nav-link" data-scroll-target="#single-threaded-python">1. Single-Threaded Python</a></li>
+  <li><a href="#multi-threaded-numpy-blas" id="toc-multi-threaded-numpy-blas" class="nav-link" data-scroll-target="#multi-threaded-numpy-blas">2. Multi-Threaded NumPy / BLAS</a></li>
+  <li><a href="#joblib.parallel-or-sklearn-n_jobsn" id="toc-joblib.parallel-or-sklearn-n_jobsn" class="nav-link" data-scroll-target="#joblib.parallel-or-sklearn-n_jobsn">3. <code>joblib.Parallel</code> or sklearn <code>n_jobs=N</code></a></li>
+  <li><a href="#job-arrays-many-similar-tasks" id="toc-job-arrays-many-similar-tasks" class="nav-link" data-scroll-target="#job-arrays-many-similar-tasks">4. Job Arrays — Many Similar Tasks</a></li>
+  <li><a href="#long-running-job-with-checkpoints" id="toc-long-running-job-with-checkpoints" class="nav-link" data-scroll-target="#long-running-job-with-checkpoints">5. Long-Running Job With Checkpoints</a></li>
+  <li><a href="#mpi-multi-process-possibly-multi-node" id="toc-mpi-multi-process-possibly-multi-node" class="nav-link" data-scroll-target="#mpi-multi-process-possibly-multi-node">6. MPI (multi-process, possibly multi-node)</a></li>
+  <li><a href="#after-the-job-right-sizing" id="toc-after-the-job-right-sizing" class="nav-link" data-scroll-target="#after-the-job-right-sizing">7. After the Job: Right-Sizing</a></li>
+  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">8. See Also</a></li>
   </ul>
 </nav>
     </div>
@@ -459,11 +467,307 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="cpu-job" class="level1">
-<h1>CPU Job</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=4</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=16G</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> preprocess.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This page collects <strong>ready-to-adapt Slurm scripts</strong> for the most common CPU-only workloads on Unity. Each template includes the diagnostic wrapper from <a href="../slurm/slurm_best_practices.html">Best Practices §8</a> so you can right-size after the first run.</p>
+<p>Replace placeholders:</p>
+<ul>
+<li><code>&lt;group&gt;</code> — your Slurm partition (often <code>batch</code>; see <a href="../hpc/shell_environment.html">Shell Environment §4</a>)</li>
+<li><code>yourname@osu.edu</code> — your email for completion notifications</li>
+<li><code>myproject</code> — your mamba env name</li>
+<li><code>~/miniforge3/...</code> — your mamba install path (might be <code>~/mambaforge/</code> on older setups)</li>
+</ul>
+<p>And always:</p>
+<ul>
+<li><code>mkdir -p logs</code> before submitting (so <code>--output=logs/...</code> can write)</li>
+<li>Run on a tiny test first; let <code>seff &lt;jobid&gt;</code> tell you what to tighten for the real run</li>
+</ul>
+<p>Templates on this page:</p>
+<ol type="1">
+<li><strong>Single-threaded Python</strong> (the scikit-learn / pandas / plain-Python case)</li>
+<li><strong>Multi-threaded NumPy/BLAS</strong> (linear algebra, FFTs)</li>
+<li><strong><code>joblib.Parallel</code> / <code>sklearn(n_jobs=N)</code></strong> (embarrassingly parallel within one job)</li>
+<li><strong>Job arrays</strong> (many independent tasks — e.g.&nbsp;processing 100 files)</li>
+<li><strong>Long-running with checkpoints</strong> (multi-day jobs that survive wall-time kills)</li>
+<li><strong>MPI</strong> (for the few who need it)</li>
+</ol>
+<hr>
+</section>
+<section id="single-threaded-python" class="level1">
+<h1>1. Single-Threaded Python</h1>
+<p>The most common case: plain Python, pandas, sklearn with defaults, scientific scripts that don’t internally parallelize.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=fit_rf</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=02:00:00</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1                 # single-threaded</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=36G                         # measured ~30 GB + headroom</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=yourname@osu.edu</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Constrain numerical libraries to 1 thread (matches --cpus-per-task)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OPENBLAS_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NUMEXPR_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Vital signs ───────────────────────────────────────────</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job:    </span><span class="va">$SLURM_JOB_ID</span><span class="st">  (</span><span class="va">$SLURM_JOB_NAME</span><span class="st">) on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"CPUs:   </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st">  |  Mem (MB): </span><span class="va">${SLURM_MEM_PER_NODE</span><span class="op">:-</span><span class="pp">?</span><span class="va">}</span><span class="st">"</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start:  </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Environment ───────────────────────────────────────────</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># ─── Work ─────────────────────────────────────────────────</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python fit_rf.py</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End:    </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Run 'seff </span><span class="va">$SLURM_JOB_ID</span><span class="st">' for an efficiency report."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Tips:</p>
+<ul>
+<li>✔ <code>OMP_NUM_THREADS=1</code> is critical here. Without it, NumPy operations called by sklearn can spawn 48 threads on a 48-core node <em>despite</em> your single-CPU allocation, causing thread-thrashing slowdowns.</li>
+<li>✔ <code>/usr/bin/time -v</code> gives you peak memory; use the result to tighten <code>--mem</code> next time.</li>
+</ul>
+<hr>
+</section>
+<section id="multi-threaded-numpy-blas" class="level1">
+<h1>2. Multi-Threaded NumPy / BLAS</h1>
+<p>For code dominated by large matrix operations (linear algebra, FFTs, eigendecompositions), NumPy / SciPy can scale to multiple threads via the BLAS backend.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=svd_big</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04:00:00</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=8                 # BLAS will use 8 threads</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=64G</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Tell BLAS / OpenMP / MKL how many threads to use — match SLURM_CPUS_PER_TASK</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OPENBLAS_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NUMEXPR_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job:    </span><span class="va">$SLURM_JOB_ID</span><span class="st"> on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"CPUs:   </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st"> (threads exported to libraries)"</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start:  </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python linalg_heavy.py</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End:    </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Tuning:</p>
+<ul>
+<li>Try 1, 2, 4, 8, 16 threads with <code>seff</code> to find diminishing returns</li>
+<li>BLAS scaling is sub-linear past ~8 threads on most operations; going to 48 rarely helps</li>
+<li>If you don’t see speedup, the bottleneck isn’t matrix math — check with profiling</li>
+</ul>
+<hr>
+</section>
+<section id="joblib.parallel-or-sklearn-n_jobsn" class="level1">
+<h1>3. <code>joblib.Parallel</code> or sklearn <code>n_jobs=N</code></h1>
+<p>For embarrassingly parallel work — fitting many small models, cross-validation folds, hyperparameter search — sklearn and joblib parallelize across CPUs in one Python process.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=cv_search</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=06:00:00</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=16                # n_jobs will match this</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=64G</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Per-thread BLAS should NOT also be 16 — that would 16×16 = 256-way nested</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># parallelism on a 48-core node. Force inner-loop BLAS to single thread.</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OPENBLAS_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NUMEXPR_NUM_THREADS</span><span class="op">=</span>1</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job: </span><span class="va">$SLURM_JOB_ID</span><span class="st">  CPUs: </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st">  on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start: </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python cv_search.py</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End: </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Inside <code>cv_search.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="bu">int</span>(os.environ.get(<span class="st">"SLURM_CPUS_PER_TASK"</span>, <span class="dv">1</span>))   <span class="co"># respect Slurm allocation</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>search <span class="op">=</span> GridSearchCV(estimator, param_grid, cv<span class="op">=</span><span class="dv">5</span>, n_jobs<span class="op">=</span>N)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>search.fit(X, y)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Key insight: when <strong>outer</strong> parallelism (joblib / n_jobs) uses N workers, the <strong>inner</strong> BLAS threading should be 1 — otherwise you get nested parallelism that thrashes. The <code>OMP_NUM_THREADS=1</code> lines above enforce this.</p>
+<hr>
+</section>
+<section id="job-arrays-many-similar-tasks" class="level1">
+<h1>4. Job Arrays — Many Similar Tasks</h1>
+<p>If you need to run the same script on 100 different inputs, don’t submit 100 separate jobs. Use a <strong>job array</strong>: one submission that Slurm fans out into many tasks, each with its own <code>$SLURM_ARRAY_TASK_ID</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=process_files</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=00:30:00                   # per task, not total</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=2</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=8G</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%A_%a.out        # %A = array master, %a = task ID</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --array=0-99                      # 100 tasks, IDs 0–99</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --array=0-99%20                   # alternative: cap concurrent runs at 20</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Array master: </span><span class="va">$SLURM_ARRAY_JOB_ID</span><span class="st">"</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"This task:    </span><span class="va">$SLURM_ARRAY_TASK_ID</span><span class="st"> / </span><span class="va">$SLURM_ARRAY_TASK_COUNT</span><span class="st">"</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Node:         </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Map the array index to an input file</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="va">INPUT_DIR</span><span class="op">=</span><span class="st">"/fs/project/&lt;group&gt;/raw"</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="ex">mapfile</span> <span class="at">-t</span> FILES <span class="op">&lt;</span> <span class="op">&lt;(</span><span class="fu">ls</span> <span class="st">"</span><span class="va">$INPUT_DIR</span><span class="st">"</span>/<span class="pp">*</span>.csv <span class="kw">|</span> <span class="fu">sort</span><span class="op">)</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="va">INPUT_FILE</span><span class="op">=</span><span class="st">"</span><span class="va">${FILES</span><span class="op">[</span><span class="va">$SLURM_ARRAY_TASK_ID</span><span class="op">]</span><span class="va">}</span><span class="st">"</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Processing:   </span><span class="va">$INPUT_FILE</span><span class="st">"</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python process_one.py <span class="st">"</span><span class="va">$INPUT_FILE</span><span class="st">"</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Done at </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notes:</p>
+<ul>
+<li><code>--array=0-99</code> runs 100 tasks. Use <code>--array=0-99%20</code> to cap concurrent tasks at 20 — important if each task uses non-trivial memory and you don’t want to hog the cluster.</li>
+<li>Inside the script, <code>$SLURM_ARRAY_TASK_ID</code> selects which input to process.</li>
+<li><code>--output=logs/%x-%A_%a.out</code> gives each task its own log file: e.g.&nbsp;<code>logs/process_files-12345_42.out</code>.</li>
+<li>Monitor with <code>squeue -u $USER</code> — each task appears as <code>12345_42</code>, <code>12345_43</code>, etc.</li>
+<li>Cancel the whole array with <code>scancel 12345</code>; one task with <code>scancel 12345_42</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="long-running-job-with-checkpoints" class="level1">
+<h1>5. Long-Running Job With Checkpoints</h1>
+<p>For multi-day work where a wall-time kill or node reboot would be catastrophic, <strong>always checkpoint</strong>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=long_sim</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=24:00:00                   # max walltime per submission</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=8</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=64G</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --signal=USR1@300                 # send SIGUSR1 5 min before --time expires</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --requeue                         # automatically resubmit if pre-empted</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">$SLURM_CPUS_PER_TASK</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job: </span><span class="va">$SLURM_JOB_ID</span><span class="st"> on </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st"> at </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Restart count: </span><span class="va">${SLURM_RESTART_COUNT</span><span class="op">:-</span>0<span class="va">}</span><span class="st">"</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass the checkpoint directory and resume flag to Python.</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co"># The script should look for the latest checkpoint and resume from it.</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKPOINT_DIR</span><span class="op">=</span><span class="st">"/fs/project/&lt;group&gt;/&lt;username&gt;/checkpoints/</span><span class="va">$SLURM_JOB_NAME</span><span class="st">"</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$CHECKPOINT_DIR</span><span class="st">"</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python long_sim.py <span class="dt">\</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">--checkpoint-dir</span> <span class="st">"</span><span class="va">$CHECKPOINT_DIR</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">--checkpoint-every</span> 1000</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Finished at </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Inside <code>long_sim.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, signal, sys</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ckpt_dir <span class="op">=</span> Path(os.environ.get(<span class="st">"CHECKPOINT_DIR"</span>, <span class="st">"ckpt"</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ckpt_dir.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>, parents<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Handle SIGUSR1 (sent by Slurm 5 min before wall-time): save and exit cleanly</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> save_and_exit(signum, frame):</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    save_checkpoint(state, ckpt_dir <span class="op">/</span> <span class="ss">f"step_</span><span class="sc">{</span>state<span class="sc">.</span>step<span class="sc">}</span><span class="ss">.pt"</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Got SIGUSR1; saved checkpoint at step </span><span class="sc">{</span>state<span class="sc">.</span>step<span class="sc">}</span><span class="ss">. Exiting."</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    sys.exit(<span class="dv">0</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>signal.signal(signal.SIGUSR1, save_and_exit)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Resume from latest checkpoint if any</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>latest <span class="op">=</span> <span class="bu">max</span>(ckpt_dir.glob(<span class="st">"step_*.pt"</span>), default<span class="op">=</span><span class="va">None</span>, key<span class="op">=</span><span class="kw">lambda</span> p: <span class="bu">int</span>(p.stem.split(<span class="st">"_"</span>)[<span class="dv">1</span>]))</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> latest:</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> load_checkpoint(latest)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Resumed from </span><span class="sc">{</span>latest<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> initial_state()</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> state.step <span class="op">&lt;</span> state.max_steps:</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> step(state)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> state.step <span class="op">%</span> <span class="dv">1000</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        save_checkpoint(state, ckpt_dir <span class="op">/</span> <span class="ss">f"step_</span><span class="sc">{</span>state<span class="sc">.</span>step<span class="sc">}</span><span class="ss">.pt"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>With <code>--requeue</code> set, if the job is killed for any preemption reason, Slurm will resubmit it automatically. Your script then loads the latest checkpoint and picks up from there.</p>
+<hr>
+</section>
+<section id="mpi-multi-process-possibly-multi-node" class="level1">
+<h1>6. MPI (multi-process, possibly multi-node)</h1>
+<p>Most Python workloads don’t need MPI — joblib / multiprocessing handles the embarrassingly-parallel cases (Section 3) and threading handles the linear algebra (Section 2). But for tightly-coupled scientific computing or large simulations, MPI shines.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=mpi_run</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=&lt;group&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=02:00:00</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=2                         # spread across 2 nodes</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks=96                       # 96 total MPI ranks</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=48              # 48 per node</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1                 # 1 CPU per rank</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=0                           # 0 = give me all RAM on the node</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job:    </span><span class="va">$SLURM_JOB_ID</span><span class="st">"</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Nodes:  </span><span class="va">$SLURM_NNODES</span><span class="st">"</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Tasks:  </span><span class="va">$SLURM_NTASKS</span><span class="st">"</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start:  </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load intel/2024.2.0                <span class="co"># or your favorite MPI-enabled compiler</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co"># (or activate a mamba env that contains mpi4py + openmpi/mpich)</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="ex">srun</span> ./my_mpi_program                     <span class="co"># `srun` is MPI-aware on Slurm clusters</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"End:    </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notes:</p>
+<ul>
+<li>Use <code>srun</code>, not <code>mpirun</code>, on a Slurm cluster — it picks up the allocation automatically</li>
+<li><code>--mem=0</code> is a Slurm idiom for “all the memory on each allocated node”</li>
+<li>For Python MPI (<code>mpi4py</code>), install it via mamba (<code>mamba install mpi4py openmpi</code>) so it’s linked against a Slurm-aware MPI</li>
+</ul>
+<p>If you don’t know whether you need MPI, you don’t.</p>
+<hr>
+</section>
+<section id="after-the-job-right-sizing" class="level1">
+<h1>7. After the Job: Right-Sizing</h1>
+<p>For every template above, after the first successful run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">seff</span> <span class="op">&lt;</span>jobid<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at <strong>CPU Efficiency</strong> and <strong>Memory Efficiency</strong>. If either is much below 80–90%, your next submission should request less. See <a href="../slurm/slurm_best_practices.html">Best Practices §9</a>.</p>
+<p>For arrays, <code>seff</code> only shows one task; use <code>sacct</code> for the whole array:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sacct</span> <span class="at">-j</span> 12345 <span class="at">--format</span><span class="op">=</span>JobID,State,Elapsed,MaxRSS,CPUTime</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="see-also" class="level1">
+<h1>8. See Also</h1>
+<ul>
+<li><a href="../slurm/slurm_basics.html">Slurm Basics</a> — <code>#SBATCH</code> directive reference, monitoring, cancellation</li>
+<li><a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a> — the right-sizing methodology these templates lean on</li>
+<li><a href="../slurm/slurm_gpu_templates.html">GPU Templates</a> — same idea, for GPU workloads</li>
+<li><a href="../hpc/conda_envs.html">Python Environments</a> — for the <code>mamba activate</code> setup inside batch scripts</li>
+</ul>
 
 
 </section>

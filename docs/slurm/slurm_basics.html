@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Slurm Basics – BuckAI HPC Handbook</title>
+<title>Slurm Basics: jobs, scripts, and monitoring – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -286,7 +286,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm Basics</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm Basics: jobs, scripts, and monitoring</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -400,13 +400,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Slurm Basics</span></a>
+ <span class="menu-text">Slurm Basics: jobs, scripts, and monitoring</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Best Practices</span></a>
+ <span class="menu-text">Slurm Best Practices: right-sizing requests and measuring what you need</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -433,8 +433,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basic-commands" id="toc-basic-commands" class="nav-link active" data-scroll-target="#basic-commands">Basic Commands</a></li>
-  <li><a href="#minimal-job-script" id="toc-minimal-job-script" class="nav-link" data-scroll-target="#minimal-job-script">Minimal Job Script</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#what-slurm-actually-does" id="toc-what-slurm-actually-does" class="nav-link" data-scroll-target="#what-slurm-actually-does">1. What Slurm Actually Does</a></li>
+  <li><a href="#the-three-ways-to-use-slurm" id="toc-the-three-ways-to-use-slurm" class="nav-link" data-scroll-target="#the-three-ways-to-use-slurm">2. The Three Ways to Use Slurm</a></li>
+  <li><a href="#your-first-batch-script" id="toc-your-first-batch-script" class="nav-link" data-scroll-target="#your-first-batch-script">3. Your First Batch Script</a></li>
+  <li><a href="#submitting-a-job" id="toc-submitting-a-job" class="nav-link" data-scroll-target="#submitting-a-job">4. Submitting a Job</a></li>
+  <li><a href="#monitoring-jobs-in-the-queue" id="toc-monitoring-jobs-in-the-queue" class="nav-link" data-scroll-target="#monitoring-jobs-in-the-queue">5. Monitoring Jobs in the Queue</a></li>
+  <li><a href="#cancelling-jobs" id="toc-cancelling-jobs" class="nav-link" data-scroll-target="#cancelling-jobs">6. Cancelling Jobs</a></li>
+  <li><a href="#where-did-my-output-go" id="toc-where-did-my-output-go" class="nav-link" data-scroll-target="#where-did-my-output-go">7. Where Did My Output Go?</a></li>
+  <li><a href="#the-most-used-sbatch-directives" id="toc-the-most-used-sbatch-directives" class="nav-link" data-scroll-target="#the-most-used-sbatch-directives">8. The Most-Used <code>#SBATCH</code> Directives</a></li>
+  <li><a href="#common-newcomer-gotchas" id="toc-common-newcomer-gotchas" class="nav-link" data-scroll-target="#common-newcomer-gotchas">9. Common Newcomer Gotchas</a>
+  <ul class="collapse">
+  <li><a href="#job-stays-pd-forever-reason-resources-or-priority" id="toc-job-stays-pd-forever-reason-resources-or-priority" class="nav-link" data-scroll-target="#job-stays-pd-forever-reason-resources-or-priority">❌ Job stays <code>PD</code> forever, reason <code>(Resources)</code> or <code>(Priority)</code></a></li>
+  <li><a href="#job-goes-r-oom-instantly" id="toc-job-goes-r-oom-instantly" class="nav-link" data-scroll-target="#job-goes-r-oom-instantly">❌ Job goes <code>R</code> → <code>OOM</code> instantly</a></li>
+  <li><a href="#job-runs-but-never-gets-to-my-python-code" id="toc-job-runs-but-never-gets-to-my-python-code" class="nav-link" data-scroll-target="#job-runs-but-never-gets-to-my-python-code">❌ Job runs but never gets to my Python code</a></li>
+  <li><a href="#job-uses-much-less-memorycpu-than-i-requested" id="toc-job-uses-much-less-memorycpu-than-i-requested" class="nav-link" data-scroll-target="#job-uses-much-less-memorycpu-than-i-requested">❌ Job uses much less memory/CPU than I requested</a></li>
+  <li><a href="#job-script-works-but-produces-no-output-file" id="toc-job-script-works-but-produces-no-output-file" class="nav-link" data-scroll-target="#job-script-works-but-produces-no-output-file">❌ Job script “works” but produces no output file</a></li>
+  <li><a href="#my-environment-isnt-loaded-inside-the-job" id="toc-my-environment-isnt-loaded-inside-the-job" class="nav-link" data-scroll-target="#my-environment-isnt-loaded-inside-the-job">❌ My environment isn’t loaded inside the job</a></li>
+  <li><a href="#sbatch-lines-after-a-real-bash-command-are-ignored" id="toc-sbatch-lines-after-a-real-bash-command-are-ignored" class="nav-link" data-scroll-target="#sbatch-lines-after-a-real-bash-command-are-ignored">❌ <code>#SBATCH</code> lines after a real bash command are ignored</a></li>
+  </ul></li>
+  <li><a href="#quick-reference" id="toc-quick-reference" class="nav-link" data-scroll-target="#quick-reference">10. Quick Reference</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">11. Summary</a></li>
   </ul>
 </nav>
     </div>
@@ -442,9 +461,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm Basics</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm Basics: jobs, scripts, and monitoring</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Slurm Basics</h1>
+<h1 class="title">Slurm Basics: jobs, scripts, and monitoring</h1>
 </div>
 
 
@@ -461,19 +480,384 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="basic-commands" class="level1">
-<h1>Basic Commands</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinfo</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> job.slurm</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">scancel</span> JOBID</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Unity is a <strong>shared cluster</strong> — dozens to hundreds of researchers want to use it at the same time. <strong>Slurm</strong> is the workload manager that decides who runs what, where, and when. You tell Slurm what resources you need (CPUs, memory, time, maybe GPUs), Slurm waits until those resources are free, and then launches your job on a compute node.</p>
+<p>This page covers:</p>
+<p>✔ What Slurm is and the mental model behind it ✔ The three ways to use it: <code>sbatch</code>, <code>srun</code>, <code>sinteractive</code> ✔ A complete walkthrough of a minimal batch script ✔ How to submit, monitor, and cancel jobs ✔ Where your output goes</p>
+<p>Once you understand the basics here, the <a href="../slurm/slurm_best_practices.html">Best Practices</a> page covers the <em>important</em> question — <strong>how much to actually request</strong> — and the <a href="../slurm/slurm_cpu_templates.html">CPU</a> and <a href="../slurm/slurm_gpu_templates.html">GPU</a> template pages have ready-to-adapt scripts.</p>
+<p>Prerequisites: <a href="../ssh/ssh_setup.html">SSH Setup</a>, <a href="../hpc/shell_environment.html">Shell Environment</a> (you should know what <code>&lt;group&gt;</code> / a Slurm partition means — see Section 4 of that page), and <a href="../hpc/conda_envs.html">Python Environments</a> (for activating your mamba env inside a batch script).</p>
+<hr>
 </section>
-<section id="minimal-job-script" class="level1">
-<h1>Minimal Job Script</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=test</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=01:00:00</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> script.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="what-slurm-actually-does" class="level1">
+<h1>1. What Slurm Actually Does</h1>
+<p>Conceptually:</p>
+<ol type="1">
+<li>You <strong>submit a job</strong> — a description of what you want to run plus what resources it needs.</li>
+<li>Slurm puts it in a <strong>queue</strong>.</li>
+<li>When matching resources are free, Slurm <strong>allocates</strong> a compute node (or some CPUs/GPUs on one) to your job.</li>
+<li>Slurm <strong>runs</strong> your script on that node.</li>
+<li>When done, Slurm <strong>releases</strong> the resources and emails you the result (if you asked).</li>
+</ol>
+<p>The “what resources you need” part is critical. <strong>Slurm doesn’t measure your job’s actual usage when deciding when to run it</strong> — it just trusts what you asked for. If you ask for 96 GB and 24 hours but only use 4 GB and 5 minutes, Slurm will hold those 96 GB hostage for the full 24 hours, blocking other people’s jobs that could have run there.</p>
+<p>That’s why <a href="../slurm/slurm_best_practices.html">right-sizing your requests</a> is the most important Slurm skill.</p>
+<hr>
+</section>
+<section id="the-three-ways-to-use-slurm" class="level1">
+<h1>2. The Three Ways to Use Slurm</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>What it does</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong><code>sbatch</code></strong></td>
+<td>Submit a script that runs unattended. Slurm schedules it; you get the output when it’s done.</td>
+<td>The main mode. Production jobs, training runs, batch processing.</td>
+</tr>
+<tr class="even">
+<td><strong><code>sinteractive</code></strong></td>
+<td>Request a compute node and drop you into an interactive shell on it.</td>
+<td>Development, debugging, exploratory work, GPU notebooks.</td>
+</tr>
+<tr class="odd">
+<td><strong><code>srun</code></strong></td>
+<td>Run a single command directly through Slurm.</td>
+<td>Low-level — usually called inside <code>sbatch</code> scripts for multi-task launches.</td>
+</tr>
+</tbody>
+</table>
+<p>The lifecycle of a typical project:</p>
+<ol type="1">
+<li>Develop and debug on an <code>sinteractive</code> node (see <a href="../hpc/persistent_sessions.html">Persistent Sessions</a> for the <code>livenode</code> pattern)</li>
+<li>Write an <code>sbatch</code> script that runs your now-working code unattended</li>
+<li><code>sbatch myjob.slurm</code> and walk away</li>
+<li>Come back to results</li>
+</ol>
+<hr>
+</section>
+<section id="your-first-batch-script" class="level1">
+<h1>3. Your First Batch Script</h1>
+<p>A Slurm batch script is just a <strong>bash script</strong> with extra <code>#SBATCH</code> comments at the top that tell Slurm what resources to allocate. Slurm reads those comments before running your script.</p>
+<p>Here is a complete, working minimal example. Save it as <code>myjob.slurm</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=hello                  # show up as `hello` in squeue</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=batch                 # which Slurm partition (often `batch` — see HPC §4)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=00:10:00                   # max walltime: 10 minutes</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1                 # how many CPUs</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=2G                          # how much RAM</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out           # where stdout/stderr go (%x=name, %j=jobid)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Above lines are SBATCH directives — read by Slurm before bash runs the script.</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Everything below is normal bash that runs once the job is allocated.</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Hello from </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st"> at </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"I have </span><span class="va">${SLURM_CPUS_PER_TASK}</span><span class="st"> CPUs and was given job ID </span><span class="va">${SLURM_JOB_ID}</span><span class="st">"</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">sleep</span> 30        <span class="co"># pretend to do work</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Done at </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A few notes:</p>
+<ul>
+<li><code>#SBATCH</code> lines look like comments to bash but are special to Slurm. The block of <code>#SBATCH</code> lines must be <strong>before</strong> any non-comment bash command, or Slurm stops reading them.</li>
+<li>The <code>--output=logs/%x-%j.out</code> line puts the captured stdout/stderr in a file named, e.g., <code>logs/hello-12345.out</code>. <strong>Make sure <code>logs/</code> exists</strong> — <code>mkdir -p logs</code> before submission, or the job fails silently.</li>
+<li>Slurm sets several useful environment variables once your job is running: <code>$SLURM_JOB_ID</code>, <code>$SLURM_CPUS_PER_TASK</code>, <code>$SLURM_MEM_PER_NODE</code>, <code>$SLURM_JOB_NAME</code>, etc.</li>
+</ul>
+<hr>
+</section>
+<section id="submitting-a-job" class="level1">
+<h1>4. Submitting a Job</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> logs                  <span class="co"># one-time, so --output= can write</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> myjob.slurm</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: Submitted batch job 12345</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The number <code>12345</code> is your <strong>job ID</strong>. You’ll use it for monitoring, cancellation, and post-mortem analysis.</p>
+<hr>
+</section>
+<section id="monitoring-jobs-in-the-queue" class="level1">
+<h1>5. Monitoring Jobs in the Queue</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> <span class="at">-u</span> <span class="va">$USER</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Output looks like:</p>
+<pre><code>JOBID    PARTITION  NAME    USER         ST  TIME      NODES  NODELIST(REASON)
+12345    batch      hello   yourname.##  R   0:23      1      u250
+12346    batch      train   yourname.##  PD  0:00      1      (Resources)</code></pre>
+<p>The <code>ST</code> column is the <strong>state</strong>. The ones you’ll see:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PD</code></td>
+<td>Pending — waiting in queue. The <code>NODELIST(REASON)</code> column says why (<code>(Resources)</code> = waiting for resources, <code>(Priority)</code> = lower priority than other queued jobs, etc.)</td>
+</tr>
+<tr class="even">
+<td><code>R</code></td>
+<td>Running</td>
+</tr>
+<tr class="odd">
+<td><code>CG</code></td>
+<td>Completing — cleanup phase, almost done</td>
+</tr>
+<tr class="even">
+<td><code>CD</code></td>
+<td>Completed successfully</td>
+</tr>
+<tr class="odd">
+<td><code>F</code></td>
+<td>Failed — script exited non-zero</td>
+</tr>
+<tr class="even">
+<td><code>TO</code></td>
+<td>Timed out — walltime expired before the script finished</td>
+</tr>
+<tr class="odd">
+<td><code>OOM</code></td>
+<td>Out of memory — kernel killed the job for exceeding <code>--mem</code></td>
+</tr>
+<tr class="even">
+<td><code>CA</code></td>
+<td>Cancelled (by you or admin)</td>
+</tr>
+</tbody>
+</table>
+<p>A few useful flags:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> <span class="at">-u</span> <span class="va">$USER</span> <span class="at">--format</span><span class="op">=</span><span class="st">"%.10i %.20j %.2t %.10M %.6D %R"</span>   <span class="co"># cleaner columns</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> <span class="at">-u</span> <span class="va">$USER</span> <span class="at">--start</span>                                      <span class="co"># show est. start time for PD jobs</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">watch</span> <span class="at">-n</span> 5 squeue <span class="at">-u</span> <span class="va">$USER</span>                                   <span class="co"># live updating</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="cancelling-jobs" class="level1">
+<h1>6. Cancelling Jobs</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">scancel</span> 12345              <span class="co"># cancel one job</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">scancel</span> <span class="at">-u</span> <span class="va">$USER</span>           <span class="co"># cancel ALL your jobs (use with care)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">scancel</span> <span class="at">--state</span><span class="op">=</span>PD <span class="at">-u</span> <span class="va">$USER</span> <span class="co"># cancel only your pending jobs</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="where-did-my-output-go" class="level1">
+<h1>7. Where Did My Output Go?</h1>
+<p>By default, both <code>stdout</code> and <code>stderr</code> go to <code>slurm-&lt;jobid&gt;.out</code> in the directory you submitted from. That’s fine for one-off runs but quickly becomes confusing for many jobs.</p>
+<p>Use <code>--output</code> (and optionally <code>--error</code>) to control it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out          # combined stdout + stderr</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or split them:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --error=logs/%x-%j.err</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Common pattern placeholders:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Token</th>
+<th>Replaced with</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>%x</code></td>
+<td>Job name</td>
+</tr>
+<tr class="even">
+<td><code>%j</code></td>
+<td>Job ID</td>
+</tr>
+<tr class="odd">
+<td><code>%A</code></td>
+<td>Job array master ID</td>
+</tr>
+<tr class="even">
+<td><code>%a</code></td>
+<td>Job array task ID</td>
+</tr>
+<tr class="odd">
+<td><code>%N</code></td>
+<td>Name of the first node (compute node hostname)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="the-most-used-sbatch-directives" class="level1">
+<h1>8. The Most-Used <code>#SBATCH</code> Directives</h1>
+<p>You don’t need to memorize these — copy them from the <a href="../slurm/slurm_cpu_templates.html">CPU</a> and <a href="../slurm/slurm_gpu_templates.html">GPU</a> template pages and adapt.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Directive</th>
+<th>What it controls</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--job-name=NAME</code></td>
+<td>Display name in <code>squeue</code></td>
+<td><code>--job-name=train_resnet</code></td>
+</tr>
+<tr class="even">
+<td><code>--partition=NAME</code></td>
+<td>Which partition (queue) — <code>batch</code> for most</td>
+<td><code>--partition=batch</code></td>
+</tr>
+<tr class="odd">
+<td><code>--time=DD-HH:MM:SS</code></td>
+<td>Maximum walltime</td>
+<td><code>--time=04:00:00</code></td>
+</tr>
+<tr class="even">
+<td><code>--cpus-per-task=N</code></td>
+<td>Number of CPU cores for your single task</td>
+<td><code>--cpus-per-task=4</code></td>
+</tr>
+<tr class="odd">
+<td><code>--mem=SIZE</code></td>
+<td>Total RAM for the job (<code>G</code>, <code>M</code> suffixes)</td>
+<td><code>--mem=32G</code></td>
+</tr>
+<tr class="even">
+<td><code>--mem-per-cpu=SIZE</code></td>
+<td>RAM per CPU (alternative to <code>--mem</code>)</td>
+<td><code>--mem-per-cpu=4G</code></td>
+</tr>
+<tr class="odd">
+<td><code>--gres=gpu:N</code></td>
+<td>Request N GPUs</td>
+<td><code>--gres=gpu:1</code></td>
+</tr>
+<tr class="even">
+<td><code>--gpus=N</code></td>
+<td>Same thing, newer syntax</td>
+<td><code>--gpus=1</code></td>
+</tr>
+<tr class="odd">
+<td><code>--output=PATH</code></td>
+<td>stdout/stderr file (see Section 7)</td>
+<td><code>--output=logs/%x-%j.out</code></td>
+</tr>
+<tr class="even">
+<td><code>--error=PATH</code></td>
+<td>stderr file if you want it separate from stdout</td>
+<td><code>--error=logs/%x-%j.err</code></td>
+</tr>
+<tr class="odd">
+<td><code>--mail-type=TYPE</code></td>
+<td>When to email — <code>BEGIN</code>, <code>END</code>, <code>FAIL</code>, <code>ALL</code>, <code>NONE</code></td>
+<td><code>--mail-type=END,FAIL</code></td>
+</tr>
+<tr class="even">
+<td><code>--mail-user=ADDR</code></td>
+<td>Email address for notifications</td>
+<td><code>--mail-user=name@osu.edu</code></td>
+</tr>
+<tr class="odd">
+<td><code>--nodes=N</code></td>
+<td>Number of nodes (for multi-node MPI etc.)</td>
+<td><code>--nodes=1</code></td>
+</tr>
+<tr class="even">
+<td><code>--ntasks=N</code></td>
+<td>Number of tasks (mostly for MPI)</td>
+<td><code>--ntasks=1</code></td>
+</tr>
+<tr class="odd">
+<td><code>--ntasks-per-node=N</code></td>
+<td>Tasks per node (mostly for MPI)</td>
+<td><code>--ntasks-per-node=4</code></td>
+</tr>
+<tr class="even">
+<td><code>--array=START-END</code></td>
+<td>Run as a job array (see CPU Templates)</td>
+<td><code>--array=0-99</code></td>
+</tr>
+<tr class="odd">
+<td><code>--dependency=after:JID</code></td>
+<td>Wait for another job to finish</td>
+<td><code>--dependency=afterok:12345</code></td>
+</tr>
+<tr class="even">
+<td><code>--exclusive</code></td>
+<td>Reserve the whole node (avoid unless you really need it)</td>
+<td><code>--exclusive</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="common-newcomer-gotchas" class="level1">
+<h1>9. Common Newcomer Gotchas</h1>
+<section id="job-stays-pd-forever-reason-resources-or-priority" class="level3">
+<h3 class="anchored" data-anchor-id="job-stays-pd-forever-reason-resources-or-priority">❌ Job stays <code>PD</code> forever, reason <code>(Resources)</code> or <code>(Priority)</code></h3>
+<p>You requested resources that aren’t free right now. Either wait (look at the queue to see if many jobs are ahead of you) or <strong>reduce your request</strong> — smaller jobs schedule sooner. See <a href="../slurm/slurm_best_practices.html">Best Practices</a> §3.</p>
+</section>
+<section id="job-goes-r-oom-instantly" class="level3">
+<h3 class="anchored" data-anchor-id="job-goes-r-oom-instantly">❌ Job goes <code>R</code> → <code>OOM</code> instantly</h3>
+<p>Your script tried to allocate more memory than <code>--mem</code> allowed and the kernel killed it. Bump <code>--mem</code> (but see <a href="../slurm/slurm_best_practices.html">Best Practices</a> for how to <em>measure</em> how much you actually need before guessing).</p>
+</section>
+<section id="job-runs-but-never-gets-to-my-python-code" class="level3">
+<h3 class="anchored" data-anchor-id="job-runs-but-never-gets-to-my-python-code">❌ Job runs but never gets to my Python code</h3>
+<p>Likely a <code>module load</code> or <code>mamba activate</code> failure at the top of your script. Add <code>set -euo pipefail</code> to make bash fail loudly on the first error, and check the <code>.out</code> log for tracebacks.</p>
+</section>
+<section id="job-uses-much-less-memorycpu-than-i-requested" class="level3">
+<h3 class="anchored" data-anchor-id="job-uses-much-less-memorycpu-than-i-requested">❌ Job uses much less memory/CPU than I requested</h3>
+<p>Run <code>seff &lt;jobid&gt;</code> (Slurm Efficiency) after a successful job for a summary. If CPU efficiency is 5% you don’t need so many CPUs. See <a href="../slurm/slurm_best_practices.html">Best Practices</a> §10.</p>
+</section>
+<section id="job-script-works-but-produces-no-output-file" class="level3">
+<h3 class="anchored" data-anchor-id="job-script-works-but-produces-no-output-file">❌ Job script “works” but produces no output file</h3>
+<p>You forgot to <code>mkdir -p logs</code> and <code>--output=logs/...</code> couldn’t write. Slurm doesn’t tell you; the job just fails silently. Create the directory before submitting.</p>
+</section>
+<section id="my-environment-isnt-loaded-inside-the-job" class="level3">
+<h3 class="anchored" data-anchor-id="my-environment-isnt-loaded-inside-the-job">❌ My environment isn’t loaded inside the job</h3>
+<p>Slurm runs your script in a fresh non-interactive shell that doesn’t auto-source your conda init. See the standard activation block in <a href="../hpc/conda_envs.html">Python Environments §4.3</a>.</p>
+</section>
+<section id="sbatch-lines-after-a-real-bash-command-are-ignored" class="level3">
+<h3 class="anchored" data-anchor-id="sbatch-lines-after-a-real-bash-command-are-ignored">❌ <code>#SBATCH</code> lines after a real bash command are ignored</h3>
+<p>Once Slurm sees any non-comment line, it stops reading <code>#SBATCH</code> directives. Keep them all at the top, before any <code>echo</code>, <code>module</code>, <code>source</code>, etc.</p>
+<hr>
+</section>
+</section>
+<section id="quick-reference" class="level1">
+<h1>10. Quick Reference</h1>
+<p><strong>Submit a job:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> myjob.slurm</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>See your queue:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> <span class="at">-u</span> <span class="va">$USER</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Cancel:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">scancel</span> 12345</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Post-mortem efficiency once it’s done:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">seff</span> 12345</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sacct</span> <span class="at">-j</span> 12345 <span class="at">--format</span><span class="op">=</span>JobID,JobName,State,Elapsed,MaxRSS,ReqMem,CPUTime</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Interactive node (for development):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> --cpus-per-task=4 <span class="at">--mem</span><span class="op">=</span>16G <span class="at">--time</span><span class="op">=</span>04:00:00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Minimal script template:</strong> see <a href="../slurm/slurm_cpu_templates.html">CPU Templates</a>.</p>
+<hr>
+</section>
+<section id="summary" class="level1">
+<h1>11. Summary</h1>
+<ul>
+<li>✔ Slurm allocates resources based on what you <strong>ask for</strong>, not what you actually use — over-requesting wastes the cluster</li>
+<li>✔ <code>sbatch</code> is for unattended runs, <code>sinteractive</code> is for development</li>
+<li>✔ Every batch script is bash with <code>#SBATCH</code> directives at the top</li>
+<li>✔ Monitor with <code>squeue -u $USER</code>; cancel with <code>scancel &lt;jobid&gt;</code>; post-mortem with <code>seff &lt;jobid&gt;</code></li>
+<li>✔ Make sure <code>logs/</code> exists before submitting if you use <code>--output=logs/...</code></li>
+<li>✔ Activate your mamba env <em>inside</em> the script — Slurm doesn’t inherit your interactive shell</li>
+</ul>
+<p>Next: <strong><a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a></strong> — the all-important “how much should I actually request?” question, with worked examples.</p>
 
 
 </section>
@@ -899,8 +1283,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../slurm/slurm_best_practices.html" class="pagination-link" aria-label="Slurm Best Practices">
-        <span class="nav-page-text">Slurm Best Practices</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../slurm/slurm_best_practices.html" class="pagination-link" aria-label="Slurm Best Practices: right-sizing requests and measuring what you need">
+        <span class="nav-page-text">Slurm Best Practices: right-sizing requests and measuring what you need</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

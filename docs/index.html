@@ -364,13 +364,13 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Basics</span></a>
+ <span class="menu-text">Slurm Basics: jobs, scripts, and monitoring</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Best Practices</span></a>
+ <span class="menu-text">Slurm Best Practices: right-sizing requests and measuring what you need</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -472,14 +472,13 @@ ul.task-list li input[type="checkbox"] {
 <h4 style="margin-top:0;" class="anchored">
 <i class="bi bi-cpu"></i> &nbsp;Slurm
 </h4>
-<p>Submit jobs, request resources, and use partitions properly.</p>
+<p>Submit jobs, request the right resources, and avoid blocking the cluster for others.</p>
 <ul>
-<li><a href="./slurm/slurm_basics.html">Slurm Basics</a></li>
-<li><a href="./slurm/slurm_best_practices.html">Best Practices</a></li>
-<li><a href="./slurm/slurm_gpu_templates.html">GPU Templates</a></li>
-<li><a href="./slurm/slurm_cpu_templates.html">CPU Templates</a></li>
+<li><a href="./slurm/slurm_basics.html">Slurm Basics</a> — <code>sbatch</code>, <code>squeue</code>, <code>#SBATCH</code> directives</li>
+<li><a href="./slurm/slurm_best_practices.html">Best Practices</a> — measuring memory and CPU needs; the diagnostics wrapper</li>
+<li><a href="./slurm/slurm_cpu_templates.html">CPU Templates</a> — drop-in scripts for the common cases</li>
+<li><a href="./slurm/slurm_gpu_templates.html">GPU Templates</a> — single-GPU, multi-GPU, hyperparameter sweeps</li>
 </ul>
-<p><em>This section is a work in progress — the polished versions are still being written.</em></p>
 </div>
 </div>
 </div>
@@ -496,6 +495,8 @@ ul.task-list li input[type="checkbox"] {
 <li><strong><a href="./hpc/persistent_sessions.html">Persistent Sessions</a></strong> — keep work alive across disconnects with <code>tmux</code> and the <code>livenode</code> function.</li>
 <li><strong><a href="./hpc/conda_envs.html">Python Environments</a></strong> — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.</li>
 <li><strong><a href="./hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard</a></strong> — run interactive notebooks and live training dashboards in your laptop’s browser while compute happens on Unity.</li>
+<li><strong><a href="./slurm/slurm_basics.html">Slurm Basics</a></strong> — how to submit unattended jobs with <code>sbatch</code>.</li>
+<li><strong><a href="./slurm/slurm_best_practices.html">Slurm Best Practices</a></strong> — the <em>most important</em> Slurm skill: right-sizing memory, CPU, and walltime requests so your jobs run sooner and don’t block others.</li>
 </ol>
 <p>Returning to look something up? Use the <strong>search box at the top of the sidebar</strong> — it indexes every page.</p>
 </section>

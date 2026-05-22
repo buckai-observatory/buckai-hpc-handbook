@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Slurm Best Practices – BuckAI HPC Handbook</title>
+<title>Slurm Best Practices: right-sizing requests and measuring what you need – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -251,7 +286,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_best_practices.html">Slurm Best Practices: right-sizing requests and measuring what you need</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -365,13 +400,13 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Slurm Basics</span></a>
+ <span class="menu-text">Slurm Basics: jobs, scripts, and monitoring</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Slurm Best Practices</span></a>
+ <span class="menu-text">Slurm Best Practices: right-sizing requests and measuring what you need</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -398,8 +433,46 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#avoid-over-requesting" id="toc-avoid-over-requesting" class="nav-link active" data-scroll-target="#avoid-over-requesting">Avoid Over-Requesting</a></li>
-  <li><a href="#suggested-resources" id="toc-suggested-resources" class="nav-link" data-scroll-target="#suggested-resources">Suggested Resources</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#why-over-requesting-hurts-you-not-just-others" id="toc-why-over-requesting-hurts-you-not-just-others" class="nav-link" data-scroll-target="#why-over-requesting-hurts-you-not-just-others">1. Why Over-Requesting Hurts You (Not Just Others)</a></li>
+  <li><a href="#the-resource-axes-you-control" id="toc-the-resource-axes-you-control" class="nav-link" data-scroll-target="#the-resource-axes-you-control">2. The Resource Axes You Control</a></li>
+  <li><a href="#worked-example-a-single-threaded-scikit-learn-job" id="toc-worked-example-a-single-threaded-scikit-learn-job" class="nav-link" data-scroll-target="#worked-example-a-single-threaded-scikit-learn-job">3. Worked Example — A Single-Threaded scikit-learn Job</a>
+  <ul class="collapse">
+  <li><a href="#the-wrong-way-ill-just-grab-the-whole-node" id="toc-the-wrong-way-ill-just-grab-the-whole-node" class="nav-link" data-scroll-target="#the-wrong-way-ill-just-grab-the-whole-node">❌ The wrong way: “I’ll just grab the whole node”</a></li>
+  <li><a href="#the-right-way-ask-for-what-you-need-plus-headroom" id="toc-the-right-way-ask-for-what-you-need-plus-headroom" class="nav-link" data-scroll-target="#the-right-way-ask-for-what-you-need-plus-headroom">✅ The right way: ask for what you need, plus headroom</a></li>
+  </ul></li>
+  <li><a href="#how-much-memory-does-my-code-actually-use" id="toc-how-much-memory-does-my-code-actually-use" class="nav-link" data-scroll-target="#how-much-memory-does-my-code-actually-use">4. How Much Memory Does My Code Actually Use?</a>
+  <ul class="collapse">
+  <li><a href="#best-for-new-code-usrbintime--v" id="toc-best-for-new-code-usrbintime--v" class="nav-link" data-scroll-target="#best-for-new-code-usrbintime--v">4.1 ✔ Best for new code: <code>/usr/bin/time -v</code></a></li>
+  <li><a href="#best-inside-python-psutil" id="toc-best-inside-python-psutil" class="nav-link" data-scroll-target="#best-inside-python-psutil">4.2 ✔ Best inside Python: <code>psutil</code></a></li>
+  <li><a href="#interactively-htop-on-an-sinteractive-node" id="toc-interactively-htop-on-an-sinteractive-node" class="nav-link" data-scroll-target="#interactively-htop-on-an-sinteractive-node">4.3 ✔ Interactively: <code>htop</code> on an <code>sinteractive</code> node</a></li>
+  <li><a href="#during-a-running-batch-job-sstat" id="toc-during-a-running-batch-job-sstat" class="nav-link" data-scroll-target="#during-a-running-batch-job-sstat">4.4 ✔ During a running batch job: <code>sstat</code></a></li>
+  <li><a href="#post-mortem-on-a-finished-job-seff" id="toc-post-mortem-on-a-finished-job-seff" class="nav-link" data-scroll-target="#post-mortem-on-a-finished-job-seff">4.5 ✔ Post-mortem on a finished job: <code>seff</code></a></li>
+  <li><a href="#what-about-sacct" id="toc-what-about-sacct" class="nav-link" data-scroll-target="#what-about-sacct">4.6 What about <code>sacct</code>?</a></li>
+  </ul></li>
+  <li><a href="#how-many-cpus-should-i-request" id="toc-how-many-cpus-should-i-request" class="nav-link" data-scroll-target="#how-many-cpus-should-i-request">5. How Many CPUs Should I Request?</a>
+  <ul class="collapse">
+  <li><a href="#always-tell-your-libraries-about-slurm" id="toc-always-tell-your-libraries-about-slurm" class="nav-link" data-scroll-target="#always-tell-your-libraries-about-slurm">Always tell your libraries about Slurm</a></li>
+  </ul></li>
+  <li><a href="#how-much-walltime" id="toc-how-much-walltime" class="nav-link" data-scroll-target="#how-much-walltime">6. How Much Walltime?</a></li>
+  <li><a href="#gpu-jobs-balancing-cpu-ram-and-gpu" id="toc-gpu-jobs-balancing-cpu-ram-and-gpu" class="nav-link" data-scroll-target="#gpu-jobs-balancing-cpu-ram-and-gpu">7. GPU Jobs: Balancing CPU, RAM, and GPU</a>
+  <ul class="collapse">
+  <li><a href="#sensible-defaults-for-a-single-gpu-deep-learning-job" id="toc-sensible-defaults-for-a-single-gpu-deep-learning-job" class="nav-link" data-scroll-target="#sensible-defaults-for-a-single-gpu-deep-learning-job">Sensible defaults for a single-GPU deep-learning job</a></li>
+  <li><a href="#watching-gpu-usage-while-training" id="toc-watching-gpu-usage-while-training" class="nav-link" data-scroll-target="#watching-gpu-usage-while-training">Watching GPU usage while training</a></li>
+  </ul></li>
+  <li><a href="#the-diagnostics-wrapper-every-batch-script-should-have" id="toc-the-diagnostics-wrapper-every-batch-script-should-have" class="nav-link" data-scroll-target="#the-diagnostics-wrapper-every-batch-script-should-have">8. The Diagnostics Wrapper Every Batch Script Should Have</a></li>
+  <li><a href="#the-post-mortem-loop-read-seff-adjust-re-submit" id="toc-the-post-mortem-loop-read-seff-adjust-re-submit" class="nav-link" data-scroll-target="#the-post-mortem-loop-read-seff-adjust-re-submit">9. The Post-Mortem Loop: Read <code>seff</code>, Adjust, Re-submit</a></li>
+  <li><a href="#other-practical-tips" id="toc-other-practical-tips" class="nav-link" data-scroll-target="#other-practical-tips">10. Other Practical Tips</a>
+  <ul class="collapse">
+  <li><a href="#use-sinteractive-for-development-sbatch-for-production" id="toc-use-sinteractive-for-development-sbatch-for-production" class="nav-link" data-scroll-target="#use-sinteractive-for-development-sbatch-for-production">Use <code>sinteractive</code> for development, <code>sbatch</code> for production</a></li>
+  <li><a href="#save-slurm-logs-to-a-dedicated-logs-directory" id="toc-save-slurm-logs-to-a-dedicated-logs-directory" class="nav-link" data-scroll-target="#save-slurm-logs-to-a-dedicated-logs-directory">Save Slurm logs to a dedicated <code>logs/</code> directory</a></li>
+  <li><a href="#use-array-jobs-for-many-similar-tasks" id="toc-use-array-jobs-for-many-similar-tasks" class="nav-link" data-scroll-target="#use-array-jobs-for-many-similar-tasks">Use array jobs for “many similar tasks”</a></li>
+  <li><a href="#dont-run-heavy-work-on-login-nodes" id="toc-dont-run-heavy-work-on-login-nodes" class="nav-link" data-scroll-target="#dont-run-heavy-work-on-login-nodes">Don’t run heavy work on login nodes</a></li>
+  <li><a href="#email-yourself-on-completion" id="toc-email-yourself-on-completion" class="nav-link" data-scroll-target="#email-yourself-on-completion">Email yourself on completion</a></li>
+  <li><a href="#checkpoint-anything-long" id="toc-checkpoint-anything-long" class="nav-link" data-scroll-target="#checkpoint-anything-long">Checkpoint anything long</a></li>
+  </ul></li>
+  <li><a href="#summary-checklist" id="toc-summary-checklist" class="nav-link" data-scroll-target="#summary-checklist">11. Summary Checklist</a></li>
+  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">12. See Also</a></li>
   </ul>
 </nav>
     </div>
@@ -407,9 +480,9 @@ ul.task-list li input[type="checkbox"] {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_best_practices.html">Slurm Best Practices</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../slurm/slurm_basics.html">Slurm</a></li><li class="breadcrumb-item"><a href="../slurm/slurm_best_practices.html">Slurm Best Practices: right-sizing requests and measuring what you need</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Slurm Best Practices</h1>
+<h1 class="title">Slurm Best Practices: right-sizing requests and measuring what you need</h1>
 </div>
 
 
@@ -426,28 +499,527 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="avoid-over-requesting" class="level1">
-<h1>Avoid Over-Requesting</h1>
-<p>Large allocations slow scheduling.</p>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>The single most common mistake new HPC users make is <strong>asking for too much</strong> — too many CPUs, too much memory, too long a walltime. The intuition feels right (“better safe than sorry”), but on a shared cluster it backfires three ways:</p>
+<ol type="1">
+<li><strong>Your own job waits longer.</strong> Slurm’s backfill scheduler runs small, short jobs first; a job asking for the whole node sits in the queue much longer than one asking for a fraction.</li>
+<li><strong>You block other users.</strong> Every CPU and gigabyte you reserve is unavailable to the rest of the lab — even if your job is only using 5% of it.</li>
+<li><strong>It teaches you nothing.</strong> You don’t learn what your code actually needs, so the over-requesting just gets worse over time.</li>
+</ol>
+<p>This page is the antidote. It covers:</p>
+<p>✔ How Slurm scheduling decides what runs when (intuition for backfill) ✔ A worked example: a single-threaded Python job that needs ~30 GB on a 96 GB node ✔ How to <strong>measure</strong> how much CPU and RAM your code actually uses (the hard part on HPC) ✔ Right-sizing CPUs for parallel vs serial code ✔ Balancing CPU/RAM/GPU for deep-learning training ✔ A drop-in <strong>diagnostics wrapper</strong> to put around every batch script ✔ Reading <code>seff</code> reports for post-mortem right-sizing</p>
+<p>Prerequisites: <a href="../slurm/slurm_basics.html">Slurm Basics</a> for the mechanics.</p>
+<hr>
 </section>
-<section id="suggested-resources" class="level1">
-<h1>Suggested Resources</h1>
+<section id="why-over-requesting-hurts-you-not-just-others" class="level1">
+<h1>1. Why Over-Requesting Hurts You (Not Just Others)</h1>
+<p>Slurm doesn’t just “run jobs first-come-first-served.” It uses a <strong>backfill scheduler</strong>: when there’s a gap in the schedule (e.g.&nbsp;4 hours and 32 GB free on a node before a big reservation kicks in), Slurm scans the queue looking for jobs that fit in that gap.</p>
+<p>If your job asks for 24 hours and 96 GB, it doesn’t fit in many gaps. So it waits for a big window to open up.</p>
+<p>If your job asks for 4 hours and 16 GB, it fits in <em>most</em> gaps. So it slips in much sooner.</p>
+<p><strong>Concrete example:</strong> two identical jobs that actually take 2 hours and use 8 GB. One is submitted with <code>--time=24:00:00 --mem=64G</code>, the other with <code>--time=04:00:00 --mem=16G</code>. On a busy cluster, the second one typically starts running <strong>hours</strong> before the first one — even though the work is identical.</p>
+<p>The rule: <strong>ask for what you actually need, plus a small safety margin</strong> (~20–30%).</p>
+<hr>
+</section>
+<section id="the-resource-axes-you-control" class="level1">
+<h1>2. The Resource Axes You Control</h1>
+<p>Every batch script declares some combination of:</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
 <thead>
 <tr class="header">
-<th>Task</th>
-<th>CPUs</th>
-<th>Memory</th>
+<th>Resource</th>
+<th>Slurm flag</th>
+<th>What it limits</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Preprocessing</td>
-<td>2–4</td>
-<td>4–8 GB</td>
+<td><strong>Walltime</strong></td>
+<td><code>--time=</code></td>
+<td>Max wall-clock time; job is killed when it expires</td>
+</tr>
+<tr class="even">
+<td><strong>CPUs</strong></td>
+<td><code>--cpus-per-task=</code></td>
+<td>Number of CPU cores your task can use</td>
+</tr>
+<tr class="odd">
+<td><strong>Memory</strong></td>
+<td><code>--mem=</code> or <code>--mem-per-cpu=</code></td>
+<td>Maximum RAM; exceeding it → instant OOM kill</td>
+</tr>
+<tr class="even">
+<td><strong>GPUs</strong></td>
+<td><code>--gres=gpu:N</code> or <code>--gpus=N</code></td>
+<td>Number of GPUs</td>
+</tr>
+<tr class="odd">
+<td><strong>Nodes</strong></td>
+<td><code>--nodes=</code></td>
+<td>(Multi-node MPI only — usually 1 for Python/ML)</td>
 </tr>
 </tbody>
 </table>
+<p>The first three are the ones you tune. GPUs are binary (you need one or you don’t).</p>
+<hr>
+</section>
+<section id="worked-example-a-single-threaded-scikit-learn-job" class="level1">
+<h1>3. Worked Example — A Single-Threaded scikit-learn Job</h1>
+<p>Suppose you have this script, <code>fit_rf.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_parquet(<span class="st">"/fs/project/&lt;group&gt;/data/big_features.parquet"</span>)  <span class="co"># ~10 GB in memory</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> df.drop(<span class="st">"label"</span>, axis<span class="op">=</span><span class="dv">1</span>), df[<span class="st">"label"</span>]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Default n_jobs=1 — single-threaded</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>clf <span class="op">=</span> RandomForestClassifier(n_estimators<span class="op">=</span><span class="dv">500</span>, max_depth<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>clf.fit(X, y)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> joblib</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>joblib.dump(clf, <span class="st">"model.joblib"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Suppose this code uses about <strong>30 GB</strong> of peak RAM (mostly the loaded DataFrame plus the trained model) and runs <strong>single-threaded</strong> because <code>n_jobs=1</code> is the sklearn default.</p>
+<p>A typical Unity compute node has <strong>48 CPUs and 96 GB RAM</strong>. What should you request?</p>
+<section id="the-wrong-way-ill-just-grab-the-whole-node" class="level3">
+<h3 class="anchored" data-anchor-id="the-wrong-way-ill-just-grab-the-whole-node">❌ The wrong way: “I’ll just grab the whole node”</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=48</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=96G</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=24:00:00</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This:</p>
+<ul>
+<li>Blocks all 48 CPUs and 96 GB of RAM — preventing <strong>47 other people’s small jobs</strong> from running on that node</li>
+<li>Sits in the queue much longer waiting for a full node to free up</li>
+<li>Provides <strong>zero benefit</strong> to your job, since your Python uses 1 CPU and 30 GB no matter what you “reserve”</li>
+</ul>
+</section>
+<section id="the-right-way-ask-for-what-you-need-plus-headroom" class="level3">
+<h3 class="anchored" data-anchor-id="the-right-way-ask-for-what-you-need-plus-headroom">✅ The right way: ask for what you need, plus headroom</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1                # the code is single-threaded</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=36G                        # 30 GB measured + ~20% headroom</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=02:00:00                  # measured wall time + safety</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This:</p>
+<ul>
+<li>Fits in most queue gaps → starts running sooner</li>
+<li>Lets 47 other jobs run alongside yours on the same node</li>
+<li>Costs your lab less SU (service unit) charge</li>
+<li>Does <strong>exactly the same work</strong> at exactly the same speed</li>
+</ul>
+<p>The catch: you have to <strong>measure</strong> to know that “30 GB” and “2 hours” are accurate. The next sections cover how.</p>
+<hr>
+</section>
+</section>
+<section id="how-much-memory-does-my-code-actually-use" class="level1">
+<h1>4. How Much Memory Does My Code Actually Use?</h1>
+<p>On a Mac you’d open Activity Monitor and watch the number climb. On a headless HPC node you don’t have that — but there are five solid ways to find out.</p>
+<section id="best-for-new-code-usrbintime--v" class="level3">
+<h3 class="anchored" data-anchor-id="best-for-new-code-usrbintime--v">4.1 ✔ Best for new code: <code>/usr/bin/time -v</code></h3>
+<p>Wrap your command in GNU <code>time</code> (with the <code>-v</code> flag, not the bash builtin) to get a full resource report including peak memory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python fit_rf.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After the script finishes, you get:</p>
+<pre><code>Command being timed: "python fit_rf.py"
+User time (seconds): 4823.12
+System time (seconds): 87.45
+Percent of CPU this job got: 98%
+Elapsed (wall clock) time: 01:22:17
+Maximum resident set size (kbytes): 31245312       ← THIS LINE
+Major (requiring I/O) page faults: 23
+...</code></pre>
+<p>The <strong>“Maximum resident set size”</strong> is the peak RAM the process held. Divide by 1024² to get GB: <code>31245312 / 1024 / 1024 ≈ 29.8 GB</code>. Add ~20% headroom → request <strong>36 GB</strong>.</p>
+<p>(Note the explicit <code>/usr/bin/time</code> path — the bash builtin <code>time</code> is different and doesn’t have <code>-v</code>.)</p>
+</section>
+<section id="best-inside-python-psutil" class="level3">
+<h3 class="anchored" data-anchor-id="best-inside-python-psutil">4.2 ✔ Best inside Python: <code>psutil</code></h3>
+<p>For monitoring memory at specific moments (after data load, mid-loop, etc.):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> psutil, os</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>proc <span class="op">=</span> psutil.Process(os.getpid())</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ... do work ...</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RSS: </span><span class="sc">{</span>proc<span class="sc">.</span>memory_info()<span class="sc">.</span>rss <span class="op">/</span> <span class="fl">1e9</span><span class="sc">:.2f}</span><span class="ss"> GB"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You can <code>print</code> this around the suspicious parts of your code. Especially useful for finding <em>which step</em> causes a memory spike.</p>
+</section>
+<section id="interactively-htop-on-an-sinteractive-node" class="level3">
+<h3 class="anchored" data-anchor-id="interactively-htop-on-an-sinteractive-node">4.3 ✔ Interactively: <code>htop</code> on an <code>sinteractive</code> node</h3>
+<p>If you’re developing on a compute node via <code>sinteractive</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> --cpus-per-task=4 <span class="at">--mem</span><span class="op">=</span>64G <span class="at">--time</span><span class="op">=</span>02:00:00</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ... once allocated:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">htop</span> <span class="at">-u</span> <span class="va">$USER</span>          <span class="co"># interactive process viewer</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then in another terminal pane (use <code>tmux</code> or <code>livenode</code>), run your code and watch its <code>RES</code> column climb.</p>
+</section>
+<section id="during-a-running-batch-job-sstat" class="level3">
+<h3 class="anchored" data-anchor-id="during-a-running-batch-job-sstat">4.4 ✔ During a running batch job: <code>sstat</code></h3>
+<p>While your <code>sbatch</code> job is running:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sstat</span> <span class="at">-j</span> <span class="op">&lt;</span>jobid<span class="op">&gt;</span> --format=JobID,MaxRSS,AveRSS,MaxVMSize</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Returns live max-resident-set-size for the job so far.</p>
+</section>
+<section id="post-mortem-on-a-finished-job-seff" class="level3">
+<h3 class="anchored" data-anchor-id="post-mortem-on-a-finished-job-seff">4.5 ✔ Post-mortem on a finished job: <code>seff</code></h3>
+<p>After the job ends:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">seff</span> 12345</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Returns a one-page summary:</p>
+<pre><code>Job ID: 12345
+Cluster: unity
+User/Group: yourname.##/yourname.##
+State: COMPLETED (exit code 0)
+Cores: 1
+CPU Utilized: 01:21:43
+CPU Efficiency: 99.30% of 01:22:17 core-walltime
+Job Wall-clock time: 01:22:17
+Memory Utilized: 29.82 GB
+Memory Efficiency: 31.06% of 96.00 GB</code></pre>
+<p>Two efficiency numbers to read:</p>
+<ul>
+<li><strong>CPU Efficiency</strong> — close to 100% means you used all the cores you asked for. 25% means you used 1 of 4. Use fewer cores next time.</li>
+<li><strong>Memory Efficiency</strong> — close to 100% (with a small margin) is ideal. 31% means you asked for 3× too much memory.</li>
+</ul>
+<p><code>seff</code> is the single most useful tool for right-sizing future jobs. <strong>Get in the habit of running <code>seff &lt;jobid&gt;</code> after every long job.</strong></p>
+</section>
+<section id="what-about-sacct" class="level3">
+<h3 class="anchored" data-anchor-id="what-about-sacct">4.6 What about <code>sacct</code>?</h3>
+<p><code>sacct</code> is the raw Slurm accounting interface — more verbose but works for any job, finished or running:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sacct</span> <span class="at">-j</span> 12345 <span class="at">--format</span><span class="op">=</span>JobID,JobName,State,Elapsed,MaxRSS,ReqMem,CPUTime,ExitCode</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Useful when <code>seff</code> isn’t available or for batch-querying many jobs at once.</p>
+<hr>
+</section>
+</section>
+<section id="how-many-cpus-should-i-request" class="level1">
+<h1>5. How Many CPUs Should I Request?</h1>
+<p>A confusing thing about Python on HPC: many libraries silently default to <strong>using every CPU they can see</strong>, which means a 1-CPU allocation can become a “let me try to use all 48 CPUs” mess that thrashes and underperforms.</p>
+<p>The rule of thumb:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th>What to ask for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Pure single-threaded Python (sklearn defaults, plain loops, most pandas operations)</td>
+<td><code>--cpus-per-task=1</code></td>
+</tr>
+<tr class="even">
+<td>NumPy/SciPy with BLAS (matrix multiplies, linear algebra)</td>
+<td><code>--cpus-per-task=4–8</code> AND set <code>OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK</code></td>
+</tr>
+<tr class="odd">
+<td>sklearn with <code>n_jobs=N</code> (Random Forest, cross-validation, etc.)</td>
+<td><code>--cpus-per-task=N</code> with <code>N</code> matching what you’ll pass to sklearn</td>
+</tr>
+<tr class="even">
+<td><code>joblib.Parallel(n_jobs=N)</code></td>
+<td><code>--cpus-per-task=N</code> matching</td>
+</tr>
+<tr class="odd">
+<td>PyTorch DataLoader with <code>num_workers=N</code></td>
+<td>Request <code>N + 1</code> or <code>N + 2</code> CPUs</td>
+</tr>
+<tr class="even">
+<td>MPI / multi-process (rare for ML)</td>
+<td><code>--ntasks=N --cpus-per-task=1</code></td>
+</tr>
+</tbody>
+</table>
+<section id="always-tell-your-libraries-about-slurm" class="level3">
+<h3 class="anchored" data-anchor-id="always-tell-your-libraries-about-slurm">Always tell your libraries about Slurm</h3>
+<p>Inside your batch script, <strong>before launching Python</strong>, export the thread-count env vars so libraries respect your allocation instead of grabbing everything:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OPENBLAS_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NUMEXPR_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Without these, a NumPy <code>@</code> operator may try to use all 48 cores on the node — even though you only have 4 — and <strong>slow down dramatically</strong> due to thread thrashing while also being a bad citizen.</p>
+<hr>
+</section>
+</section>
+<section id="how-much-walltime" class="level1">
+<h1>6. How Much Walltime?</h1>
+<p>The strategy:</p>
+<ol type="1">
+<li><strong>Run a tiny version first.</strong> Subset your data to 1% or 10%, measure how long it takes.</li>
+<li><strong>Multiply linearly</strong> (most ML training, batch processing, scientific simulation scales roughly linearly with input size).</li>
+<li><strong>Add a 30–50% safety margin</strong> for the full run.</li>
+<li>Round up to a sensible chunk (1h, 4h, 12h, 24h).</li>
+</ol>
+<p>If you genuinely don’t know and the job MUST finish, ask for more — but plan to use <code>seff</code> afterwards to right-size for next time. <strong><code>Elapsed</code> time in <code>seff</code> tells you what the run actually took.</strong></p>
+<p>For very-long-running things (multi-day training), use <strong>checkpointing</strong> so a wall-time-exceeded kill doesn’t lose progress. See <a href="../slurm/slurm_cpu_templates.html">CPU Templates §6</a>.</p>
+<hr>
+</section>
+<section id="gpu-jobs-balancing-cpu-ram-and-gpu" class="level1">
+<h1>7. GPU Jobs: Balancing CPU, RAM, and GPU</h1>
+<p>A GPU job has <em>two</em> memory budgets:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Memory</th>
+<th>What lives there</th>
+<th>How to size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>System RAM</strong> (<code>--mem</code>)</td>
+<td>The Python interpreter, NumPy arrays, dataset on CPU, batches being prepared by DataLoader workers</td>
+<td>Measure with <code>seff</code>, like CPU jobs</td>
+</tr>
+<tr class="even">
+<td><strong>GPU memory</strong></td>
+<td>Your model weights, activations, gradients, current batch on GPU</td>
+<td>Watch with <code>nvidia-smi</code> while training</td>
+</tr>
+</tbody>
+</table>
+<p>And you still need <strong>CPUs</strong>, primarily for:</p>
+<ul>
+<li>The PyTorch/TF DataLoader workers preparing batches in parallel (<code>num_workers=N</code> → request <code>N+1</code> or <code>N+2</code> CPUs)</li>
+<li>Any preprocessing that happens in Python before tensors are moved to GPU</li>
+</ul>
+<section id="sensible-defaults-for-a-single-gpu-deep-learning-job" class="level3">
+<h3 class="anchored" data-anchor-id="sensible-defaults-for-a-single-gpu-deep-learning-job">Sensible defaults for a single-GPU deep-learning job</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --gres=gpu:1                     # one GPU</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=8                # 4 dataloader workers + slack</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=48G                        # enough for typical image/audio batches</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=12:00:00</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then set DataLoader appropriately in the Python:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>loader <span class="op">=</span> DataLoader(dataset, batch_size<span class="op">=</span><span class="dv">64</span>, num_workers<span class="op">=</span><span class="dv">4</span>, pin_memory<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Tuning:</p>
+<ul>
+<li><strong>GPU OOM (CUDA out of memory)</strong> — reduce <code>batch_size</code>, switch to mixed precision (<code>autocast</code> / <code>bfloat16</code>), use gradient accumulation, or use a bigger GPU</li>
+<li><strong>GPU underutilized</strong> (<code>nvidia-smi</code> shows &lt;50% GPU util) — usually a data-loading bottleneck; increase <code>num_workers</code> (and bump <code>--cpus-per-task</code>)</li>
+<li><strong>System RAM OOM</strong> — reduce <code>num_workers</code>, or batch-prep less data on CPU</li>
+</ul>
+</section>
+<section id="watching-gpu-usage-while-training" class="level3">
+<h3 class="anchored" data-anchor-id="watching-gpu-usage-while-training">Watching GPU usage while training</h3>
+<p>In a second SSH session to the same compute node:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nvidia-smi</span> <span class="at">-l</span> 1                  <span class="co"># update every 1 second</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or, more compact:</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">watch</span> <span class="at">-n</span> 1 nvidia-smi</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at:</p>
+<ul>
+<li><strong><code>Memory-Usage</code></strong> column: how much GPU VRAM is in use (vs.&nbsp;total available on the card)</li>
+<li><strong><code>Volatile GPU-Util</code></strong> column: % of GPU compute time being used. 90%+ is great. &lt;50% = data-loading bottleneck</li>
+</ul>
+<p>After training, <code>seff &lt;jobid&gt;</code> gives system-RAM and CPU efficiency. For GPU-side metrics during the run, you have to capture <code>nvidia-smi</code> output yourself (see Section 8 below).</p>
+<hr>
+</section>
+</section>
+<section id="the-diagnostics-wrapper-every-batch-script-should-have" class="level1">
+<h1>8. The Diagnostics Wrapper Every Batch Script Should Have</h1>
+<p>The script below is a drop-in template. Replace the contents of the “ACTUAL WORK” block with your <code>python</code> invocation; everything else helps you debug and right-size.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=fit_rf</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=batch</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=02:00:00                   # see best-practices §6</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --cpus-per-task=1                 # see best-practices §5</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=36G                         # see best-practices §4</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --output=logs/%x-%j.out</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=yourname@osu.edu</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-euo</span> pipefail                         <span class="co"># fail loudly on any error</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Tell numerical libraries how many threads they may use.</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Without this, NumPy/BLAS/MKL will try to grab every CPU</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="co"># visible on the node — even ones not allocated to you.</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MKL_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OPENBLAS_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NUMEXPR_NUM_THREADS</span><span class="op">=</span><span class="va">${SLURM_CPUS_PER_TASK</span><span class="op">:-</span>1<span class="va">}</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Vital signs — recorded at the top of the log for every job.</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"=================== JOB INFO ===================="</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job ID:        </span><span class="va">$SLURM_JOB_ID</span><span class="st">"</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Job name:      </span><span class="va">$SLURM_JOB_NAME</span><span class="st">"</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Partition:     </span><span class="va">$SLURM_JOB_PARTITION</span><span class="st">"</span></span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Node:          </span><span class="va">$(</span><span class="fu">hostname</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"CPUs:          </span><span class="va">$SLURM_CPUS_PER_TASK</span><span class="st">"</span></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Memory (MB):   </span><span class="va">${SLURM_MEM_PER_NODE</span><span class="op">:-</span><span class="va">${SLURM_MEM_PER_CPU</span><span class="op">:-</span>unset<span class="va">}}</span><span class="st">"</span></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"GPUs:          </span><span class="va">${SLURM_GPUS</span><span class="op">:-</span><span class="va">${SLURM_JOB_GPUS</span><span class="op">:-</span>none<span class="va">}}</span><span class="st">"</span></span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Working dir:   </span><span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Started:       </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"================================================="</span></span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Environment activation</span></span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/miniforge3/etc/profile.d/conda.sh</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Python:        </span><span class="va">$(</span><span class="fu">which</span> python<span class="va">)</span><span class="st">"</span></span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"import sys; print(f'Python version: {sys.version.split()[0]}')"</span></span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional but very useful for ML: log GPU specs and current versions</span></span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">command</span> <span class="at">-v</span> nvidia-smi <span class="op">&amp;&gt;</span> /dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"--- nvidia-smi ---"</span></span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>    <span class="ex">nvidia-smi</span></span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: snapshot GPU usage every 30s in the background</span></span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a><span class="co"># so you can review utilization after the job ends.</span></span>
+<span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">command</span> <span class="at">-v</span> nvidia-smi <span class="op">&amp;&gt;</span> /dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">(</span></span>
+<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a>      <span class="cf">while</span> <span class="fu">sleep</span> 30<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a>        <span class="bu">echo</span> <span class="st">"--- </span><span class="va">$(</span><span class="fu">date</span> <span class="st">'+%H:%M:%S'</span><span class="va">)</span><span class="st"> ---"</span></span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>        <span class="ex">nvidia-smi</span> <span class="at">--query-gpu</span><span class="op">=</span>utilization.gpu,memory.used,memory.total <span class="at">--format</span><span class="op">=</span>csv,noheader</span>
+<span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>      <span class="cf">done</span></span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">)</span> <span class="op">&gt;</span> <span class="st">"logs/gpu-</span><span class="va">${SLURM_JOB_ID}</span><span class="st">.log"</span> <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">&amp;</span></span>
+<span id="cb16-64"><a href="#cb16-64" aria-hidden="true" tabindex="-1"></a>    <span class="va">GPU_LOGGER_PID</span><span class="op">=</span><span class="va">$!</span></span>
+<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a><span class="co"># ACTUAL WORK — wrap in /usr/bin/time -v for a peak-memory readout</span></span>
+<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a><span class="co"># ───────────────────────────────────────────────────────────</span></span>
+<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"===================== WORK ======================"</span></span>
+<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a><span class="ex">/usr/bin/time</span> <span class="at">-v</span> python fit_rf.py</span>
+<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"================================================="</span></span>
+<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a><span class="co"># Stop the GPU logger if we started one</span></span>
+<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">[</span> <span class="ot">-n</span> <span class="st">"</span><span class="va">${GPU_LOGGER_PID</span><span class="op">:-</span><span class="va">}</span><span class="st">"</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>    <span class="bu">kill</span> <span class="va">$GPU_LOGGER_PID</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">||</span> <span class="fu">true</span></span>
+<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Finished:      </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Run 'seff </span><span class="va">$SLURM_JOB_ID</span><span class="st">' after the job's epilog completes"</span></span>
+<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"for a one-page efficiency report (CPU% and Memory%)."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Why this matters:</p>
+<ul>
+<li>The vital-signs block tells you instantly which node + how much was requested for any past job — no detective work</li>
+<li>The thread-count exports stop libraries from oversubscribing the node</li>
+<li><code>/usr/bin/time -v</code> captures peak memory so you can right-size next time</li>
+<li>The optional GPU-usage logger gives you per-30s GPU stats so you can spot dataloader bottlenecks</li>
+</ul>
+<p>Save it as <code>templates/diagnostic.slurm</code> and copy it for every new project.</p>
+<hr>
+</section>
+<section id="the-post-mortem-loop-read-seff-adjust-re-submit" class="level1">
+<h1>9. The Post-Mortem Loop: Read <code>seff</code>, Adjust, Re-submit</h1>
+<p>After every meaningful job, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">seff</span> 12345</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at the two efficiency numbers and adjust:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>What you see</th>
+<th>What it means</th>
+<th>What to change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CPU Efficiency 98% on <code>--cpus-per-task=4</code></td>
+<td>All 4 cores fully used</td>
+<td>Allocation looks right; don’t change</td>
+</tr>
+<tr class="even">
+<td>CPU Efficiency 25% on <code>--cpus-per-task=4</code></td>
+<td>You used 1 of 4 cores</td>
+<td>Drop to <code>--cpus-per-task=1</code> next time</td>
+</tr>
+<tr class="odd">
+<td>Memory Efficiency 31% on <code>--mem=96G</code></td>
+<td>Used ~30 GB of 96</td>
+<td>Drop to <code>--mem=36G</code> next time</td>
+</tr>
+<tr class="even">
+<td>Memory Efficiency 99% with <code>OOM</code> exit</td>
+<td>You hit the cap</td>
+<td>Bump <code>--mem</code> by 50% next time</td>
+</tr>
+<tr class="odd">
+<td>Elapsed time 0:30 on <code>--time=24:00:00</code></td>
+<td>Massive over-ask</td>
+<td>Drop <code>--time</code> to 1–2h next time</td>
+</tr>
+</tbody>
+</table>
+<p>Iteration: first submission is a rough guess (always over-ask a bit if unsure); second submission uses the <code>seff</code> numbers to right-size; from then on you usually hit it right.</p>
+<hr>
+</section>
+<section id="other-practical-tips" class="level1">
+<h1>10. Other Practical Tips</h1>
+<section id="use-sinteractive-for-development-sbatch-for-production" class="level3">
+<h3 class="anchored" data-anchor-id="use-sinteractive-for-development-sbatch-for-production">Use <code>sinteractive</code> for development, <code>sbatch</code> for production</h3>
+<p>Editing-and-running cycles belong in an interactive session (<a href="../hpc/persistent_sessions.html">Persistent Sessions</a>). Once code works, write a batch script and submit it unattended.</p>
+</section>
+<section id="save-slurm-logs-to-a-dedicated-logs-directory" class="level3">
+<h3 class="anchored" data-anchor-id="save-slurm-logs-to-a-dedicated-logs-directory">Save Slurm logs to a dedicated <code>logs/</code> directory</h3>
+<p><code>mkdir -p logs</code> once per project. Use <code>--output=logs/%x-%j.out</code> so logs don’t clutter the project root.</p>
+</section>
+<section id="use-array-jobs-for-many-similar-tasks" class="level3">
+<h3 class="anchored" data-anchor-id="use-array-jobs-for-many-similar-tasks">Use array jobs for “many similar tasks”</h3>
+<p>If you have 100 input files to process the same way, <strong>don’t submit 100 separate jobs</strong>. Use a job array — see <a href="../slurm/slurm_cpu_templates.html">CPU Templates §4</a>.</p>
+</section>
+<section id="dont-run-heavy-work-on-login-nodes" class="level3">
+<h3 class="anchored" data-anchor-id="dont-run-heavy-work-on-login-nodes">Don’t run heavy work on login nodes</h3>
+<p>Login nodes are for editing, submitting, and light data inspection. Heavy <code>python</code> or <code>R</code> runs on the login node will be killed by sysadmins and annoy everyone. Use <code>sinteractive</code> or <code>sbatch</code>.</p>
+</section>
+<section id="email-yourself-on-completion" class="level3">
+<h3 class="anchored" data-anchor-id="email-yourself-on-completion">Email yourself on completion</h3>
+<p>Add to your script:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=yourname@osu.edu</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You’ll get an email when the job finishes (or fails). Great for long-running training jobs.</p>
+</section>
+<section id="checkpoint-anything-long" class="level3">
+<h3 class="anchored" data-anchor-id="checkpoint-anything-long">Checkpoint anything long</h3>
+<p>If a 24-hour job loses its last checkpoint to a wall-time kill, you’ve wasted a day. Save state every N epochs / iterations and write code that can resume from the latest checkpoint.</p>
+<hr>
+</section>
+</section>
+<section id="summary-checklist" class="level1">
+<h1>11. Summary Checklist</h1>
+<p>Before submitting a job, ask yourself:</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Have I run this on a tiny subset first and measured time + memory?</label></li>
+<li><label><input type="checkbox">Is my <code>--mem</code> close to the measured peak RSS + ~20% headroom?</label></li>
+<li><label><input type="checkbox">Is my <code>--cpus-per-task</code> actually used by my code, not just “requested”?</label></li>
+<li><label><input type="checkbox">Have I exported <code>OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK</code> etc.?</label></li>
+<li><label><input type="checkbox">Is my <code>--time</code> close to the measured wall time + ~30% safety, not a round 24h?</label></li>
+<li><label><input type="checkbox">Does my script <code>mamba activate</code> the right env explicitly?</label></li>
+<li><label><input type="checkbox">Does <code>logs/</code> exist before <code>sbatch</code>?</label></li>
+<li><label><input type="checkbox">Will I check <code>seff &lt;jobid&gt;</code> after it finishes?</label></li>
+</ul>
+<p>After it runs:</p>
+<ul class="task-list">
+<li><label><input type="checkbox"><code>seff &lt;jobid&gt;</code> — what were CPU and Memory efficiency?</label></li>
+<li><label><input type="checkbox">What should I change in next submission to right-size?</label></li>
+</ul>
+<hr>
+</section>
+<section id="see-also" class="level1">
+<h1>12. See Also</h1>
+<ul>
+<li><a href="../slurm/slurm_basics.html">Slurm Basics</a> for <code>#SBATCH</code> syntax and the basic monitoring/cancel commands</li>
+<li><a href="../slurm/slurm_cpu_templates.html">CPU Templates</a> for concrete drop-in scripts for common CPU workloads</li>
+<li><a href="../slurm/slurm_gpu_templates.html">GPU Templates</a> for the same on the GPU side</li>
+<li><a href="../hpc/conda_envs.html">Python Environments §4.3</a> for the standard mamba-activation block inside batch scripts</li>
+<li><a href="../hpc/persistent_sessions.html">Persistent Sessions</a> for <code>sinteractive</code> patterns during development</li>
+</ul>
 
 
 </section>
@@ -868,8 +1440,8 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../slurm/slurm_basics.html" class="pagination-link" aria-label="Slurm Basics">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Slurm Basics</span>
+      <a href="../slurm/slurm_basics.html" class="pagination-link" aria-label="Slurm Basics: jobs, scripts, and monitoring">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Slurm Basics: jobs, scripts, and monitoring</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

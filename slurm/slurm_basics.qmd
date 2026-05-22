@@ -1,22 +1,277 @@
+---
+title: "Slurm Basics: jobs, scripts, and monitoring"
+---
+
+# Introduction
+
+Unity is a **shared cluster** — dozens to hundreds of researchers want to use it at the same time. **Slurm** is the workload manager that decides who runs what, where, and when. You tell Slurm what resources you need (CPUs, memory, time, maybe GPUs), Slurm waits until those resources are free, and then launches your job on a compute node.
+
+This page covers:
+
+✔ What Slurm is and the mental model behind it
+✔ The three ways to use it: `sbatch`, `srun`, `sinteractive`
+✔ A complete walkthrough of a minimal batch script
+✔ How to submit, monitor, and cancel jobs
+✔ Where your output goes
+
+Once you understand the basics here, the [Best Practices](slurm_best_practices.qmd) page covers the *important* question — **how much to actually request** — and the [CPU](slurm_cpu_templates.qmd) and [GPU](slurm_gpu_templates.qmd) template pages have ready-to-adapt scripts.
+
+Prerequisites: [SSH Setup](../ssh/ssh_setup.qmd), [Shell Environment](../hpc/shell_environment.qmd) (you should know what `<group>` / a Slurm partition means — see Section 4 of that page), and [Python Environments](../hpc/conda_envs.qmd) (for activating your mamba env inside a batch script).
 
 ---
-title: "Slurm Basics"
+
+# 1. What Slurm Actually Does
+
+Conceptually:
+
+1. You **submit a job** — a description of what you want to run plus what resources it needs.
+2. Slurm puts it in a **queue**.
+3. When matching resources are free, Slurm **allocates** a compute node (or some CPUs/GPUs on one) to your job.
+4. Slurm **runs** your script on that node.
+5. When done, Slurm **releases** the resources and emails you the result (if you asked).
+
+The "what resources you need" part is critical. **Slurm doesn't measure your job's actual usage when deciding when to run it** — it just trusts what you asked for. If you ask for 96 GB and 24 hours but only use 4 GB and 5 minutes, Slurm will hold those 96 GB hostage for the full 24 hours, blocking other people's jobs that could have run there.
+
+That's why [right-sizing your requests](slurm_best_practices.qmd) is the most important Slurm skill.
+
 ---
 
-# Basic Commands
+# 2. The Three Ways to Use Slurm
 
-```bash
-sinfo
-squeue
-sbatch job.slurm
-scancel JOBID
-```
+| Command | What it does | When to use |
+|---|---|---|
+| **`sbatch`** | Submit a script that runs unattended. Slurm schedules it; you get the output when it's done. | The main mode. Production jobs, training runs, batch processing. |
+| **`sinteractive`** | Request a compute node and drop you into an interactive shell on it. | Development, debugging, exploratory work, GPU notebooks. |
+| **`srun`** | Run a single command directly through Slurm. | Low-level — usually called inside `sbatch` scripts for multi-task launches. |
 
-# Minimal Job Script
+The lifecycle of a typical project:
+
+1. Develop and debug on an `sinteractive` node (see [Persistent Sessions](../hpc/persistent_sessions.qmd) for the `livenode` pattern)
+2. Write an `sbatch` script that runs your now-working code unattended
+3. `sbatch myjob.slurm` and walk away
+4. Come back to results
+
+---
+
+# 3. Your First Batch Script
+
+A Slurm batch script is just a **bash script** with extra `#SBATCH` comments at the top that tell Slurm what resources to allocate. Slurm reads those comments before running your script.
+
+Here is a complete, working minimal example. Save it as `myjob.slurm`:
 
 ```bash
 #!/bin/bash
-#SBATCH --job-name=test
-#SBATCH --time=01:00:00
-python script.py
+#SBATCH --job-name=hello                  # show up as `hello` in squeue
+#SBATCH --partition=batch                 # which Slurm partition (often `batch` — see HPC §4)
+#SBATCH --time=00:10:00                   # max walltime: 10 minutes
+#SBATCH --cpus-per-task=1                 # how many CPUs
+#SBATCH --mem=2G                          # how much RAM
+#SBATCH --output=logs/%x-%j.out           # where stdout/stderr go (%x=name, %j=jobid)
+
+# Above lines are SBATCH directives — read by Slurm before bash runs the script.
+# Everything below is normal bash that runs once the job is allocated.
+
+echo "Hello from $(hostname) at $(date)"
+echo "I have ${SLURM_CPUS_PER_TASK} CPUs and was given job ID ${SLURM_JOB_ID}"
+sleep 30        # pretend to do work
+echo "Done at $(date)"
 ```
+
+A few notes:
+
+- `#SBATCH` lines look like comments to bash but are special to Slurm. The block of `#SBATCH` lines must be **before** any non-comment bash command, or Slurm stops reading them.
+- The `--output=logs/%x-%j.out` line puts the captured stdout/stderr in a file named, e.g., `logs/hello-12345.out`. **Make sure `logs/` exists** — `mkdir -p logs` before submission, or the job fails silently.
+- Slurm sets several useful environment variables once your job is running: `$SLURM_JOB_ID`, `$SLURM_CPUS_PER_TASK`, `$SLURM_MEM_PER_NODE`, `$SLURM_JOB_NAME`, etc.
+
+---
+
+# 4. Submitting a Job
+
+```bash
+mkdir -p logs                  # one-time, so --output= can write
+sbatch myjob.slurm
+# Output: Submitted batch job 12345
+```
+
+The number `12345` is your **job ID**. You'll use it for monitoring, cancellation, and post-mortem analysis.
+
+---
+
+# 5. Monitoring Jobs in the Queue
+
+```bash
+squeue -u $USER
+```
+
+Output looks like:
+
+```
+JOBID    PARTITION  NAME    USER         ST  TIME      NODES  NODELIST(REASON)
+12345    batch      hello   yourname.##  R   0:23      1      u250
+12346    batch      train   yourname.##  PD  0:00      1      (Resources)
+```
+
+The `ST` column is the **state**. The ones you'll see:
+
+| State | Meaning |
+|---|---|
+| `PD` | Pending — waiting in queue. The `NODELIST(REASON)` column says why (`(Resources)` = waiting for resources, `(Priority)` = lower priority than other queued jobs, etc.) |
+| `R`  | Running |
+| `CG` | Completing — cleanup phase, almost done |
+| `CD` | Completed successfully |
+| `F`  | Failed — script exited non-zero |
+| `TO` | Timed out — walltime expired before the script finished |
+| `OOM`| Out of memory — kernel killed the job for exceeding `--mem` |
+| `CA` | Cancelled (by you or admin) |
+
+A few useful flags:
+
+```bash
+squeue -u $USER --format="%.10i %.20j %.2t %.10M %.6D %R"   # cleaner columns
+squeue -u $USER --start                                      # show est. start time for PD jobs
+watch -n 5 squeue -u $USER                                   # live updating
+```
+
+---
+
+# 6. Cancelling Jobs
+
+```bash
+scancel 12345              # cancel one job
+scancel -u $USER           # cancel ALL your jobs (use with care)
+scancel --state=PD -u $USER # cancel only your pending jobs
+```
+
+---
+
+# 7. Where Did My Output Go?
+
+By default, both `stdout` and `stderr` go to `slurm-<jobid>.out` in the directory you submitted from. That's fine for one-off runs but quickly becomes confusing for many jobs.
+
+Use `--output` (and optionally `--error`) to control it:
+
+```bash
+#SBATCH --output=logs/%x-%j.out          # combined stdout + stderr
+# or split them:
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+```
+
+Common pattern placeholders:
+
+| Token | Replaced with |
+|---|---|
+| `%x` | Job name |
+| `%j` | Job ID |
+| `%A` | Job array master ID |
+| `%a` | Job array task ID |
+| `%N` | Name of the first node (compute node hostname) |
+
+---
+
+# 8. The Most-Used `#SBATCH` Directives
+
+You don't need to memorize these — copy them from the [CPU](slurm_cpu_templates.qmd) and [GPU](slurm_gpu_templates.qmd) template pages and adapt.
+
+| Directive | What it controls | Example |
+|---|---|---|
+| `--job-name=NAME` | Display name in `squeue` | `--job-name=train_resnet` |
+| `--partition=NAME` | Which partition (queue) — `batch` for most | `--partition=batch` |
+| `--time=DD-HH:MM:SS` | Maximum walltime | `--time=04:00:00` |
+| `--cpus-per-task=N` | Number of CPU cores for your single task | `--cpus-per-task=4` |
+| `--mem=SIZE` | Total RAM for the job (`G`, `M` suffixes) | `--mem=32G` |
+| `--mem-per-cpu=SIZE` | RAM per CPU (alternative to `--mem`) | `--mem-per-cpu=4G` |
+| `--gres=gpu:N` | Request N GPUs | `--gres=gpu:1` |
+| `--gpus=N` | Same thing, newer syntax | `--gpus=1` |
+| `--output=PATH` | stdout/stderr file (see Section 7) | `--output=logs/%x-%j.out` |
+| `--error=PATH` | stderr file if you want it separate from stdout | `--error=logs/%x-%j.err` |
+| `--mail-type=TYPE` | When to email — `BEGIN`, `END`, `FAIL`, `ALL`, `NONE` | `--mail-type=END,FAIL` |
+| `--mail-user=ADDR` | Email address for notifications | `--mail-user=name@osu.edu` |
+| `--nodes=N` | Number of nodes (for multi-node MPI etc.) | `--nodes=1` |
+| `--ntasks=N` | Number of tasks (mostly for MPI) | `--ntasks=1` |
+| `--ntasks-per-node=N` | Tasks per node (mostly for MPI) | `--ntasks-per-node=4` |
+| `--array=START-END` | Run as a job array (see CPU Templates) | `--array=0-99` |
+| `--dependency=after:JID` | Wait for another job to finish | `--dependency=afterok:12345` |
+| `--exclusive` | Reserve the whole node (avoid unless you really need it) | `--exclusive` |
+
+---
+
+# 9. Common Newcomer Gotchas
+
+### ❌ Job stays `PD` forever, reason `(Resources)` or `(Priority)`
+
+You requested resources that aren't free right now. Either wait (look at the queue to see if many jobs are ahead of you) or **reduce your request** — smaller jobs schedule sooner. See [Best Practices](slurm_best_practices.qmd) §3.
+
+### ❌ Job goes `R` → `OOM` instantly
+
+Your script tried to allocate more memory than `--mem` allowed and the kernel killed it. Bump `--mem` (but see [Best Practices](slurm_best_practices.qmd) for how to *measure* how much you actually need before guessing).
+
+### ❌ Job runs but never gets to my Python code
+
+Likely a `module load` or `mamba activate` failure at the top of your script. Add `set -euo pipefail` to make bash fail loudly on the first error, and check the `.out` log for tracebacks.
+
+### ❌ Job uses much less memory/CPU than I requested
+
+Run `seff <jobid>` (Slurm Efficiency) after a successful job for a summary. If CPU efficiency is 5% you don't need so many CPUs. See [Best Practices](slurm_best_practices.qmd) §10.
+
+### ❌ Job script "works" but produces no output file
+
+You forgot to `mkdir -p logs` and `--output=logs/...` couldn't write. Slurm doesn't tell you; the job just fails silently. Create the directory before submitting.
+
+### ❌ My environment isn't loaded inside the job
+
+Slurm runs your script in a fresh non-interactive shell that doesn't auto-source your conda init. See the standard activation block in [Python Environments §4.3](../hpc/conda_envs.qmd).
+
+### ❌ `#SBATCH` lines after a real bash command are ignored
+
+Once Slurm sees any non-comment line, it stops reading `#SBATCH` directives. Keep them all at the top, before any `echo`, `module`, `source`, etc.
+
+---
+
+# 10. Quick Reference
+
+**Submit a job:**
+
+```bash
+sbatch myjob.slurm
+```
+
+**See your queue:**
+
+```bash
+squeue -u $USER
+```
+
+**Cancel:**
+
+```bash
+scancel 12345
+```
+
+**Post-mortem efficiency once it's done:**
+
+```bash
+seff 12345
+sacct -j 12345 --format=JobID,JobName,State,Elapsed,MaxRSS,ReqMem,CPUTime
+```
+
+**Interactive node (for development):**
+
+```bash
+sinteractive -p <group> --cpus-per-task=4 --mem=16G --time=04:00:00
+```
+
+**Minimal script template:** see [CPU Templates](slurm_cpu_templates.qmd).
+
+---
+
+# 11. Summary
+
+- ✔ Slurm allocates resources based on what you **ask for**, not what you actually use — over-requesting wastes the cluster
+- ✔ `sbatch` is for unattended runs, `sinteractive` is for development
+- ✔ Every batch script is bash with `#SBATCH` directives at the top
+- ✔ Monitor with `squeue -u $USER`; cancel with `scancel <jobid>`; post-mortem with `seff <jobid>`
+- ✔ Make sure `logs/` exists before submitting if you use `--output=logs/...`
+- ✔ Activate your mamba env *inside* the script — Slurm doesn't inherit your interactive shell
+
+Next: **[Slurm Best Practices](slurm_best_practices.qmd)** — the all-important "how much should I actually request?" question, with worked examples.
