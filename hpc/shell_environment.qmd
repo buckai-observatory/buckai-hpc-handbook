@@ -198,7 +198,12 @@ Several of the alias examples above used `<group>` as a placeholder — e.g. `si
 
 In Linux, every user belongs to one or more **Unix groups**. Every file has a single *group owner*, and the file's permissions decide what members of that group can read, write, or execute (see Section 7 on `umask`).
 
-On Unity, your **labmates and collaborators** are typically gathered into a shared group so you can all access `/fs/project/<group>/...` directories.
+On Unity, your **labmates and collaborators** are typically gathered into a shared group so you can all access `/fs/project/<group>/...` directories. The two filesystems you'll see referenced throughout this handbook are:
+
+| Path | Purpose |
+|---|---|
+| `/fs/project/<group>/` | **Long-term shared storage** — lab data, shared environments, code repos. Group-readable when permissions are set right (see Section 7 on `umask`). |
+| `/fs/scratch/` | **Temporary fast storage** — intermediate files during computation. Not backed up; periodically cleaned. Use for things you can regenerate. |
 
 To see which Unix groups *you* belong to:
 
@@ -385,8 +390,6 @@ If you always want a specific module on every login, put the `module load` line 
 ```bash
 module load intel/2024.2.0
 ```
-
-See the [Modules](modules.qmd) page for more.
 
 ---
 

@@ -381,18 +381,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../hpc/modules.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Modules System</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../hpc/storage_and_paths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Storage &amp; Paths</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="../hpc/conda_envs.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Python Environments on Unity: Mamba, Conda, and Pip</span></a>
   </div>
@@ -671,7 +659,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="unix-groups-who-can-readedit-your-files" class="level3">
 <h3 class="anchored" data-anchor-id="unix-groups-who-can-readedit-your-files">4.1 Unix groups: who can read/edit your files</h3>
 <p>In Linux, every user belongs to one or more <strong>Unix groups</strong>. Every file has a single <em>group owner</em>, and the file’s permissions decide what members of that group can read, write, or execute (see Section 7 on <code>umask</code>).</p>
-<p>On Unity, your <strong>labmates and collaborators</strong> are typically gathered into a shared group so you can all access <code>/fs/project/&lt;group&gt;/...</code> directories.</p>
+<p>On Unity, your <strong>labmates and collaborators</strong> are typically gathered into a shared group so you can all access <code>/fs/project/&lt;group&gt;/...</code> directories. The two filesystems you’ll see referenced throughout this handbook are:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>/fs/project/&lt;group&gt;/</code></td>
+<td><strong>Long-term shared storage</strong> — lab data, shared environments, code repos. Group-readable when permissions are set right (see Section 7 on <code>umask</code>).</td>
+</tr>
+<tr class="even">
+<td><code>/fs/scratch/</code></td>
+<td><strong>Temporary fast storage</strong> — intermediate files during computation. Not backed up; periodically cleaned. Use for things you can regenerate.</td>
+</tr>
+</tbody>
+</table>
 <p>To see which Unix groups <em>you</em> belong to:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># example output:  yourname.##  somelab  somelab-students</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -833,7 +843,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>When you <code>module load X</code>, the system silently appends to your <code>PATH</code> and <code>LD_LIBRARY_PATH</code> and sets a few environment variables. <strong>It’s just a fancy way of setting environment variables</strong> — there’s no magic.</p>
 <p>If you always want a specific module on every login, put the <code>module load</code> line in your <code>.bashrc</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load intel/2024.2.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>See the <a href="../hpc/modules.html">Modules</a> page for more.</p>
 <hr>
 </section>
 <section id="umask-default-permissions-for-new-files" class="level1">
