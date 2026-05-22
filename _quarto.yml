@@ -33,6 +33,7 @@ website:
         contents:
           - hpc/shell_environment.qmd
           - hpc/persistent_sessions.qmd
+          - hpc/jupyter_and_tensorboard.qmd
           - hpc/modules.qmd
           - hpc/storage_and_paths.qmd
           - hpc/conda_envs.qmd

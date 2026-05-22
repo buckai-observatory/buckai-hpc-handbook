@@ -1,0 +1,424 @@
+---
+title: "Running Jupyter and TensorBoard from Your Laptop"
+---
+
+# Introduction
+
+One of the most useful daily HPC patterns is **running a notebook or dashboard in your browser on your Mac, while the actual code and GPU live on Unity**. Your browser stays responsive, the computation happens where the data and hardware are, and you keep all of Jupyter's interactivity.
+
+There are two ways to do this:
+
+1. ✅ **The easy path: Unity OnDemand** — a web portal that gives you Jupyter, MATLAB, RStudio, etc. with no SSH setup. Works for most exploratory and teaching use.
+2. 🛠 **The flexible path: headless Jupyter + SSH tunnel** — start Jupyter yourself on a compute node and tunnel it back to your laptop's browser. More setup, but you get **GPU access** and full control.
+
+This page covers both, and shows how to apply the same SSH-tunnel trick to **TensorBoard** for monitoring training runs.
+
+Prerequisite: a working SSH setup ([SSH Setup](../ssh/ssh_setup.qmd)) with multiplexing and direct compute-node aliases (Section 8 of the SSH page). Familiarity with the [Shell Environment](shell_environment.qmd) page for aliases helps.
+
+---
+
+# 1. The Easy Path: Unity OnDemand
+
+OSU's Unity OnDemand portal lets you launch interactive Jupyter / MATLAB / RStudio sessions through your browser — no SSH, no Duo prompts for each session, no port forwarding.
+
+### 1.1 Where to find it
+
+[https://ondemand.asc.ohio-state.edu](https://ondemand.asc.ohio-state.edu)
+
+Log in with your OSU credentials + one Duo tap. From the **Interactive Apps** menu you'll see options like:
+
+- **Jupyter Notebook**
+- **MATLAB**
+- **RStudio Server**
+- **VS Code Server** (sometimes)
+
+For Jupyter: pick a partition (usually `batch` if you don't have a lab partition), set the requested time, click **Launch**. After a moment your session shows up in **My Interactive Sessions** with a **Connect to Jupyter** button.
+
+### 1.2 ✅ Use OnDemand's JupyterLab instead of plain Jupyter Notebook
+
+Even though the OnDemand menu only offers "Jupyter Notebook," you can flip it into **JupyterLab** (the fancier interface with file browser, table of contents for long notebooks, multi-pane layouts, etc.) with a one-time URL hack:
+
+1. Launch a regular Jupyter Notebook session via OnDemand
+2. Click **Connect to Jupyter** — a new tab opens with a URL that looks like:
+
+   ```
+   https://ondemand.asc.ohio-state.edu/node/u500/12345/notebook/tree
+   ```
+
+3. Edit the URL: **strip out everything from `/notebook/...` onwards and replace it with `/lab`**. So the URL becomes:
+
+   ```
+   https://ondemand.asc.ohio-state.edu/node/u500/12345/lab
+   ```
+
+4. Press Enter. You're now in JupyterLab, with the same kernel and files as the underlying notebook session.
+
+The session shows up identically in OnDemand — only the front-end interface changes.
+
+### 1.3 ⚠ Limitations of OnDemand
+
+OnDemand is great for many use cases, but as of writing:
+
+- ❌ **No GPU sessions for Jupyter.** OnDemand's Jupyter form doesn't offer a GPU option, so you can't train deep-learning models from an OnDemand notebook.
+- ❌ **Less control over node selection, time limits, partition.** OnDemand picks reasonable defaults but doesn't expose every Slurm flag.
+- ❌ **Limited environment customization.** OnDemand provides system Python and a few preinstalled kernels. If your project needs a specific mamba/conda environment, you can register it as a Jupyter kernel, but that's an extra step.
+
+If you need any of those, use the manual SSH-tunnel approach below.
+
+---
+
+# 2. The Flexible Path: Headless Jupyter via SSH Tunnel
+
+The idea: start a Jupyter server on a compute node (one that you've allocated, possibly with a GPU), and **forward the connection back to your laptop's browser** through an SSH tunnel.
+
+There are three moving parts:
+
+1. A compute-node allocation (`sinteractive` with `-g` for GPU)
+2. A Jupyter process running on that node, **not opening a browser** (since the node has no browser) and listening on a port like `8888`
+3. An SSH tunnel from your laptop that maps a local port (e.g. `9099`) to that remote port
+
+The reason it works is that **SSH's `-L` flag** lets us route traffic from `localhost:9099` on your Mac all the way through to `127.0.0.1:8888` on the compute node, transparently. From your browser's perspective, you're just visiting `http://127.0.0.1:9099`.
+
+### 2.1 Step 1 — Get a GPU compute node on Unity
+
+From a terminal SSH'd into Unity (or from VS Code's integrated terminal):
+
+```bash
+sinteractive -p <group> -g 1 -t 06:00:00
+```
+
+Replace `<group>` with your Slurm partition (often `batch` — see [Shell Environment §4](shell_environment.qmd)). The `-g 1` requests one GPU. The `-t 06:00:00` asks for 6 hours.
+
+Once allocated, your shell prompt will change to indicate you're on a compute node — note the hostname (e.g. `u500` — I'll use `mynode` as a placeholder throughout this page).
+
+### 2.2 Step 2 — Start Jupyter on the compute node
+
+Still inside that compute-node shell:
+
+```bash
+jupyter notebook --no-browser --port=8888
+```
+
+Two important flags:
+
+- `--no-browser` — don't try to open a browser locally (the compute node has none)
+- `--port=8888` — listen on port 8888
+
+Jupyter will print something like:
+
+```
+Or copy and paste this URL:
+    http://localhost:8888/?token=2c4f9e0...long-hex-string
+```
+
+**Copy that whole URL (or just the token).** You'll paste it into your laptop's browser in Step 4.
+
+Leave this terminal alone — Jupyter keeps running here. If you close it, Jupyter dies.
+
+### 2.3 Step 3 — Open the SSH tunnel from your laptop
+
+In a **new** Terminal window on your Mac:
+
+```bash
+ssh -L 9099:127.0.0.1:8888 mynode
+```
+
+What this means:
+
+- **Listen on `localhost:9099`** on my laptop
+- When something connects, **tunnel it through the SSH connection to `mynode`'s `127.0.0.1:8888`**
+- From `mynode`'s perspective, the request looks like it came from itself
+
+This works thanks to the `ProxyJump unity` in your compute-node `Host` block — SSH chains laptop → jumphost → unity → mynode automatically (see [SSH Setup §8](../ssh/ssh_setup.qmd)).
+
+**Leave this SSH connection open.** The tunnel only exists while it's alive.
+
+### 2.4 Step 4 — Open your browser
+
+On your Mac, visit:
+
+```
+http://127.0.0.1:9099
+```
+
+(Note: **9099**, the local port, not 8888.)
+
+You'll see Jupyter's "Token authentication" page. Paste the token from Step 2.
+
+✅ You're now running Jupyter on a GPU node, edited and viewed locally in Safari/Chrome.
+
+---
+
+# 3. Aliases That Make This Workflow Painless
+
+Once you've done the manual dance a few times, alias everything. From [Shell Environment](shell_environment.qmd):
+
+### On the **cluster's** `~/.bashrc` (so it's available when you're SSH'd in):
+
+```bash
+# Start a headless Jupyter on the current node, port 8888
+alias jup='jupyter notebook --no-browser --port=8888'
+```
+
+So after `sinteractive ... -g 1`, just type `jup`.
+
+### On your **laptop's** `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# One alias per compute node you commonly use.
+# Replace `mynode`, `othernode` etc. with the names from your ~/.ssh/config.
+alias jup='ssh -L 9099:127.0.0.1:8888 mynode'
+alias jup2='ssh -L 9099:127.0.0.1:8888 othernode'
+```
+
+Now the whole workflow becomes:
+
+```bash
+# Tab 1 (Unity terminal, after sinteractive):
+jup                       # starts jupyter, prints token
+
+# Tab 2 (Mac terminal):
+jup                       # opens SSH tunnel to compute node
+
+# Browser:
+open http://127.0.0.1:9099 # paste the token
+```
+
+Three commands, two terminals, one browser tab.
+
+---
+
+# 4. SSH Port Forwarding, Demystified
+
+The `ssh -L LOCAL_PORT:HOST:REMOTE_PORT TARGET` syntax confuses everyone the first time. Decoded:
+
+```
+ssh -L 9099:127.0.0.1:8888 mynode
+       │     │         │    │
+       │     │         │    └── Target machine to SSH into (uses ~/.ssh/config)
+       │     │         └────── Port on the remote machine to forward TO
+       │     └──────────────── Hostname as seen FROM the remote machine
+       └───────────────────── Local port on your laptop to listen on
+```
+
+So this command says:
+
+> "SSH into `mynode`. While that connection is up, listen on `localhost:9099` on **my laptop**. Any traffic that arrives there, forward it through the SSH tunnel and connect it to `127.0.0.1:8888` **as seen from mynode** (i.e. mynode's own localhost, where Jupyter is)."
+
+### Why two different port numbers?
+
+- **`8888`** is Jupyter's default — fixed by Jupyter, you can change it with `--port`
+- **`9099`** is arbitrary — your laptop's free choice
+
+You could use the same number on both sides (e.g. `-L 8888:127.0.0.1:8888`), but picking a distinct local port avoids clashing with other things on your Mac, and makes it obvious which terminal/tunnel is "your Jupyter."
+
+### Multiple tunnels at once
+
+You can run several `ssh -L ...` sessions in parallel as long as each uses a **different local port**:
+
+```bash
+ssh -L 9099:127.0.0.1:8888 mynode      # Jupyter on mynode
+ssh -L 9100:127.0.0.1:8888 othernode   # Jupyter on othernode
+ssh -L 16006:127.0.0.1:6006 unity      # TensorBoard on unity
+```
+
+All three coexist; each is its own tab in your browser.
+
+---
+
+# 5. TensorBoard with the Same Trick
+
+[TensorBoard](https://www.tensorflow.org/tensorboard) is the standard tool for monitoring deep-learning training runs (loss curves, validation accuracy, learning-rate schedules, etc.). The setup is identical to Jupyter — just a different port (`6006` by default).
+
+### 5.1 Where to start TensorBoard
+
+You have two reasonable options:
+
+| Where | Pros | Cons |
+|---|---|---|
+| **On the Unity login node** | No Slurm allocation needed; one tunnel from your laptop reaches it forever | Login nodes shouldn't do heavy work, but TensorBoard just reads TFEvents log files, which is cheap |
+| **On the same compute node where training is running** | Lowest latency, no concerns about login-node etiquette | The tunnel breaks when the allocation expires |
+
+For most workflows, **starting TensorBoard on the Unity login node** is the path of least friction — log files live on the shared filesystem `/fs/project/<group>/...`, so TensorBoard can read them from anywhere.
+
+### 5.2 Start TensorBoard on Unity
+
+After `ssh unity`:
+
+```bash
+tensorboard --logdir /fs/project/<group>/<username>/runs --port 6006
+```
+
+It prints a message like:
+
+```
+TensorBoard 2.x at http://localhost:6006/ (Press CTRL+C to quit)
+```
+
+Leave it running.
+
+### 5.3 SSH tunnel from your laptop
+
+From your Mac:
+
+```bash
+ssh -L 16006:127.0.0.1:6006 unity
+```
+
+Aliased:
+
+```bash
+alias tb_unity='ssh -L 16006:127.0.0.1:6006 unity'
+```
+
+### 5.4 Open the browser
+
+```
+http://127.0.0.1:16006
+```
+
+✅ You're now watching training metrics live, on your laptop, from logs being written by jobs on Unity.
+
+### 5.5 TensorBoard on a compute node (when the login node won't do)
+
+If you need TensorBoard close to a specific GPU job (rare), start it on the same compute node:
+
+```bash
+# On the compute node:
+tensorboard --logdir ./runs --port 6006
+```
+
+And from your laptop:
+
+```bash
+ssh -L 16006:127.0.0.1:6006 mynode
+```
+
+Same `ProxyJump` magic delivers the tunnel through unity to the compute node.
+
+---
+
+# 6. Keeping It Alive Across Disconnects
+
+If your laptop sleeps, the SSH tunnel dies — but **Jupyter itself keeps running** as long as the Slurm allocation and the cluster-side shell are still alive. To make sure they are:
+
+- Run `jupyter notebook --no-browser ...` **inside a `tmux` session** on the compute node (or use the `livenode` function in [Persistent Sessions](persistent_sessions.qmd))
+- When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You're back where you left off, with all variables and the kernel state intact.
+
+The recipe:
+
+```bash
+# On Unity:
+livenode                            # tmux + sinteractive -g 1
+jup                                 # starts headless Jupyter
+
+# ... disconnect, close laptop, etc. ...
+
+# Next day, from any laptop:
+ssh unity
+# (no need to attach to livenode if you only need the tunnel)
+
+# In another terminal on your Mac:
+jup                                 # re-opens the tunnel
+# Browser refresh on http://127.0.0.1:9099 — done.
+```
+
+If you *do* want to interact with the running Python kernel via the shell (e.g. to `ls` for new log files), `livenode` (`tmux attach -t jbm_node`) reattaches you to the same Jupyter terminal.
+
+---
+
+# 7. Common Pitfalls
+
+### ❌ "Connection refused" when opening `http://127.0.0.1:9099`
+
+The SSH tunnel isn't open. Confirm:
+
+- Your `ssh -L ...` command is still running in a terminal (not exited)
+- Your Jupyter server is still running on the compute node (the terminal you ran `jup` in should still show its log output)
+- Slurm allocation hasn't expired — check `squeue -u $USER`
+
+### ❌ "Address already in use" when starting Jupyter
+
+Another Jupyter process is already bound to port 8888 on the same node — maybe from an earlier session you forgot to kill. Either:
+
+```bash
+jupyter notebook --no-browser --port=8889   # use a different port
+```
+
+(and remember to bump the local-side port in your `ssh -L`), or kill the old one:
+
+```bash
+pkill -u $USER jupyter
+```
+
+### ❌ "Address already in use" when opening the SSH tunnel
+
+You already have an `ssh -L 9099:...` running. Either close that one, or pick a different local port (`-L 9100:...`).
+
+### ❌ Token-prompt screen, but no token to paste
+
+You missed copying it from Jupyter's startup output. Run `jupyter notebook list` on the compute node — it prints the current server URL with the token included.
+
+### ❌ "Could not find a kernel matching ..."
+
+Your notebook expects a kernel (e.g. a mamba env) that isn't registered as a Jupyter kernel. From the cluster shell:
+
+```bash
+mamba activate myproject
+python -m ipykernel install --user --name myproject --display-name "myproject"
+```
+
+Then refresh Jupyter and pick "myproject" from the Kernel menu.
+
+### ❌ Tunnel works once, then fails on later attempts
+
+Stale ControlMaster socket from a half-broken SSH connection. Clear it (same as the SSH setup page):
+
+```bash
+rm ~/.ssh/sockets/*
+```
+
+### ❌ Jupyter dies when I close the laptop
+
+Jupyter was running directly in an SSH shell, not inside `tmux`. When SSH disconnected, the shell got `SIGHUP`, which killed Jupyter. Use `livenode` (see [Persistent Sessions](persistent_sessions.qmd)) for any Jupyter session you care about.
+
+---
+
+# 8. Quick Reference
+
+**Cluster-side aliases (in your Unity `~/.bashrc`):**
+
+```bash
+alias jup='jupyter notebook --no-browser --port=8888'
+alias tb='tensorboard --logdir runs --port 6006'
+```
+
+**Laptop-side aliases (in your Mac `~/.bashrc` or `~/.zshrc`):**
+
+```bash
+alias jup='ssh -L 9099:127.0.0.1:8888 mynode'      # replace `mynode`
+alias tb_unity='ssh -L 16006:127.0.0.1:6006 unity'
+```
+
+**Browser URLs:**
+
+| Service | URL |
+|---|---|
+| Jupyter (via tunnel) | `http://127.0.0.1:9099` |
+| TensorBoard on unity (via tunnel) | `http://127.0.0.1:16006` |
+| Unity OnDemand | `https://ondemand.asc.ohio-state.edu` |
+
+**OnDemand → JupyterLab switch:** edit the Jupyter URL, replace `/notebook/...` with `/lab`.
+
+---
+
+# 9. Summary
+
+- ✔ Try **OnDemand first** for casual Jupyter / MATLAB / RStudio — no SSH setup, no Duo per session
+- ✔ Use the **JupyterLab `/lab` URL trick** for a better notebook interface in OnDemand
+- ✔ Use the **headless Jupyter + SSH tunnel** approach when you need a GPU, full control, or a custom mamba environment
+- ✔ The same tunnel trick works for **TensorBoard** — just swap port `8888` for `6006`
+- ✔ Run cluster-side servers inside `livenode` / `tmux` so they survive disconnects ([Persistent Sessions](persistent_sessions.qmd))
+- ✔ Keep distinct local ports per tunnel so you can run several in parallel
+
+Next up: [Conda Environments](conda_envs.qmd) — managing the Python packages your notebooks actually use.

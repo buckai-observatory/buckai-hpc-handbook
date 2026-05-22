@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Running Jupyter and TensorBoard from Your Laptop – BuckAI HPC Handbook</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../hpc/modules.html" rel="next">
+<link href="../hpc/persistent_sessions.html" rel="prev">
+<link href="../images/BuckAI_logo_transp.png" rel="icon" type="image/png">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b758ccaa5987ceb1b75504551e579abf.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-76856fad3469a9725597717dd028a81b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/jupyter_and_tensorboard.html">Running Jupyter and TensorBoard from Your Laptop</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="../index.html" class="sidebar-logo-link">
+      <img src="../images/BuckAI_logo_transp.png" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="../images/BuckAI_logo_transp.png" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+      <div class="sidebar-tools-main">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">BuckAI HPC Handbook</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true"><i class="bi bi-unlock" role="img">
+</i> 
+ <span class="menu-text">SSH</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/ssh_setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/ssh_keys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SSH Keys — Concepts &amp; Best Practices</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true"><i class="bi bi-cpu" role="img">
+</i> 
+ <span class="menu-text">Slurm</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_basics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Basics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_best_practices.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Slurm Best Practices</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_gpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GPU Job Templates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../slurm/slurm_cpu_templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CPU Job Templates</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true"><i class="bi bi-server" role="img">
+</i> 
+ <span class="menu-text">HPC</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/shell_environment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Shell Environment: .bashrc, PATH, aliases, and umask</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/persistent_sessions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Persistent Sessions: tmux, nohup, and livenode</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/jupyter_and_tensorboard.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Running Jupyter and TensorBoard from Your Laptop</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Modules System</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/storage_and_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Storage &amp; Paths</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../hpc/conda_envs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Conda Environments</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#the-easy-path-unity-ondemand" id="toc-the-easy-path-unity-ondemand" class="nav-link" data-scroll-target="#the-easy-path-unity-ondemand">1. The Easy Path: Unity OnDemand</a>
+  <ul class="collapse">
+  <li><a href="#where-to-find-it" id="toc-where-to-find-it" class="nav-link" data-scroll-target="#where-to-find-it">1.1 Where to find it</a></li>
+  <li><a href="#use-ondemands-jupyterlab-instead-of-plain-jupyter-notebook" id="toc-use-ondemands-jupyterlab-instead-of-plain-jupyter-notebook" class="nav-link" data-scroll-target="#use-ondemands-jupyterlab-instead-of-plain-jupyter-notebook">1.2 ✅ Use OnDemand’s JupyterLab instead of plain Jupyter Notebook</a></li>
+  <li><a href="#limitations-of-ondemand" id="toc-limitations-of-ondemand" class="nav-link" data-scroll-target="#limitations-of-ondemand">1.3 ⚠ Limitations of OnDemand</a></li>
+  </ul></li>
+  <li><a href="#the-flexible-path-headless-jupyter-via-ssh-tunnel" id="toc-the-flexible-path-headless-jupyter-via-ssh-tunnel" class="nav-link" data-scroll-target="#the-flexible-path-headless-jupyter-via-ssh-tunnel">2. The Flexible Path: Headless Jupyter via SSH Tunnel</a>
+  <ul class="collapse">
+  <li><a href="#step-1-get-a-gpu-compute-node-on-unity" id="toc-step-1-get-a-gpu-compute-node-on-unity" class="nav-link" data-scroll-target="#step-1-get-a-gpu-compute-node-on-unity">2.1 Step 1 — Get a GPU compute node on Unity</a></li>
+  <li><a href="#step-2-start-jupyter-on-the-compute-node" id="toc-step-2-start-jupyter-on-the-compute-node" class="nav-link" data-scroll-target="#step-2-start-jupyter-on-the-compute-node">2.2 Step 2 — Start Jupyter on the compute node</a></li>
+  <li><a href="#step-3-open-the-ssh-tunnel-from-your-laptop" id="toc-step-3-open-the-ssh-tunnel-from-your-laptop" class="nav-link" data-scroll-target="#step-3-open-the-ssh-tunnel-from-your-laptop">2.3 Step 3 — Open the SSH tunnel from your laptop</a></li>
+  <li><a href="#step-4-open-your-browser" id="toc-step-4-open-your-browser" class="nav-link" data-scroll-target="#step-4-open-your-browser">2.4 Step 4 — Open your browser</a></li>
+  </ul></li>
+  <li><a href="#aliases-that-make-this-workflow-painless" id="toc-aliases-that-make-this-workflow-painless" class="nav-link" data-scroll-target="#aliases-that-make-this-workflow-painless">3. Aliases That Make This Workflow Painless</a>
+  <ul class="collapse">
+  <li><a href="#on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in" id="toc-on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in" class="nav-link" data-scroll-target="#on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in">On the <strong>cluster’s</strong> <code>~/.bashrc</code> (so it’s available when you’re SSH’d in):</a></li>
+  <li><a href="#on-your-laptops-.bashrc-or-.zshrc" id="toc-on-your-laptops-.bashrc-or-.zshrc" class="nav-link" data-scroll-target="#on-your-laptops-.bashrc-or-.zshrc">On your <strong>laptop’s</strong> <code>~/.bashrc</code> or <code>~/.zshrc</code>:</a></li>
+  </ul></li>
+  <li><a href="#ssh-port-forwarding-demystified" id="toc-ssh-port-forwarding-demystified" class="nav-link" data-scroll-target="#ssh-port-forwarding-demystified">4. SSH Port Forwarding, Demystified</a>
+  <ul class="collapse">
+  <li><a href="#why-two-different-port-numbers" id="toc-why-two-different-port-numbers" class="nav-link" data-scroll-target="#why-two-different-port-numbers">Why two different port numbers?</a></li>
+  <li><a href="#multiple-tunnels-at-once" id="toc-multiple-tunnels-at-once" class="nav-link" data-scroll-target="#multiple-tunnels-at-once">Multiple tunnels at once</a></li>
+  </ul></li>
+  <li><a href="#tensorboard-with-the-same-trick" id="toc-tensorboard-with-the-same-trick" class="nav-link" data-scroll-target="#tensorboard-with-the-same-trick">5. TensorBoard with the Same Trick</a>
+  <ul class="collapse">
+  <li><a href="#where-to-start-tensorboard" id="toc-where-to-start-tensorboard" class="nav-link" data-scroll-target="#where-to-start-tensorboard">5.1 Where to start TensorBoard</a></li>
+  <li><a href="#start-tensorboard-on-unity" id="toc-start-tensorboard-on-unity" class="nav-link" data-scroll-target="#start-tensorboard-on-unity">5.2 Start TensorBoard on Unity</a></li>
+  <li><a href="#ssh-tunnel-from-your-laptop" id="toc-ssh-tunnel-from-your-laptop" class="nav-link" data-scroll-target="#ssh-tunnel-from-your-laptop">5.3 SSH tunnel from your laptop</a></li>
+  <li><a href="#open-the-browser" id="toc-open-the-browser" class="nav-link" data-scroll-target="#open-the-browser">5.4 Open the browser</a></li>
+  <li><a href="#tensorboard-on-a-compute-node-when-the-login-node-wont-do" id="toc-tensorboard-on-a-compute-node-when-the-login-node-wont-do" class="nav-link" data-scroll-target="#tensorboard-on-a-compute-node-when-the-login-node-wont-do">5.5 TensorBoard on a compute node (when the login node won’t do)</a></li>
+  </ul></li>
+  <li><a href="#keeping-it-alive-across-disconnects" id="toc-keeping-it-alive-across-disconnects" class="nav-link" data-scroll-target="#keeping-it-alive-across-disconnects">6. Keeping It Alive Across Disconnects</a></li>
+  <li><a href="#common-pitfalls" id="toc-common-pitfalls" class="nav-link" data-scroll-target="#common-pitfalls">7. Common Pitfalls</a>
+  <ul class="collapse">
+  <li><a href="#connection-refused-when-opening-http127.0.0.19099" id="toc-connection-refused-when-opening-http127.0.0.19099" class="nav-link" data-scroll-target="#connection-refused-when-opening-http127.0.0.19099">❌ “Connection refused” when opening <code>http://127.0.0.1:9099</code></a></li>
+  <li><a href="#address-already-in-use-when-starting-jupyter" id="toc-address-already-in-use-when-starting-jupyter" class="nav-link" data-scroll-target="#address-already-in-use-when-starting-jupyter">❌ “Address already in use” when starting Jupyter</a></li>
+  <li><a href="#address-already-in-use-when-opening-the-ssh-tunnel" id="toc-address-already-in-use-when-opening-the-ssh-tunnel" class="nav-link" data-scroll-target="#address-already-in-use-when-opening-the-ssh-tunnel">❌ “Address already in use” when opening the SSH tunnel</a></li>
+  <li><a href="#token-prompt-screen-but-no-token-to-paste" id="toc-token-prompt-screen-but-no-token-to-paste" class="nav-link" data-scroll-target="#token-prompt-screen-but-no-token-to-paste">❌ Token-prompt screen, but no token to paste</a></li>
+  <li><a href="#could-not-find-a-kernel-matching" id="toc-could-not-find-a-kernel-matching" class="nav-link" data-scroll-target="#could-not-find-a-kernel-matching">❌ “Could not find a kernel matching …”</a></li>
+  <li><a href="#tunnel-works-once-then-fails-on-later-attempts" id="toc-tunnel-works-once-then-fails-on-later-attempts" class="nav-link" data-scroll-target="#tunnel-works-once-then-fails-on-later-attempts">❌ Tunnel works once, then fails on later attempts</a></li>
+  <li><a href="#jupyter-dies-when-i-close-the-laptop" id="toc-jupyter-dies-when-i-close-the-laptop" class="nav-link" data-scroll-target="#jupyter-dies-when-i-close-the-laptop">❌ Jupyter dies when I close the laptop</a></li>
+  </ul></li>
+  <li><a href="#quick-reference" id="toc-quick-reference" class="nav-link" data-scroll-target="#quick-reference">8. Quick Reference</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">9. Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../hpc/shell_environment.html">HPC</a></li><li class="breadcrumb-item"><a href="../hpc/jupyter_and_tensorboard.html">Running Jupyter and TensorBoard from Your Laptop</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Running Jupyter and TensorBoard from Your Laptop</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>One of the most useful daily HPC patterns is <strong>running a notebook or dashboard in your browser on your Mac, while the actual code and GPU live on Unity</strong>. Your browser stays responsive, the computation happens where the data and hardware are, and you keep all of Jupyter’s interactivity.</p>
+<p>There are two ways to do this:</p>
+<ol type="1">
+<li>✅ <strong>The easy path: Unity OnDemand</strong> — a web portal that gives you Jupyter, MATLAB, RStudio, etc. with no SSH setup. Works for most exploratory and teaching use.</li>
+<li>🛠 <strong>The flexible path: headless Jupyter + SSH tunnel</strong> — start Jupyter yourself on a compute node and tunnel it back to your laptop’s browser. More setup, but you get <strong>GPU access</strong> and full control.</li>
+</ol>
+<p>This page covers both, and shows how to apply the same SSH-tunnel trick to <strong>TensorBoard</strong> for monitoring training runs.</p>
+<p>Prerequisite: a working SSH setup (<a href="../ssh/ssh_setup.html">SSH Setup</a>) with multiplexing and direct compute-node aliases (Section 8 of the SSH page). Familiarity with the <a href="../hpc/shell_environment.html">Shell Environment</a> page for aliases helps.</p>
+<hr>
+</section>
+<section id="the-easy-path-unity-ondemand" class="level1">
+<h1>1. The Easy Path: Unity OnDemand</h1>
+<p>OSU’s Unity OnDemand portal lets you launch interactive Jupyter / MATLAB / RStudio sessions through your browser — no SSH, no Duo prompts for each session, no port forwarding.</p>
+<section id="where-to-find-it" class="level3">
+<h3 class="anchored" data-anchor-id="where-to-find-it">1.1 Where to find it</h3>
+<p><a href="https://ondemand.asc.ohio-state.edu">https://ondemand.asc.ohio-state.edu</a></p>
+<p>Log in with your OSU credentials + one Duo tap. From the <strong>Interactive Apps</strong> menu you’ll see options like:</p>
+<ul>
+<li><strong>Jupyter Notebook</strong></li>
+<li><strong>MATLAB</strong></li>
+<li><strong>RStudio Server</strong></li>
+<li><strong>VS Code Server</strong> (sometimes)</li>
+</ul>
+<p>For Jupyter: pick a partition (usually <code>batch</code> if you don’t have a lab partition), set the requested time, click <strong>Launch</strong>. After a moment your session shows up in <strong>My Interactive Sessions</strong> with a <strong>Connect to Jupyter</strong> button.</p>
+</section>
+<section id="use-ondemands-jupyterlab-instead-of-plain-jupyter-notebook" class="level3">
+<h3 class="anchored" data-anchor-id="use-ondemands-jupyterlab-instead-of-plain-jupyter-notebook">1.2 ✅ Use OnDemand’s JupyterLab instead of plain Jupyter Notebook</h3>
+<p>Even though the OnDemand menu only offers “Jupyter Notebook,” you can flip it into <strong>JupyterLab</strong> (the fancier interface with file browser, table of contents for long notebooks, multi-pane layouts, etc.) with a one-time URL hack:</p>
+<ol type="1">
+<li><p>Launch a regular Jupyter Notebook session via OnDemand</p></li>
+<li><p>Click <strong>Connect to Jupyter</strong> — a new tab opens with a URL that looks like:</p>
+<pre><code>https://ondemand.asc.ohio-state.edu/node/u500/12345/notebook/tree</code></pre></li>
+<li><p>Edit the URL: <strong>strip out everything from <code>/notebook/...</code> onwards and replace it with <code>/lab</code></strong>. So the URL becomes:</p>
+<pre><code>https://ondemand.asc.ohio-state.edu/node/u500/12345/lab</code></pre></li>
+<li><p>Press Enter. You’re now in JupyterLab, with the same kernel and files as the underlying notebook session.</p></li>
+</ol>
+<p>The session shows up identically in OnDemand — only the front-end interface changes.</p>
+</section>
+<section id="limitations-of-ondemand" class="level3">
+<h3 class="anchored" data-anchor-id="limitations-of-ondemand">1.3 ⚠ Limitations of OnDemand</h3>
+<p>OnDemand is great for many use cases, but as of writing:</p>
+<ul>
+<li>❌ <strong>No GPU sessions for Jupyter.</strong> OnDemand’s Jupyter form doesn’t offer a GPU option, so you can’t train deep-learning models from an OnDemand notebook.</li>
+<li>❌ <strong>Less control over node selection, time limits, partition.</strong> OnDemand picks reasonable defaults but doesn’t expose every Slurm flag.</li>
+<li>❌ <strong>Limited environment customization.</strong> OnDemand provides system Python and a few preinstalled kernels. If your project needs a specific mamba/conda environment, you can register it as a Jupyter kernel, but that’s an extra step.</li>
+</ul>
+<p>If you need any of those, use the manual SSH-tunnel approach below.</p>
+<hr>
+</section>
+</section>
+<section id="the-flexible-path-headless-jupyter-via-ssh-tunnel" class="level1">
+<h1>2. The Flexible Path: Headless Jupyter via SSH Tunnel</h1>
+<p>The idea: start a Jupyter server on a compute node (one that you’ve allocated, possibly with a GPU), and <strong>forward the connection back to your laptop’s browser</strong> through an SSH tunnel.</p>
+<p>There are three moving parts:</p>
+<ol type="1">
+<li>A compute-node allocation (<code>sinteractive</code> with <code>-g</code> for GPU)</li>
+<li>A Jupyter process running on that node, <strong>not opening a browser</strong> (since the node has no browser) and listening on a port like <code>8888</code></li>
+<li>An SSH tunnel from your laptop that maps a local port (e.g.&nbsp;<code>9099</code>) to that remote port</li>
+</ol>
+<p>The reason it works is that <strong>SSH’s <code>-L</code> flag</strong> lets us route traffic from <code>localhost:9099</code> on your Mac all the way through to <code>127.0.0.1:8888</code> on the compute node, transparently. From your browser’s perspective, you’re just visiting <code>http://127.0.0.1:9099</code>.</p>
+<section id="step-1-get-a-gpu-compute-node-on-unity" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-get-a-gpu-compute-node-on-unity">2.1 Step 1 — Get a GPU compute node on Unity</h3>
+<p>From a terminal SSH’d into Unity (or from VS Code’s integrated terminal):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-p</span> <span class="op">&lt;</span>group<span class="op">&gt;</span> -g 1 <span class="at">-t</span> 06:00:00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Replace <code>&lt;group&gt;</code> with your Slurm partition (often <code>batch</code> — see <a href="../hpc/shell_environment.html">Shell Environment §4</a>). The <code>-g 1</code> requests one GPU. The <code>-t 06:00:00</code> asks for 6 hours.</p>
+<p>Once allocated, your shell prompt will change to indicate you’re on a compute node — note the hostname (e.g.&nbsp;<code>u500</code> — I’ll use <code>mynode</code> as a placeholder throughout this page).</p>
+</section>
+<section id="step-2-start-jupyter-on-the-compute-node" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-start-jupyter-on-the-compute-node">2.2 Step 2 — Start Jupyter on the compute node</h3>
+<p>Still inside that compute-node shell:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8888</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Two important flags:</p>
+<ul>
+<li><code>--no-browser</code> — don’t try to open a browser locally (the compute node has none)</li>
+<li><code>--port=8888</code> — listen on port 8888</li>
+</ul>
+<p>Jupyter will print something like:</p>
+<pre><code>Or copy and paste this URL:
+    http://localhost:8888/?token=2c4f9e0...long-hex-string</code></pre>
+<p><strong>Copy that whole URL (or just the token).</strong> You’ll paste it into your laptop’s browser in Step 4.</p>
+<p>Leave this terminal alone — Jupyter keeps running here. If you close it, Jupyter dies.</p>
+</section>
+<section id="step-3-open-the-ssh-tunnel-from-your-laptop" class="level3">
+<h3 class="anchored" data-anchor-id="step-3-open-the-ssh-tunnel-from-your-laptop">2.3 Step 3 — Open the SSH tunnel from your laptop</h3>
+<p>In a <strong>new</strong> Terminal window on your Mac:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 9099:127.0.0.1:8888 mynode</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What this means:</p>
+<ul>
+<li><strong>Listen on <code>localhost:9099</code></strong> on my laptop</li>
+<li>When something connects, <strong>tunnel it through the SSH connection to <code>mynode</code>’s <code>127.0.0.1:8888</code></strong></li>
+<li>From <code>mynode</code>’s perspective, the request looks like it came from itself</li>
+</ul>
+<p>This works thanks to the <code>ProxyJump unity</code> in your compute-node <code>Host</code> block — SSH chains laptop → jumphost → unity → mynode automatically (see <a href="../ssh/ssh_setup.html">SSH Setup §8</a>).</p>
+<p><strong>Leave this SSH connection open.</strong> The tunnel only exists while it’s alive.</p>
+</section>
+<section id="step-4-open-your-browser" class="level3">
+<h3 class="anchored" data-anchor-id="step-4-open-your-browser">2.4 Step 4 — Open your browser</h3>
+<p>On your Mac, visit:</p>
+<pre><code>http://127.0.0.1:9099</code></pre>
+<p>(Note: <strong>9099</strong>, the local port, not 8888.)</p>
+<p>You’ll see Jupyter’s “Token authentication” page. Paste the token from Step 2.</p>
+<p>✅ You’re now running Jupyter on a GPU node, edited and viewed locally in Safari/Chrome.</p>
+<hr>
+</section>
+</section>
+<section id="aliases-that-make-this-workflow-painless" class="level1">
+<h1>3. Aliases That Make This Workflow Painless</h1>
+<p>Once you’ve done the manual dance a few times, alias everything. From <a href="../hpc/shell_environment.html">Shell Environment</a>:</p>
+<section id="on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in" class="level3">
+<h3 class="anchored" data-anchor-id="on-the-clusters-.bashrc-so-its-available-when-youre-sshd-in">On the <strong>cluster’s</strong> <code>~/.bashrc</code> (so it’s available when you’re SSH’d in):</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start a headless Jupyter on the current node, port 8888</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'jupyter notebook --no-browser --port=8888'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>So after <code>sinteractive ... -g 1</code>, just type <code>jup</code>.</p>
+</section>
+<section id="on-your-laptops-.bashrc-or-.zshrc" class="level3">
+<h3 class="anchored" data-anchor-id="on-your-laptops-.bashrc-or-.zshrc">On your <strong>laptop’s</strong> <code>~/.bashrc</code> or <code>~/.zshrc</code>:</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># One alias per compute node you commonly use.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace `mynode`, `othernode` etc. with the names from your ~/.ssh/config.</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'ssh -L 9099:127.0.0.1:8888 mynode'</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup2=<span class="st">'ssh -L 9099:127.0.0.1:8888 othernode'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Now the whole workflow becomes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tab 1 (Unity terminal, after sinteractive):</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                       <span class="co"># starts jupyter, prints token</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Tab 2 (Mac terminal):</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                       <span class="co"># opens SSH tunnel to compute node</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Browser:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">open</span> http://127.0.0.1:9099 <span class="co"># paste the token</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three commands, two terminals, one browser tab.</p>
+<hr>
+</section>
+</section>
+<section id="ssh-port-forwarding-demystified" class="level1">
+<h1>4. SSH Port Forwarding, Demystified</h1>
+<p>The <code>ssh -L LOCAL_PORT:HOST:REMOTE_PORT TARGET</code> syntax confuses everyone the first time. Decoded:</p>
+<pre><code>ssh -L 9099:127.0.0.1:8888 mynode
+       │     │         │    │
+       │     │         │    └── Target machine to SSH into (uses ~/.ssh/config)
+       │     │         └────── Port on the remote machine to forward TO
+       │     └──────────────── Hostname as seen FROM the remote machine
+       └───────────────────── Local port on your laptop to listen on</code></pre>
+<p>So this command says:</p>
+<blockquote class="blockquote">
+<p>“SSH into <code>mynode</code>. While that connection is up, listen on <code>localhost:9099</code> on <strong>my laptop</strong>. Any traffic that arrives there, forward it through the SSH tunnel and connect it to <code>127.0.0.1:8888</code> <strong>as seen from mynode</strong> (i.e.&nbsp;mynode’s own localhost, where Jupyter is).”</p>
+</blockquote>
+<section id="why-two-different-port-numbers" class="level3">
+<h3 class="anchored" data-anchor-id="why-two-different-port-numbers">Why two different port numbers?</h3>
+<ul>
+<li><strong><code>8888</code></strong> is Jupyter’s default — fixed by Jupyter, you can change it with <code>--port</code></li>
+<li><strong><code>9099</code></strong> is arbitrary — your laptop’s free choice</li>
+</ul>
+<p>You could use the same number on both sides (e.g.&nbsp;<code>-L 8888:127.0.0.1:8888</code>), but picking a distinct local port avoids clashing with other things on your Mac, and makes it obvious which terminal/tunnel is “your Jupyter.”</p>
+</section>
+<section id="multiple-tunnels-at-once" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-tunnels-at-once">Multiple tunnels at once</h3>
+<p>You can run several <code>ssh -L ...</code> sessions in parallel as long as each uses a <strong>different local port</strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 9099:127.0.0.1:8888 mynode      <span class="co"># Jupyter on mynode</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 9100:127.0.0.1:8888 othernode   <span class="co"># Jupyter on othernode</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 16006:127.0.0.1:6006 unity      <span class="co"># TensorBoard on unity</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>All three coexist; each is its own tab in your browser.</p>
+<hr>
+</section>
+</section>
+<section id="tensorboard-with-the-same-trick" class="level1">
+<h1>5. TensorBoard with the Same Trick</h1>
+<p><a href="https://www.tensorflow.org/tensorboard">TensorBoard</a> is the standard tool for monitoring deep-learning training runs (loss curves, validation accuracy, learning-rate schedules, etc.). The setup is identical to Jupyter — just a different port (<code>6006</code> by default).</p>
+<section id="where-to-start-tensorboard" class="level3">
+<h3 class="anchored" data-anchor-id="where-to-start-tensorboard">5.1 Where to start TensorBoard</h3>
+<p>You have two reasonable options:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Where</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>On the Unity login node</strong></td>
+<td>No Slurm allocation needed; one tunnel from your laptop reaches it forever</td>
+<td>Login nodes shouldn’t do heavy work, but TensorBoard just reads TFEvents log files, which is cheap</td>
+</tr>
+<tr class="even">
+<td><strong>On the same compute node where training is running</strong></td>
+<td>Lowest latency, no concerns about login-node etiquette</td>
+<td>The tunnel breaks when the allocation expires</td>
+</tr>
+</tbody>
+</table>
+<p>For most workflows, <strong>starting TensorBoard on the Unity login node</strong> is the path of least friction — log files live on the shared filesystem <code>/fs/project/&lt;group&gt;/...</code>, so TensorBoard can read them from anywhere.</p>
+</section>
+<section id="start-tensorboard-on-unity" class="level3">
+<h3 class="anchored" data-anchor-id="start-tensorboard-on-unity">5.2 Start TensorBoard on Unity</h3>
+<p>After <code>ssh unity</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tensorboard</span> <span class="at">--logdir</span> /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/<span class="op">&lt;</span>username<span class="op">&gt;</span>/runs <span class="at">--port</span> 6006</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>It prints a message like:</p>
+<pre><code>TensorBoard 2.x at http://localhost:6006/ (Press CTRL+C to quit)</code></pre>
+<p>Leave it running.</p>
+</section>
+<section id="ssh-tunnel-from-your-laptop" class="level3">
+<h3 class="anchored" data-anchor-id="ssh-tunnel-from-your-laptop">5.3 SSH tunnel from your laptop</h3>
+<p>From your Mac:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 16006:127.0.0.1:6006 unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Aliased:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb_unity=<span class="st">'ssh -L 16006:127.0.0.1:6006 unity'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="open-the-browser" class="level3">
+<h3 class="anchored" data-anchor-id="open-the-browser">5.4 Open the browser</h3>
+<pre><code>http://127.0.0.1:16006</code></pre>
+<p>✅ You’re now watching training metrics live, on your laptop, from logs being written by jobs on Unity.</p>
+</section>
+<section id="tensorboard-on-a-compute-node-when-the-login-node-wont-do" class="level3">
+<h3 class="anchored" data-anchor-id="tensorboard-on-a-compute-node-when-the-login-node-wont-do">5.5 TensorBoard on a compute node (when the login node won’t do)</h3>
+<p>If you need TensorBoard close to a specific GPU job (rare), start it on the same compute node:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On the compute node:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tensorboard</span> <span class="at">--logdir</span> ./runs <span class="at">--port</span> 6006</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>And from your laptop:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 16006:127.0.0.1:6006 mynode</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Same <code>ProxyJump</code> magic delivers the tunnel through unity to the compute node.</p>
+<hr>
+</section>
+</section>
+<section id="keeping-it-alive-across-disconnects" class="level1">
+<h1>6. Keeping It Alive Across Disconnects</h1>
+<p>If your laptop sleeps, the SSH tunnel dies — but <strong>Jupyter itself keeps running</strong> as long as the Slurm allocation and the cluster-side shell are still alive. To make sure they are:</p>
+<ul>
+<li>Run <code>jupyter notebook --no-browser ...</code> <strong>inside a <code>tmux</code> session</strong> on the compute node (or use the <code>livenode</code> function in <a href="../hpc/persistent_sessions.html">Persistent Sessions</a>)</li>
+<li>When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You’re back where you left off, with all variables and the kernel state intact.</li>
+</ul>
+<p>The recipe:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On Unity:</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>                            <span class="co"># tmux + sinteractive -g 1</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                                 <span class="co"># starts headless Jupyter</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ... disconnect, close laptop, etc. ...</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Next day, from any laptop:</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (no need to attach to livenode if you only need the tunnel)</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="co"># In another terminal on your Mac:</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                                 <span class="co"># re-opens the tunnel</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Browser refresh on http://127.0.0.1:9099 — done.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If you <em>do</em> want to interact with the running Python kernel via the shell (e.g.&nbsp;to <code>ls</code> for new log files), <code>livenode</code> (<code>tmux attach -t jbm_node</code>) reattaches you to the same Jupyter terminal.</p>
+<hr>
+</section>
+<section id="common-pitfalls" class="level1">
+<h1>7. Common Pitfalls</h1>
+<section id="connection-refused-when-opening-http127.0.0.19099" class="level3">
+<h3 class="anchored" data-anchor-id="connection-refused-when-opening-http127.0.0.19099">❌ “Connection refused” when opening <code>http://127.0.0.1:9099</code></h3>
+<p>The SSH tunnel isn’t open. Confirm:</p>
+<ul>
+<li>Your <code>ssh -L ...</code> command is still running in a terminal (not exited)</li>
+<li>Your Jupyter server is still running on the compute node (the terminal you ran <code>jup</code> in should still show its log output)</li>
+<li>Slurm allocation hasn’t expired — check <code>squeue -u $USER</code></li>
+</ul>
+</section>
+<section id="address-already-in-use-when-starting-jupyter" class="level3">
+<h3 class="anchored" data-anchor-id="address-already-in-use-when-starting-jupyter">❌ “Address already in use” when starting Jupyter</h3>
+<p>Another Jupyter process is already bound to port 8888 on the same node — maybe from an earlier session you forgot to kill. Either:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8889   <span class="co"># use a different port</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(and remember to bump the local-side port in your <code>ssh -L</code>), or kill the old one:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pkill</span> <span class="at">-u</span> <span class="va">$USER</span> jupyter</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="address-already-in-use-when-opening-the-ssh-tunnel" class="level3">
+<h3 class="anchored" data-anchor-id="address-already-in-use-when-opening-the-ssh-tunnel">❌ “Address already in use” when opening the SSH tunnel</h3>
+<p>You already have an <code>ssh -L 9099:...</code> running. Either close that one, or pick a different local port (<code>-L 9100:...</code>).</p>
+</section>
+<section id="token-prompt-screen-but-no-token-to-paste" class="level3">
+<h3 class="anchored" data-anchor-id="token-prompt-screen-but-no-token-to-paste">❌ Token-prompt screen, but no token to paste</h3>
+<p>You missed copying it from Jupyter’s startup output. Run <code>jupyter notebook list</code> on the compute node — it prints the current server URL with the token included.</p>
+</section>
+<section id="could-not-find-a-kernel-matching" class="level3">
+<h3 class="anchored" data-anchor-id="could-not-find-a-kernel-matching">❌ “Could not find a kernel matching …”</h3>
+<p>Your notebook expects a kernel (e.g.&nbsp;a mamba env) that isn’t registered as a Jupyter kernel. From the cluster shell:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span> myproject <span class="at">--display-name</span> <span class="st">"myproject"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then refresh Jupyter and pick “myproject” from the Kernel menu.</p>
+</section>
+<section id="tunnel-works-once-then-fails-on-later-attempts" class="level3">
+<h3 class="anchored" data-anchor-id="tunnel-works-once-then-fails-on-later-attempts">❌ Tunnel works once, then fails on later attempts</h3>
+<p>Stale ControlMaster socket from a half-broken SSH connection. Clear it (same as the SSH setup page):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ~/.ssh/sockets/<span class="pp">*</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="jupyter-dies-when-i-close-the-laptop" class="level3">
+<h3 class="anchored" data-anchor-id="jupyter-dies-when-i-close-the-laptop">❌ Jupyter dies when I close the laptop</h3>
+<p>Jupyter was running directly in an SSH shell, not inside <code>tmux</code>. When SSH disconnected, the shell got <code>SIGHUP</code>, which killed Jupyter. Use <code>livenode</code> (see <a href="../hpc/persistent_sessions.html">Persistent Sessions</a>) for any Jupyter session you care about.</p>
+<hr>
+</section>
+</section>
+<section id="quick-reference" class="level1">
+<h1>8. Quick Reference</h1>
+<p><strong>Cluster-side aliases (in your Unity <code>~/.bashrc</code>):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'jupyter notebook --no-browser --port=8888'</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb=<span class="st">'tensorboard --logdir runs --port 6006'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Laptop-side aliases (in your Mac <code>~/.bashrc</code> or <code>~/.zshrc</code>):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'ssh -L 9099:127.0.0.1:8888 mynode'</span>      <span class="co"># replace `mynode`</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb_unity=<span class="st">'ssh -L 16006:127.0.0.1:6006 unity'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Browser URLs:</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Service</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Jupyter (via tunnel)</td>
+<td><code>http://127.0.0.1:9099</code></td>
+</tr>
+<tr class="even">
+<td>TensorBoard on unity (via tunnel)</td>
+<td><code>http://127.0.0.1:16006</code></td>
+</tr>
+<tr class="odd">
+<td>Unity OnDemand</td>
+<td><code>https://ondemand.asc.ohio-state.edu</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>OnDemand → JupyterLab switch:</strong> edit the Jupyter URL, replace <code>/notebook/...</code> with <code>/lab</code>.</p>
+<hr>
+</section>
+<section id="summary" class="level1">
+<h1>9. Summary</h1>
+<ul>
+<li>✔ Try <strong>OnDemand first</strong> for casual Jupyter / MATLAB / RStudio — no SSH setup, no Duo per session</li>
+<li>✔ Use the <strong>JupyterLab <code>/lab</code> URL trick</strong> for a better notebook interface in OnDemand</li>
+<li>✔ Use the <strong>headless Jupyter + SSH tunnel</strong> approach when you need a GPU, full control, or a custom mamba environment</li>
+<li>✔ The same tunnel trick works for <strong>TensorBoard</strong> — just swap port <code>8888</code> for <code>6006</code></li>
+<li>✔ Run cluster-side servers inside <code>livenode</code> / <code>tmux</code> so they survive disconnects (<a href="../hpc/persistent_sessions.html">Persistent Sessions</a>)</li>
+<li>✔ Keep distinct local ports per tunnel so you can run several in parallel</li>
+</ul>
+<p>Next up: <a href="../hpc/conda_envs.html">Conda Environments</a> — managing the Python packages your notebooks actually use.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../hpc/persistent_sessions.html" class="pagination-link" aria-label="Persistent Sessions: tmux, nohup, and livenode">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Persistent Sessions: tmux, nohup, and livenode</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../hpc/modules.html" class="pagination-link" aria-label="Modules System">
+        <span class="nav-page-text">Modules System</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
