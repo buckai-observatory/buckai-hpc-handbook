@@ -46,16 +46,51 @@ The rules are slightly weird:
 | `~/.bash_profile` | When you start a **login** shell (e.g. you SSH in) |
 | `~/.bashrc` | When you start a **non-login interactive** shell (e.g. open a new terminal pane *inside* an existing session) |
 
-The annoying part: by default `.bash_profile` does **not** run `.bashrc`. So if you put your aliases in `.bashrc`, an SSH session won't see them.
+The annoying part: `.bash_profile` does not **automatically** run `.bashrc`. They're independent files, and login shells normally only read `.bash_profile`. So if your `.bash_profile` doesn't explicitly source `.bashrc`, your SSH session won't see the aliases and functions you put there.
 
-### The fix: source `.bashrc` from `.bash_profile`
+### The good news: Unity's stock `.bash_profile` already handles this
 
-Put this at the bottom of your `~/.bash_profile`:
+On Unity, the default `~/.bash_profile` you get with a new account contains exactly this block near the top:
+
+```bash
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+
+export PATH
+```
+
+The `if [ -f ~/.bashrc ]; then . ~/.bashrc; fi` block is what makes everything work — every login SSH session sources `.bashrc` automatically. **If your Unity `.bash_profile` looks like that, you're fine — just put your stuff in `.bashrc`.**
+
+### When you do need to add the line yourself
+
+This is much more common on:
+
+- **macOS** — many hand-created `~/.bash_profile` files (or `~/.zshrc` on newer Macs) don't source `~/.bashrc`
+- **Other clusters** — some HPC systems' default skeletons skip the block
+- **A `.bash_profile` you wrote yourself** for a custom setup
+
+To check what you actually have:
+
+```bash
+cat ~/.bash_profile
+```
+
+If you don't see something equivalent to the Unity stock block above, add this to the bottom:
 
 ```bash
 # Source .bashrc on login so aliases / functions / env vars are always loaded
 [ -f ~/.bashrc ] && source ~/.bashrc
 ```
+
+(Either form — the `if ... fi` block or the `[ -f ... ] && source` one-liner — works the same.)
 
 After this, **everything goes in `.bashrc`** and you can forget `.bash_profile` exists.
 
