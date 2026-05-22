@@ -1,22 +1,311 @@
-
 ---
 title: "SSH Keys — Concepts & Best Practices"
 ---
 
-# Why SSH Keys?
+# Introduction
 
-Secure authentication without passwords.
+If you followed the [SSH Setup](ssh_setup.qmd) page, you've already generated a key, copied it to ASC and Unity, and tested that `ssh unity` works without a password. This page is the **deeper reference** for everything keys: what they are, why they're shaped the way they are, how to load them into your SSH agent, how to manage multiple keys, and how to recover when things go wrong.
 
-# Create Key
+You can read this top to bottom on your first time through, or treat it as a lookup when something breaks.
+
+---
+
+# 1. The Lock-and-Key Model
+
+An SSH key pair is **two files** that are mathematically tied to each other:
+
+- **Private key** (`~/.ssh/buckai_key`) — stays on your laptop forever. Never email it, never paste it, never check it into git.
+- **Public key** (`~/.ssh/buckai_key.pub`) — safe to share. You install copies of it on every remote machine you want to log into.
+
+Think of it as a **lock and key**:
+
+- You install the lock (public key) on the cluster, in a file called `~/.ssh/authorized_keys`.
+- You keep the key (private key) on your computer.
+- When you connect, the server hands you a small challenge that can only be solved with your private key. Your laptop solves it locally and sends back the answer. The private key itself never leaves your machine.
+
+This is why SSH keys are far more secure than passwords: even an attacker who fully owns the cluster can never extract your private key from there, because it isn't there.
+
+---
+
+# 2. Generating a Key
+
+On your **Mac**, not on the cluster:
 
 ```bash
 ssh-keygen -t ed25519 -C "yourname@osu.edu" -f ~/.ssh/buckai_key
 ```
 
-# Permissions
+What each flag means:
+
+- `-t ed25519` — the key algorithm. Ed25519 is modern, fast, and short. **Use this unless you have a specific reason to use RSA.**
+- `-C "yourname@osu.edu"` — a comment baked into the public key. It only exists so humans can tell keys apart later. Use your email.
+- `-f ~/.ssh/buckai_key` — where to save the files. You'll get `buckai_key` (private) and `buckai_key.pub` (public).
+
+You'll be asked for a passphrase. Two reasonable choices:
+
+- **No passphrase** — convenient, but anyone with file access to your laptop can use the key.
+- **A passphrase** — slightly more secure. On macOS, see Section 5 below for how to make the Keychain unlock it for you so you only type the passphrase once per reboot.
+
+## When to use RSA instead
+
+If you must interoperate with a very old system that doesn't accept Ed25519:
 
 ```bash
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/buckai_key
-chmod 644 ~/.ssh/buckai_key.pub
+ssh-keygen -t rsa -b 4096 -C "yourname@osu.edu" -f ~/.ssh/buckai_key_rsa
 ```
+
+(`-b 4096` means a 4096-bit RSA key — anything less is too short by modern standards.)
+
+This is rare for OSU clusters in 2025. Stick with Ed25519 unless you hit a wall.
+
+---
+
+# 3. File Permissions
+
+SSH **silently refuses** to use key files (and config files) that have permissions other programs could read. After generating your key:
+
+```bash
+chmod 700 ~/.ssh                  # only you can enter the directory
+chmod 600 ~/.ssh/buckai_key       # only you can read the private key
+chmod 644 ~/.ssh/buckai_key.pub   # public key — anyone can read
+chmod 600 ~/.ssh/config           # only you can read the config
+```
+
+What the numbers mean:
+
+- `7` = read + write + execute (owner needs to enter a directory)
+- `6` = read + write
+- `4` = read only
+- First digit = owner, second = group, third = everyone else
+
+So `600` is "owner can read/write; everyone else, nothing."
+
+### ❌ "Bad owner or permissions on ~/.ssh/buckai_key"
+
+This is the most common SSH error. Run the four `chmod` lines above and try again.
+
+### ❌ "It worked yesterday, today it asks for password"
+
+Sometimes file managers, restore-from-backup tools, or VS Code path operations change permissions. Re-apply the four `chmod` lines and check again.
+
+---
+
+# 4. The SSH Agent — What It Does and Why
+
+The SSH agent is a small background program that **holds your unlocked private key in memory** so SSH can use it without asking for the passphrase every time.
+
+Without an agent:
+
+- Every `ssh unity` re-reads the key file
+- Every passphrase-protected key prompts on every connection
+- Tools like Git, VS Code, and rsync each see the key independently
+
+With an agent:
+
+- The key is loaded once
+- Every subsequent SSH (and Git, and VS Code, and `rsync`) just asks the agent
+- Multi-hop connections (laptop → jumphost → unity) work seamlessly
+
+On macOS, the SSH agent is launched automatically by the system. On Linux, you usually start it via your shell startup files or your desktop environment.
+
+---
+
+# 5. Loading Your Key Into the Agent on macOS
+
+In your `~/.ssh/config`, the global `Host *` block from the [SSH Setup](ssh_setup.qmd) page already includes:
+
+```sshconfig
+AddKeysToAgent yes
+UseKeychain yes
+```
+
+What these do:
+
+- `AddKeysToAgent yes` — the first time SSH uses your private key, automatically add it to the agent so subsequent connections don't re-read the file.
+- `UseKeychain yes` — store the key's passphrase in the **macOS Keychain**, which means after you've entered it once, the system unlocks the key for you on every login.
+
+So the typical flow on macOS is:
+
+1. First `ssh unity` after a reboot: you're prompted for the key's passphrase (if you set one).
+2. macOS Keychain remembers it.
+3. Every subsequent SSH session — across all terminals, all reboots — uses the key automatically.
+
+You can also load the key manually:
+
+```bash
+ssh-add --apple-use-keychain ~/.ssh/buckai_key
+```
+
+(Older macOS versions: `ssh-add -K ~/.ssh/buckai_key`.)
+
+### Checking what's loaded
+
+```bash
+ssh-add -l
+```
+
+Lists keys the agent currently knows about. If your key isn't there, SSH won't try it.
+
+### Clearing the agent
+
+```bash
+ssh-add -D
+```
+
+Wipes all loaded keys (e.g. if you regenerated a key and want to make sure the old one isn't lingering).
+
+---
+
+# 6. Installing Your Public Key on a Remote Machine
+
+You need the **public** half (`buckai_key.pub`) installed into `~/.ssh/authorized_keys` on every machine you want to log into. The easiest way:
+
+```bash
+ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200
+```
+
+`ssh-copy-id` is a small helper script that:
+
+1. Logs into the remote with password auth
+2. Appends your public key to `~/.ssh/authorized_keys`
+3. Fixes permissions on `~/.ssh` and `~/.ssh/authorized_keys` if needed
+
+You'll be asked for your OSU password **once** during this step. After that, the key takes over and you won't need the password again.
+
+### If `ssh-copy-id` isn't available (rare)
+
+Do it by hand:
+
+```bash
+cat ~/.ssh/buckai_key.pub | ssh -p 2200 yourname.##@jump.asc.ohio-state.edu \
+    'mkdir -p ~/.ssh && chmod 700 ~/.ssh && \
+     cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'
+```
+
+That's the long version of what `ssh-copy-id` does. Same result.
+
+### Checking the installation
+
+```bash
+ssh -p 2200 yourname.##@jump.asc.ohio-state.edu 'cat ~/.ssh/authorized_keys'
+```
+
+You should see your public key line in the output. If you see other public keys too, that's fine — `authorized_keys` accepts multiple keys, one per line.
+
+---
+
+# 7. Using Multiple Keys
+
+A good habit is **one key per service**, not one key for everything:
+
+- `~/.ssh/buckai_key` — OSU clusters
+- `~/.ssh/github_key` — GitHub
+- `~/.ssh/personal_vps_key` — your personal server
+
+Why bother?
+
+- Compromise containment: if one key leaks, you rotate just that one.
+- Per-key passphrase choices: you can passphrase-protect your most sensitive key and leave a low-risk one open.
+- Cleaner removal: leaving an organization means revoking just the key tied to it.
+
+SSH knows which key to use for which host because your `~/.ssh/config` tells it. From the setup page:
+
+```sshconfig
+Host unity
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
+```
+
+The `IdentitiesOnly yes` is important — without it, your SSH agent will offer **every** loaded key to the server, in some arbitrary order. If the first one isn't the right one and the server has key-attempt limits (it often does), you get locked out before SSH even tries the right key. Always pair `IdentityFile` with `IdentitiesOnly yes`.
+
+---
+
+# 8. Backing Up Your Private Key
+
+Treat your private key like the only copy of an important password — because that's what it is.
+
+Reasonable approaches:
+
+- **Encrypted USB drive in a drawer.** Cheap, offline, simple.
+- **Encrypted disk image on iCloud Drive / Dropbox.** Convenient. Use `hdiutil` to create a `.dmg` with AES-256 encryption, and put `buckai_key` inside.
+- **1Password / Bitwarden secure note.** Some password managers can store files; paste the contents of `buckai_key`.
+
+**Do not:**
+
+- Email it to yourself
+- Paste it in Slack
+- Check it into git
+- Store it in plain-text cloud storage
+
+If you lose your private key, you don't lose access permanently — you generate a new one and re-copy the public half to the clusters (Section 6). But if someone *else* gets your private key, they can log in as you until you remove the corresponding line from `authorized_keys` on every cluster.
+
+---
+
+# 9. Rotating and Removing Keys
+
+### Rotating (replacing one key with a new one)
+
+1. Generate a new key on your Mac (Section 2)
+2. Add the new public key to each cluster (Section 6)
+3. Test that `ssh unity` still works (and that it's using the new key — check `ssh -v unity`)
+4. SSH into each cluster and remove the old public key line from `~/.ssh/authorized_keys`
+5. Delete the old key from your Mac:
+
+```bash
+ssh-add -d ~/.ssh/old_buckai_key   # remove from agent
+rm ~/.ssh/old_buckai_key{,.pub}    # remove from disk
+```
+
+### Revoking access (e.g. after a laptop is lost or stolen)
+
+If your private key may be compromised, **act immediately**:
+
+1. From any other machine, SSH into the jump host and Unity using password auth (or another key if you have one)
+2. Edit `~/.ssh/authorized_keys` and delete the relevant key's line
+3. Verify by trying to SSH in from the lost device's perspective — it should fail
+
+You don't have to delete the key from the lost laptop; you just have to make sure the cluster no longer accepts it.
+
+---
+
+# 10. Common Mistakes
+
+### ❌ Copying the **private** key to the cluster
+
+You only ever upload `buckai_key.pub`. If you `scp`'d `buckai_key` (no `.pub`) to the cluster by accident, delete it immediately:
+
+```bash
+ssh unity 'rm -f ~/buckai_key ~/.ssh/buckai_key'
+```
+
+Then regenerate the key on your Mac.
+
+### ❌ Treating the public key as secret
+
+The public key is **designed** to be shared. Posting it in chat, on a website, or in a config repo is fine. Only the private key is sensitive.
+
+### ❌ Using the same key for everything, forever
+
+Convenient at first, painful later. Once you have more than one service, split keys per service (Section 7).
+
+### ❌ Forgetting `IdentitiesOnly yes`
+
+Without it, the SSH agent tries every loaded key, and the cluster may lock you out after a few wrong tries. Pair `IdentityFile` with `IdentitiesOnly yes` in every `Host` block.
+
+### ❌ Setting a passphrase you can't remember
+
+Without the passphrase, the private key is useless. If you set one, write it down in a password manager **before** closing the terminal. If you've already lost it: regenerate the key, re-copy the public half to the clusters.
+
+---
+
+# 11. Summary
+
+- ✔ Use **Ed25519** keys unless something forces you to RSA
+- ✔ Keep permissions strict: `chmod 700 ~/.ssh`, `chmod 600 ~/.ssh/buckai_key`
+- ✔ Use the **SSH agent** with `AddKeysToAgent yes` and (on macOS) `UseKeychain yes`
+- ✔ Always pair `IdentityFile` with `IdentitiesOnly yes`
+- ✔ One key per service, not one key for everything
+- ✔ Back up your private key somewhere encrypted and offline
+- ✔ Rotate keys when you leave a project; revoke immediately if a device is lost
+
+Back to [SSH Setup](ssh_setup.qmd) for the config file, or onward to [VS Code Remote-SSH + Claude Code](vscode_remote_ssh.qmd) for the editor workflow.

@@ -346,7 +346,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">VS Code Remote SSH Setup</span></a>
+ <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
   </div>
 </li>
       </ul>
@@ -427,9 +427,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#why-ssh-keys" id="toc-why-ssh-keys" class="nav-link active" data-scroll-target="#why-ssh-keys">Why SSH Keys?</a></li>
-  <li><a href="#create-key" id="toc-create-key" class="nav-link" data-scroll-target="#create-key">Create Key</a></li>
-  <li><a href="#permissions" id="toc-permissions" class="nav-link" data-scroll-target="#permissions">Permissions</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#the-lock-and-key-model" id="toc-the-lock-and-key-model" class="nav-link" data-scroll-target="#the-lock-and-key-model">1. The Lock-and-Key Model</a></li>
+  <li><a href="#generating-a-key" id="toc-generating-a-key" class="nav-link" data-scroll-target="#generating-a-key">2. Generating a Key</a>
+  <ul class="collapse">
+  <li><a href="#when-to-use-rsa-instead" id="toc-when-to-use-rsa-instead" class="nav-link" data-scroll-target="#when-to-use-rsa-instead">When to use RSA instead</a></li>
+  </ul></li>
+  <li><a href="#file-permissions" id="toc-file-permissions" class="nav-link" data-scroll-target="#file-permissions">3. File Permissions</a>
+  <ul class="collapse">
+  <li><a href="#bad-owner-or-permissions-on-.sshbuckai_key" id="toc-bad-owner-or-permissions-on-.sshbuckai_key" class="nav-link" data-scroll-target="#bad-owner-or-permissions-on-.sshbuckai_key">❌ “Bad owner or permissions on ~/.ssh/buckai_key”</a></li>
+  <li><a href="#it-worked-yesterday-today-it-asks-for-password" id="toc-it-worked-yesterday-today-it-asks-for-password" class="nav-link" data-scroll-target="#it-worked-yesterday-today-it-asks-for-password">❌ “It worked yesterday, today it asks for password”</a></li>
+  </ul></li>
+  <li><a href="#the-ssh-agent-what-it-does-and-why" id="toc-the-ssh-agent-what-it-does-and-why" class="nav-link" data-scroll-target="#the-ssh-agent-what-it-does-and-why">4. The SSH Agent — What It Does and Why</a></li>
+  <li><a href="#loading-your-key-into-the-agent-on-macos" id="toc-loading-your-key-into-the-agent-on-macos" class="nav-link" data-scroll-target="#loading-your-key-into-the-agent-on-macos">5. Loading Your Key Into the Agent on macOS</a>
+  <ul class="collapse">
+  <li><a href="#checking-whats-loaded" id="toc-checking-whats-loaded" class="nav-link" data-scroll-target="#checking-whats-loaded">Checking what’s loaded</a></li>
+  <li><a href="#clearing-the-agent" id="toc-clearing-the-agent" class="nav-link" data-scroll-target="#clearing-the-agent">Clearing the agent</a></li>
+  </ul></li>
+  <li><a href="#installing-your-public-key-on-a-remote-machine" id="toc-installing-your-public-key-on-a-remote-machine" class="nav-link" data-scroll-target="#installing-your-public-key-on-a-remote-machine">6. Installing Your Public Key on a Remote Machine</a>
+  <ul class="collapse">
+  <li><a href="#if-ssh-copy-id-isnt-available-rare" id="toc-if-ssh-copy-id-isnt-available-rare" class="nav-link" data-scroll-target="#if-ssh-copy-id-isnt-available-rare">If <code>ssh-copy-id</code> isn’t available (rare)</a></li>
+  <li><a href="#checking-the-installation" id="toc-checking-the-installation" class="nav-link" data-scroll-target="#checking-the-installation">Checking the installation</a></li>
+  </ul></li>
+  <li><a href="#using-multiple-keys" id="toc-using-multiple-keys" class="nav-link" data-scroll-target="#using-multiple-keys">7. Using Multiple Keys</a></li>
+  <li><a href="#backing-up-your-private-key" id="toc-backing-up-your-private-key" class="nav-link" data-scroll-target="#backing-up-your-private-key">8. Backing Up Your Private Key</a></li>
+  <li><a href="#rotating-and-removing-keys" id="toc-rotating-and-removing-keys" class="nav-link" data-scroll-target="#rotating-and-removing-keys">9. Rotating and Removing Keys</a>
+  <ul class="collapse">
+  <li><a href="#rotating-replacing-one-key-with-a-new-one" id="toc-rotating-replacing-one-key-with-a-new-one" class="nav-link" data-scroll-target="#rotating-replacing-one-key-with-a-new-one">Rotating (replacing one key with a new one)</a></li>
+  <li><a href="#revoking-access-e.g.-after-a-laptop-is-lost-or-stolen" id="toc-revoking-access-e.g.-after-a-laptop-is-lost-or-stolen" class="nav-link" data-scroll-target="#revoking-access-e.g.-after-a-laptop-is-lost-or-stolen">Revoking access (e.g.&nbsp;after a laptop is lost or stolen)</a></li>
+  </ul></li>
+  <li><a href="#common-mistakes" id="toc-common-mistakes" class="nav-link" data-scroll-target="#common-mistakes">10. Common Mistakes</a>
+  <ul class="collapse">
+  <li><a href="#copying-the-private-key-to-the-cluster" id="toc-copying-the-private-key-to-the-cluster" class="nav-link" data-scroll-target="#copying-the-private-key-to-the-cluster">❌ Copying the <strong>private</strong> key to the cluster</a></li>
+  <li><a href="#treating-the-public-key-as-secret" id="toc-treating-the-public-key-as-secret" class="nav-link" data-scroll-target="#treating-the-public-key-as-secret">❌ Treating the public key as secret</a></li>
+  <li><a href="#using-the-same-key-for-everything-forever" id="toc-using-the-same-key-for-everything-forever" class="nav-link" data-scroll-target="#using-the-same-key-for-everything-forever">❌ Using the same key for everything, forever</a></li>
+  <li><a href="#forgetting-identitiesonly-yes" id="toc-forgetting-identitiesonly-yes" class="nav-link" data-scroll-target="#forgetting-identitiesonly-yes">❌ Forgetting <code>IdentitiesOnly yes</code></a></li>
+  <li><a href="#setting-a-passphrase-you-cant-remember" id="toc-setting-a-passphrase-you-cant-remember" class="nav-link" data-scroll-target="#setting-a-passphrase-you-cant-remember">❌ Setting a passphrase you can’t remember</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">11. Summary</a></li>
   </ul>
 </nav>
     </div>
@@ -456,19 +491,256 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="why-ssh-keys" class="level1">
-<h1>Why SSH Keys?</h1>
-<p>Secure authentication without passwords.</p>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>If you followed the <a href="../ssh/ssh_setup.html">SSH Setup</a> page, you’ve already generated a key, copied it to ASC and Unity, and tested that <code>ssh unity</code> works without a password. This page is the <strong>deeper reference</strong> for everything keys: what they are, why they’re shaped the way they are, how to load them into your SSH agent, how to manage multiple keys, and how to recover when things go wrong.</p>
+<p>You can read this top to bottom on your first time through, or treat it as a lookup when something breaks.</p>
+<hr>
 </section>
-<section id="create-key" class="level1">
-<h1>Create Key</h1>
+<section id="the-lock-and-key-model" class="level1">
+<h1>1. The Lock-and-Key Model</h1>
+<p>An SSH key pair is <strong>two files</strong> that are mathematically tied to each other:</p>
+<ul>
+<li><strong>Private key</strong> (<code>~/.ssh/buckai_key</code>) — stays on your laptop forever. Never email it, never paste it, never check it into git.</li>
+<li><strong>Public key</strong> (<code>~/.ssh/buckai_key.pub</code>) — safe to share. You install copies of it on every remote machine you want to log into.</li>
+</ul>
+<p>Think of it as a <strong>lock and key</strong>:</p>
+<ul>
+<li>You install the lock (public key) on the cluster, in a file called <code>~/.ssh/authorized_keys</code>.</li>
+<li>You keep the key (private key) on your computer.</li>
+<li>When you connect, the server hands you a small challenge that can only be solved with your private key. Your laptop solves it locally and sends back the answer. The private key itself never leaves your machine.</li>
+</ul>
+<p>This is why SSH keys are far more secure than passwords: even an attacker who fully owns the cluster can never extract your private key from there, because it isn’t there.</p>
+<hr>
+</section>
+<section id="generating-a-key" class="level1">
+<h1>2. Generating a Key</h1>
+<p>On your <strong>Mac</strong>, not on the cluster:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-C</span> <span class="st">"yourname@osu.edu"</span> <span class="at">-f</span> ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What each flag means:</p>
+<ul>
+<li><code>-t ed25519</code> — the key algorithm. Ed25519 is modern, fast, and short. <strong>Use this unless you have a specific reason to use RSA.</strong></li>
+<li><code>-C "yourname@osu.edu"</code> — a comment baked into the public key. It only exists so humans can tell keys apart later. Use your email.</li>
+<li><code>-f ~/.ssh/buckai_key</code> — where to save the files. You’ll get <code>buckai_key</code> (private) and <code>buckai_key.pub</code> (public).</li>
+</ul>
+<p>You’ll be asked for a passphrase. Two reasonable choices:</p>
+<ul>
+<li><strong>No passphrase</strong> — convenient, but anyone with file access to your laptop can use the key.</li>
+<li><strong>A passphrase</strong> — slightly more secure. On macOS, see Section 5 below for how to make the Keychain unlock it for you so you only type the passphrase once per reboot.</li>
+</ul>
+<section id="when-to-use-rsa-instead" class="level2">
+<h2 class="anchored" data-anchor-id="when-to-use-rsa-instead">When to use RSA instead</h2>
+<p>If you must interoperate with a very old system that doesn’t accept Ed25519:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> rsa <span class="at">-b</span> 4096 <span class="at">-C</span> <span class="st">"yourname@osu.edu"</span> <span class="at">-f</span> ~/.ssh/buckai_key_rsa</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(<code>-b 4096</code> means a 4096-bit RSA key — anything less is too short by modern standards.)</p>
+<p>This is rare for OSU clusters in 2025. Stick with Ed25519 unless you hit a wall.</p>
+<hr>
 </section>
-<section id="permissions" class="level1">
-<h1>Permissions</h1>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="file-permissions" class="level1">
+<h1>3. File Permissions</h1>
+<p>SSH <strong>silently refuses</strong> to use key files (and config files) that have permissions other programs could read. After generating your key:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh                  <span class="co"># only you can enter the directory</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key       <span class="co"># only you can read the private key</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub   <span class="co"># public key — anyone can read</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/config           <span class="co"># only you can read the config</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What the numbers mean:</p>
+<ul>
+<li><code>7</code> = read + write + execute (owner needs to enter a directory)</li>
+<li><code>6</code> = read + write</li>
+<li><code>4</code> = read only</li>
+<li>First digit = owner, second = group, third = everyone else</li>
+</ul>
+<p>So <code>600</code> is “owner can read/write; everyone else, nothing.”</p>
+<section id="bad-owner-or-permissions-on-.sshbuckai_key" class="level3">
+<h3 class="anchored" data-anchor-id="bad-owner-or-permissions-on-.sshbuckai_key">❌ “Bad owner or permissions on ~/.ssh/buckai_key”</h3>
+<p>This is the most common SSH error. Run the four <code>chmod</code> lines above and try again.</p>
+</section>
+<section id="it-worked-yesterday-today-it-asks-for-password" class="level3">
+<h3 class="anchored" data-anchor-id="it-worked-yesterday-today-it-asks-for-password">❌ “It worked yesterday, today it asks for password”</h3>
+<p>Sometimes file managers, restore-from-backup tools, or VS Code path operations change permissions. Re-apply the four <code>chmod</code> lines and check again.</p>
+<hr>
+</section>
+</section>
+<section id="the-ssh-agent-what-it-does-and-why" class="level1">
+<h1>4. The SSH Agent — What It Does and Why</h1>
+<p>The SSH agent is a small background program that <strong>holds your unlocked private key in memory</strong> so SSH can use it without asking for the passphrase every time.</p>
+<p>Without an agent:</p>
+<ul>
+<li>Every <code>ssh unity</code> re-reads the key file</li>
+<li>Every passphrase-protected key prompts on every connection</li>
+<li>Tools like Git, VS Code, and rsync each see the key independently</li>
+</ul>
+<p>With an agent:</p>
+<ul>
+<li>The key is loaded once</li>
+<li>Every subsequent SSH (and Git, and VS Code, and <code>rsync</code>) just asks the agent</li>
+<li>Multi-hop connections (laptop → jumphost → unity) work seamlessly</li>
+</ul>
+<p>On macOS, the SSH agent is launched automatically by the system. On Linux, you usually start it via your shell startup files or your desktop environment.</p>
+<hr>
+</section>
+<section id="loading-your-key-into-the-agent-on-macos" class="level1">
+<h1>5. Loading Your Key Into the Agent on macOS</h1>
+<p>In your <code>~/.ssh/config</code>, the global <code>Host *</code> block from the <a href="../ssh/ssh_setup.html">SSH Setup</a> page already includes:</p>
+<pre class="sshconfig"><code>AddKeysToAgent yes
+UseKeychain yes</code></pre>
+<p>What these do:</p>
+<ul>
+<li><code>AddKeysToAgent yes</code> — the first time SSH uses your private key, automatically add it to the agent so subsequent connections don’t re-read the file.</li>
+<li><code>UseKeychain yes</code> — store the key’s passphrase in the <strong>macOS Keychain</strong>, which means after you’ve entered it once, the system unlocks the key for you on every login.</li>
+</ul>
+<p>So the typical flow on macOS is:</p>
+<ol type="1">
+<li>First <code>ssh unity</code> after a reboot: you’re prompted for the key’s passphrase (if you set one).</li>
+<li>macOS Keychain remembers it.</li>
+<li>Every subsequent SSH session — across all terminals, all reboots — uses the key automatically.</li>
+</ol>
+<p>You can also load the key manually:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> <span class="at">--apple-use-keychain</span> ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(Older macOS versions: <code>ssh-add -K ~/.ssh/buckai_key</code>.)</p>
+<section id="checking-whats-loaded" class="level3">
+<h3 class="anchored" data-anchor-id="checking-whats-loaded">Checking what’s loaded</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> <span class="at">-l</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Lists keys the agent currently knows about. If your key isn’t there, SSH won’t try it.</p>
+</section>
+<section id="clearing-the-agent" class="level3">
+<h3 class="anchored" data-anchor-id="clearing-the-agent">Clearing the agent</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> <span class="at">-D</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Wipes all loaded keys (e.g.&nbsp;if you regenerated a key and want to make sure the old one isn’t lingering).</p>
+<hr>
+</section>
+</section>
+<section id="installing-your-public-key-on-a-remote-machine" class="level1">
+<h1>6. Installing Your Public Key on a Remote Machine</h1>
+<p>You need the <strong>public</strong> half (<code>buckai_key.pub</code>) installed into <code>~/.ssh/authorized_keys</code> on every machine you want to log into. The easiest way:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ssh-copy-id</code> is a small helper script that:</p>
+<ol type="1">
+<li>Logs into the remote with password auth</li>
+<li>Appends your public key to <code>~/.ssh/authorized_keys</code></li>
+<li>Fixes permissions on <code>~/.ssh</code> and <code>~/.ssh/authorized_keys</code> if needed</li>
+</ol>
+<p>You’ll be asked for your OSU password <strong>once</strong> during this step. After that, the key takes over and you won’t need the password again.</p>
+<section id="if-ssh-copy-id-isnt-available-rare" class="level3">
+<h3 class="anchored" data-anchor-id="if-ssh-copy-id-isnt-available-rare">If <code>ssh-copy-id</code> isn’t available (rare)</h3>
+<p>Do it by hand:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ~/.ssh/buckai_key.pub <span class="kw">|</span> <span class="fu">ssh</span> <span class="at">-p</span> 2200 yourname.##@jump.asc.ohio-state.edu <span class="dt">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">'mkdir -p ~/.ssh &amp;&amp; chmod 700 ~/.ssh &amp;&amp; \</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="st">     cat &gt;&gt; ~/.ssh/authorized_keys &amp;&amp; chmod 600 ~/.ssh/authorized_keys'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That’s the long version of what <code>ssh-copy-id</code> does. Same result.</p>
+</section>
+<section id="checking-the-installation" class="level3">
+<h3 class="anchored" data-anchor-id="checking-the-installation">Checking the installation</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-p</span> 2200 yourname.##@jump.asc.ohio-state.edu <span class="st">'cat ~/.ssh/authorized_keys'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You should see your public key line in the output. If you see other public keys too, that’s fine — <code>authorized_keys</code> accepts multiple keys, one per line.</p>
+<hr>
+</section>
+</section>
+<section id="using-multiple-keys" class="level1">
+<h1>7. Using Multiple Keys</h1>
+<p>A good habit is <strong>one key per service</strong>, not one key for everything:</p>
+<ul>
+<li><code>~/.ssh/buckai_key</code> — OSU clusters</li>
+<li><code>~/.ssh/github_key</code> — GitHub</li>
+<li><code>~/.ssh/personal_vps_key</code> — your personal server</li>
+</ul>
+<p>Why bother?</p>
+<ul>
+<li>Compromise containment: if one key leaks, you rotate just that one.</li>
+<li>Per-key passphrase choices: you can passphrase-protect your most sensitive key and leave a low-risk one open.</li>
+<li>Cleaner removal: leaving an organization means revoking just the key tied to it.</li>
+</ul>
+<p>SSH knows which key to use for which host because your <code>~/.ssh/config</code> tells it. From the setup page:</p>
+<pre class="sshconfig"><code>Host unity
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes</code></pre>
+<p>The <code>IdentitiesOnly yes</code> is important — without it, your SSH agent will offer <strong>every</strong> loaded key to the server, in some arbitrary order. If the first one isn’t the right one and the server has key-attempt limits (it often does), you get locked out before SSH even tries the right key. Always pair <code>IdentityFile</code> with <code>IdentitiesOnly yes</code>.</p>
+<hr>
+</section>
+<section id="backing-up-your-private-key" class="level1">
+<h1>8. Backing Up Your Private Key</h1>
+<p>Treat your private key like the only copy of an important password — because that’s what it is.</p>
+<p>Reasonable approaches:</p>
+<ul>
+<li><strong>Encrypted USB drive in a drawer.</strong> Cheap, offline, simple.</li>
+<li><strong>Encrypted disk image on iCloud Drive / Dropbox.</strong> Convenient. Use <code>hdiutil</code> to create a <code>.dmg</code> with AES-256 encryption, and put <code>buckai_key</code> inside.</li>
+<li><strong>1Password / Bitwarden secure note.</strong> Some password managers can store files; paste the contents of <code>buckai_key</code>.</li>
+</ul>
+<p><strong>Do not:</strong></p>
+<ul>
+<li>Email it to yourself</li>
+<li>Paste it in Slack</li>
+<li>Check it into git</li>
+<li>Store it in plain-text cloud storage</li>
+</ul>
+<p>If you lose your private key, you don’t lose access permanently — you generate a new one and re-copy the public half to the clusters (Section 6). But if someone <em>else</em> gets your private key, they can log in as you until you remove the corresponding line from <code>authorized_keys</code> on every cluster.</p>
+<hr>
+</section>
+<section id="rotating-and-removing-keys" class="level1">
+<h1>9. Rotating and Removing Keys</h1>
+<section id="rotating-replacing-one-key-with-a-new-one" class="level3">
+<h3 class="anchored" data-anchor-id="rotating-replacing-one-key-with-a-new-one">Rotating (replacing one key with a new one)</h3>
+<ol type="1">
+<li>Generate a new key on your Mac (Section 2)</li>
+<li>Add the new public key to each cluster (Section 6)</li>
+<li>Test that <code>ssh unity</code> still works (and that it’s using the new key — check <code>ssh -v unity</code>)</li>
+<li>SSH into each cluster and remove the old public key line from <code>~/.ssh/authorized_keys</code></li>
+<li>Delete the old key from your Mac:</li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> <span class="at">-d</span> ~/.ssh/old_buckai_key   <span class="co"># remove from agent</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ~/.ssh/old_buckai_key<span class="dt">{</span><span class="op">,</span><span class="dt">.pub}</span>    <span class="co"># remove from disk</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="revoking-access-e.g.-after-a-laptop-is-lost-or-stolen" class="level3">
+<h3 class="anchored" data-anchor-id="revoking-access-e.g.-after-a-laptop-is-lost-or-stolen">Revoking access (e.g.&nbsp;after a laptop is lost or stolen)</h3>
+<p>If your private key may be compromised, <strong>act immediately</strong>:</p>
+<ol type="1">
+<li>From any other machine, SSH into the jump host and Unity using password auth (or another key if you have one)</li>
+<li>Edit <code>~/.ssh/authorized_keys</code> and delete the relevant key’s line</li>
+<li>Verify by trying to SSH in from the lost device’s perspective — it should fail</li>
+</ol>
+<p>You don’t have to delete the key from the lost laptop; you just have to make sure the cluster no longer accepts it.</p>
+<hr>
+</section>
+</section>
+<section id="common-mistakes" class="level1">
+<h1>10. Common Mistakes</h1>
+<section id="copying-the-private-key-to-the-cluster" class="level3">
+<h3 class="anchored" data-anchor-id="copying-the-private-key-to-the-cluster">❌ Copying the <strong>private</strong> key to the cluster</h3>
+<p>You only ever upload <code>buckai_key.pub</code>. If you <code>scp</code>’d <code>buckai_key</code> (no <code>.pub</code>) to the cluster by accident, delete it immediately:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity <span class="st">'rm -f ~/buckai_key ~/.ssh/buckai_key'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then regenerate the key on your Mac.</p>
+</section>
+<section id="treating-the-public-key-as-secret" class="level3">
+<h3 class="anchored" data-anchor-id="treating-the-public-key-as-secret">❌ Treating the public key as secret</h3>
+<p>The public key is <strong>designed</strong> to be shared. Posting it in chat, on a website, or in a config repo is fine. Only the private key is sensitive.</p>
+</section>
+<section id="using-the-same-key-for-everything-forever" class="level3">
+<h3 class="anchored" data-anchor-id="using-the-same-key-for-everything-forever">❌ Using the same key for everything, forever</h3>
+<p>Convenient at first, painful later. Once you have more than one service, split keys per service (Section 7).</p>
+</section>
+<section id="forgetting-identitiesonly-yes" class="level3">
+<h3 class="anchored" data-anchor-id="forgetting-identitiesonly-yes">❌ Forgetting <code>IdentitiesOnly yes</code></h3>
+<p>Without it, the SSH agent tries every loaded key, and the cluster may lock you out after a few wrong tries. Pair <code>IdentityFile</code> with <code>IdentitiesOnly yes</code> in every <code>Host</code> block.</p>
+</section>
+<section id="setting-a-passphrase-you-cant-remember" class="level3">
+<h3 class="anchored" data-anchor-id="setting-a-passphrase-you-cant-remember">❌ Setting a passphrase you can’t remember</h3>
+<p>Without the passphrase, the private key is useless. If you set one, write it down in a password manager <strong>before</strong> closing the terminal. If you’ve already lost it: regenerate the key, re-copy the public half to the clusters.</p>
+<hr>
+</section>
+</section>
+<section id="summary" class="level1">
+<h1>11. Summary</h1>
+<ul>
+<li>✔ Use <strong>Ed25519</strong> keys unless something forces you to RSA</li>
+<li>✔ Keep permissions strict: <code>chmod 700 ~/.ssh</code>, <code>chmod 600 ~/.ssh/buckai_key</code></li>
+<li>✔ Use the <strong>SSH agent</strong> with <code>AddKeysToAgent yes</code> and (on macOS) <code>UseKeychain yes</code></li>
+<li>✔ Always pair <code>IdentityFile</code> with <code>IdentitiesOnly yes</code></li>
+<li>✔ One key per service, not one key for everything</li>
+<li>✔ Back up your private key somewhere encrypted and offline</li>
+<li>✔ Rotate keys when you leave a project; revoke immediately if a device is lost</li>
+</ul>
+<p>Back to <a href="../ssh/ssh_setup.html">SSH Setup</a> for the config file, or onward to <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a> for the editor workflow.</p>
 
 
 </section>
@@ -894,8 +1166,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../ssh/vscode_remote_ssh.html" class="pagination-link" aria-label="VS Code Remote SSH Setup">
-        <span class="nav-page-text">VS Code Remote SSH Setup</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../ssh/vscode_remote_ssh.html" class="pagination-link" aria-label="VS Code Remote-SSH + Claude Code on HPC">
+        <span class="nav-page-text">VS Code Remote-SSH + Claude Code on HPC</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

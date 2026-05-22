@@ -346,7 +346,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">VS Code Remote SSH Setup</span></a>
+ <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
   </div>
 </li>
       </ul>
@@ -439,16 +439,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#install-on-asc-jump-host" id="toc-install-on-asc-jump-host" class="nav-link" data-scroll-target="#install-on-asc-jump-host">4.1 Install on ASC Jump Host</a></li>
   <li><a href="#install-on-unity-login-node" id="toc-install-on-unity-login-node" class="nav-link" data-scroll-target="#install-on-unity-login-node">4.2 Install on Unity Login Node</a></li>
   </ul></li>
-  <li><a href="#create-your-local-ssh-configuration-file" id="toc-create-your-local-ssh-configuration-file" class="nav-link" data-scroll-target="#create-your-local-ssh-configuration-file">5. Create Your Local SSH Configuration File</a></li>
-  <li><a href="#optional-direct-shortcuts-to-compute-nodes" id="toc-optional-direct-shortcuts-to-compute-nodes" class="nav-link" data-scroll-target="#optional-direct-shortcuts-to-compute-nodes">6. (Optional) Direct Shortcuts to Compute Nodes</a></li>
-  <li><a href="#fix-for-older-nodes-requiring-rsa-compatibility" id="toc-fix-for-older-nodes-requiring-rsa-compatibility" class="nav-link" data-scroll-target="#fix-for-older-nodes-requiring-rsa-compatibility">7. Fix for Older Nodes Requiring RSA Compatibility</a></li>
-  <li><a href="#testing-your-setup" id="toc-testing-your-setup" class="nav-link" data-scroll-target="#testing-your-setup">8. Testing Your Setup</a></li>
-  <li><a href="#troubleshooting-guide-common-student-issues" id="toc-troubleshooting-guide-common-student-issues" class="nav-link" data-scroll-target="#troubleshooting-guide-common-student-issues">9. Troubleshooting Guide (Common Student Issues)</a>
+  <li><a href="#create-your-local-ssh-configuration-file" id="toc-create-your-local-ssh-configuration-file" class="nav-link" data-scroll-target="#create-your-local-ssh-configuration-file">5. Create Your Local SSH Configuration File</a>
+  <ul class="collapse">
+  <li><a href="#prepare-.ssh-and-create-a-sockets-directory" id="toc-prepare-.ssh-and-create-a-sockets-directory" class="nav-link" data-scroll-target="#prepare-.ssh-and-create-a-sockets-directory">5.1 Prepare <code>~/.ssh/</code> and create a sockets directory</a></li>
+  <li><a href="#open-the-config" id="toc-open-the-config" class="nav-link" data-scroll-target="#open-the-config">5.2 Open the config</a></li>
+  <li><a href="#add-the-full-template" id="toc-add-the-full-template" class="nav-link" data-scroll-target="#add-the-full-template">5.3 Add the full template</a></li>
+  </ul></li>
+  <li><a href="#understanding-the-magic-settings" id="toc-understanding-the-magic-settings" class="nav-link" data-scroll-target="#understanding-the-magic-settings">6. Understanding the Magic Settings</a>
+  <ul class="collapse">
+  <li><a href="#connection-multiplexing-the-duo-painkiller" id="toc-connection-multiplexing-the-duo-painkiller" class="nav-link" data-scroll-target="#connection-multiplexing-the-duo-painkiller">6.1 Connection multiplexing (the Duo painkiller)</a></li>
+  <li><a href="#keepalives-the-counterintuitive-part" id="toc-keepalives-the-counterintuitive-part" class="nav-link" data-scroll-target="#keepalives-the-counterintuitive-part">6.2 Keepalives — the counterintuitive part</a></li>
+  <li><a href="#why-the-ssh-rsa-lines" id="toc-why-the-ssh-rsa-lines" class="nav-link" data-scroll-target="#why-the-ssh-rsa-lines">6.3 Why the <code>+ssh-rsa</code> lines?</a></li>
+  </ul></li>
+  <li><a href="#testing-your-setup" id="toc-testing-your-setup" class="nav-link" data-scroll-target="#testing-your-setup">7. Testing Your Setup</a></li>
+  <li><a href="#direct-shortcuts-to-compute-nodes" id="toc-direct-shortcuts-to-compute-nodes" class="nav-link" data-scroll-target="#direct-shortcuts-to-compute-nodes">8. Direct Shortcuts to Compute Nodes</a>
+  <ul class="collapse">
+  <li><a href="#multi-hop-multiplexing-in-practice" id="toc-multi-hop-multiplexing-in-practice" class="nav-link" data-scroll-target="#multi-hop-multiplexing-in-practice">Multi-hop multiplexing in practice</a></li>
+  </ul></li>
+  <li><a href="#common-pitfalls" id="toc-common-pitfalls" class="nav-link" data-scroll-target="#common-pitfalls">9. Common Pitfalls</a>
   <ul class="collapse">
   <li><a href="#permission-denied-publickey" id="toc-permission-denied-publickey" class="nav-link" data-scroll-target="#permission-denied-publickey">❌ “Permission denied (publickey)”</a></li>
   <li><a href="#could-not-resolve-hostname-unity" id="toc-could-not-resolve-hostname-unity" class="nav-link" data-scroll-target="#could-not-resolve-hostname-unity">❌ “Could not resolve hostname unity”</a></li>
   <li><a href="#jump-host-asks-for-password-every-time" id="toc-jump-host-asks-for-password-every-time" class="nav-link" data-scroll-target="#jump-host-asks-for-password-every-time">❌ Jump host asks for password every time</a></li>
   <li><a href="#bad-owner-or-permissions" id="toc-bad-owner-or-permissions" class="nav-link" data-scroll-target="#bad-owner-or-permissions">❌ “Bad owner or permissions”</a></li>
+  <li><a href="#duo-prompts-on-every-connection-multiplexing-not-working" id="toc-duo-prompts-on-every-connection-multiplexing-not-working" class="nav-link" data-scroll-target="#duo-prompts-on-every-connection-multiplexing-not-working">❌ Duo prompts on every connection (multiplexing not working)</a></li>
+  <li><a href="#ssh-hangs-on-connect" id="toc-ssh-hangs-on-connect" class="nav-link" data-scroll-target="#ssh-hangs-on-connect">❌ SSH hangs on connect</a></li>
+  <li><a href="#no-matching-host-key-type-found.-their-offer-ssh-rsa" id="toc-no-matching-host-key-type-found.-their-offer-ssh-rsa" class="nav-link" data-scroll-target="#no-matching-host-key-type-found.-their-offer-ssh-rsa">❌ “no matching host key type found. Their offer: ssh-rsa”</a></li>
+  <li><a href="#wrong-username-case" id="toc-wrong-username-case" class="nav-link" data-scroll-target="#wrong-username-case">❌ Wrong username case</a></li>
   <li><a href="#vs-code-cannot-connect" id="toc-vs-code-cannot-connect" class="nav-link" data-scroll-target="#vs-code-cannot-connect">❌ VS Code cannot connect</a></li>
   </ul></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">10. Summary</a></li>
@@ -480,36 +497,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>High-performance computing (HPC) clusters like <strong>ASC</strong> and <strong>Unity</strong> at OSU are accessed using a tool called <strong>SSH (Secure Shell)</strong>.<br>
-SSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.</p>
-<p>Because OSU clusters are protected behind institutional firewalls, you <strong>cannot log in directly</strong>.<br>
-Instead, you must:</p>
+<p>High-performance computing (HPC) clusters like <strong>ASC</strong> and <strong>Unity</strong> at OSU are accessed using a tool called <strong>SSH (Secure Shell)</strong>. SSH lets you log in to remote computers securely and run commands as if you were sitting at that machine.</p>
+<p>Because OSU clusters are protected behind institutional firewalls, you <strong>cannot log in directly</strong>. Instead, you must:</p>
 <ol type="1">
-<li>connect first to a <strong>jump host</strong> (a secure gateway machine), then<br>
-</li>
+<li>connect first to a <strong>jump host</strong> (a secure gateway machine), then</li>
 <li>from there connect to <strong>Unity</strong> or compute nodes like <code>u126</code>, <code>u170</code>, <code>u181</code>, etc.</li>
 </ol>
-<p>SSH can automatically perform these multi-step hops <em>for you</em>, but only if your setup is correct.</p>
+<p>SSH can automatically perform these multi-step hops <em>for you</em> — and skip extra Duo prompts along the way — <strong>but only if your setup is correct</strong>.</p>
 <p>This guide walks through <em>everything</em> you need:</p>
-<p>✔ Understanding SSH keys<br>
-✔ Why clusters use jump hosts<br>
-✔ How to generate a secure key pair<br>
-✔ How to upload your key to OSU systems<br>
-✔ How to configure SSH so you can just type:</p>
+<p>✔ Understanding SSH keys at a high level (see <a href="../ssh/ssh_keys.html">SSH Keys</a> for the deep dive) ✔ Why clusters use jump hosts ✔ How to generate a secure key pair ✔ How to upload your key to OSU systems ✔ How to configure SSH so you can just type:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>✔ Troubleshooting and common mistakes</p>
+<p>✔ How to set up <strong>connection multiplexing</strong> so Duo prompts you only once ✔ Troubleshooting and common mistakes</p>
 <p>It is designed for students and postdocs with <strong>zero prior HPC experience</strong>.</p>
 <hr>
 </section>
 <section id="what-is-ssh-and-why-do-we-use-it" class="level1">
 <h1>1. What Is SSH, and Why Do We Use It?</h1>
-<p>SSH = <strong>Secure Shell</strong><br>
-It is a tool that:</p>
+<p>SSH = <strong>Secure Shell</strong>. It is a tool that:</p>
 <ul>
-<li>encrypts your connection<br>
-</li>
-<li>verifies your identity<br>
-</li>
+<li>encrypts your connection</li>
+<li>verifies your identity</li>
 <li>lets you run commands on remote computers</li>
 </ul>
 <p>Almost everything you do on HPC systems — submitting jobs, loading modules, managing files — starts with SSH.</p>
@@ -517,32 +524,25 @@ It is a tool that:</p>
 <h3 class="anchored" data-anchor-id="why-ssh-keys-instead-of-passwords">Why SSH keys instead of passwords?</h3>
 <p>Using passwords is:</p>
 <ul>
-<li>slow<br>
-</li>
-<li>easy to mistype<br>
-</li>
-<li>insecure<br>
-</li>
+<li>slow</li>
+<li>easy to mistype</li>
+<li>insecure</li>
 <li>often disabled for HPC environments</li>
 </ul>
 <p>SSH <strong>keys</strong> are:</p>
 <ul>
-<li>more secure<br>
-</li>
-<li>faster (no password prompts)<br>
-</li>
-<li>mandatory for multi-hop connections<br>
-</li>
+<li>more secure</li>
+<li>faster (no password prompts)</li>
+<li>mandatory for multi-hop connections</li>
 <li>compatible with VS Code Remote-SSH</li>
 </ul>
 <p>An SSH key pair consists of:</p>
 <ul>
-<li><strong>private key</strong> → stays on your laptop<br>
-</li>
+<li><strong>private key</strong> → stays on your laptop</li>
 <li><strong>public key</strong> → copied to remote machines</li>
 </ul>
-<p>Think of it as a <strong>lock and key</strong>:<br>
-You install the lock (public key) on the cluster, you keep the key (private key) on your computer.</p>
+<p>Think of it as a <strong>lock and key</strong>: You install the lock (public key) on the cluster, you keep the key (private key) on your computer.</p>
+<p>For everything you ever wanted to know about generating keys, permissions, the SSH agent, and rotation — see the <a href="../ssh/ssh_keys.html">SSH Keys</a> page.</p>
 <hr>
 </section>
 </section>
@@ -551,7 +551,9 @@ You install the lock (public key) on the cluster, you keep the key (private key)
 <p>Most OSU HPC nodes <em>cannot</em> be reached from outside campus or VPN.</p>
 <p>So you must log in through:</p>
 <pre><code>Your Laptop → ASC Jump Host → Unity Login Node → Compute Nodes</code></pre>
-<p>SSH can be configured to do this automatically using <code>ProxyJump</code>.</p>
+<p>The jump host (<code>jump.asc.ohio-state.edu</code>, port <code>2200</code>) is the only door that opens from the outside world. Once you’re through it, you can reach Unity and the compute nodes behind it.</p>
+<p>SSH can be configured to do this <strong>automatically</strong> using <code>ProxyJump</code>, so <code>ssh unity</code> will silently chain through the jump host for you.</p>
+<p>The jump host also enforces <strong>Duo multi-factor authentication (MFA)</strong>. Every fresh connection to it triggers a push to your phone. This is where most setup pain comes from — and what <strong>SSH connection multiplexing</strong> (Section 5) solves.</p>
 <hr>
 </section>
 <section id="step-by-step-create-your-ssh-key-pair-on-your-laptop" class="level1">
@@ -562,6 +564,7 @@ You install the lock (public key) on the cluster, you keep the key (private key)
 <p>You now have:</p>
 <pre><code>~/.ssh/buckai_key       ← private key (keep safe!)
 ~/.ssh/buckai_key.pub   ← public key (send to clusters)</code></pre>
+<p>See <a href="../ssh/ssh_keys.html">SSH Keys</a> for what each file is, why permissions matter, and how to load the private key into your SSH agent.</p>
 <hr>
 </section>
 <section id="install-your-public-key-on-osu-systems" class="level1">
@@ -582,20 +585,52 @@ You install the lock (public key) on the cluster, you keep the key (private key)
 <h1>5. Create Your Local SSH Configuration File</h1>
 <p>This file tells SSH:</p>
 <ul>
-<li>how to connect<br>
-</li>
-<li>which key to use<br>
-</li>
+<li>how to connect</li>
+<li>which key to use</li>
 <li>how to automatically hop through the jump host</li>
+<li>how to <strong>reuse a single authenticated connection</strong> so you don’t get a flood of Duo prompts</li>
 </ul>
-<p>Open the file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nano</span> ~/.ssh/config</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Add the following <strong>template</strong> (replace <code>yourname.##</code> with your OSU username):</p>
-<pre class="sshconfig"><code>### ASC Jumphost
+<section id="prepare-.ssh-and-create-a-sockets-directory" class="level2">
+<h2 class="anchored" data-anchor-id="prepare-.ssh-and-create-a-sockets-directory">5.1 Prepare <code>~/.ssh/</code> and create a sockets directory</h2>
+<p>The sockets directory is where SSH will store small files used to share one authenticated connection across many sessions. Without it, you can’t get the “one Duo tap, everything else is free” experience.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.ssh</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.ssh/sockets</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh/sockets</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">touch</span> ~/.ssh/config</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/config</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Permissions matter — SSH <strong>silently ignores</strong> the config file if it is world-readable.</p>
+</section>
+<section id="open-the-config" class="level2">
+<h2 class="anchored" data-anchor-id="open-the-config">5.2 Open the config</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nano</span> ~/.ssh/config</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="add-the-full-template" class="level2">
+<h2 class="anchored" data-anchor-id="add-the-full-template">5.3 Add the full template</h2>
+<p>Paste the following (replace <code>yourname.##</code> with your OSU username, e.g.&nbsp;<code>smith.123</code>):</p>
+<pre class="sshconfig"><code>### Global defaults: apply to ALL hosts
+Host *
+    # Connection multiplexing: authenticate once, reuse the connection
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+
+    # Keepalives: prevent firewalls/NAT from dropping idle connections
+    ServerAliveInterval 30
+    ServerAliveCountMax 4
+    TCPKeepAlive yes
+
+    # Prefer your SSH agent + macOS Keychain (so keys stay loaded across sessions)
+    AddKeysToAgent yes
+    UseKeychain yes
+
+### ASC Jumphost (requires Duo MFA)
 Host ascjumphost
     HostName jump.asc.ohio-state.edu
     User yourname.##
     Port 2200
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
 
 ### Unity Login Node (via jump host)
 Host unity
@@ -604,80 +639,165 @@ Host unity
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
     ProxyJump ascjumphost
-    ServerAliveInterval 240
-    ServerAliveCountMax 2</code></pre>
+    # Older HPC SSH daemons may need these for key-based auth to work:
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa</code></pre>
 <p>Now typing:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>automatically performs:</p>
 <pre><code>Laptop → Jump Host → Unity</code></pre>
+<p>with <strong>one Duo prompt</strong> and zero password typing.</p>
 <hr>
 </section>
-<section id="optional-direct-shortcuts-to-compute-nodes" class="level1">
-<h1>6. (Optional) Direct Shortcuts to Compute Nodes</h1>
+</section>
+<section id="understanding-the-magic-settings" class="level1">
+<h1>6. Understanding the Magic Settings</h1>
+<p>These three settings — multiplexing, keepalives, and the <code>+ssh-rsa</code> lines — are what make the config above robust. They’re worth understanding rather than copying blindly.</p>
+<section id="connection-multiplexing-the-duo-painkiller" class="level2">
+<h2 class="anchored" data-anchor-id="connection-multiplexing-the-duo-painkiller">6.1 Connection multiplexing (the Duo painkiller)</h2>
+<pre class="sshconfig"><code>ControlMaster auto
+ControlPath ~/.ssh/sockets/%r@%h:%p
+ControlPersist 10m</code></pre>
+<p>Together these tell SSH:</p>
+<ul>
+<li>The <strong>first</strong> SSH connection to a host authenticates normally (Duo and all) and creates a Unix socket at <code>~/.ssh/sockets/...</code></li>
+<li>Any <strong>subsequent</strong> SSH connections to the same host <strong>reuse that socket and skip authentication entirely</strong></li>
+<li>The master connection stays alive for <strong>10 minutes</strong> after the last session closes, so quick reconnects don’t re-prompt for Duo</li>
+</ul>
+<p>This is critical for VS Code Remote-SSH, which opens multiple parallel connections during connect — without multiplexing, each one triggers a separate Duo prompt and they race each other to timeout.</p>
+</section>
+<section id="keepalives-the-counterintuitive-part" class="level2">
+<h2 class="anchored" data-anchor-id="keepalives-the-counterintuitive-part">6.2 Keepalives — the counterintuitive part</h2>
+<pre class="sshconfig"><code>ServerAliveInterval 30
+ServerAliveCountMax 4</code></pre>
+<p>The intuition <em>“bigger numbers = stays alive longer”</em> is <strong>backwards</strong>.</p>
+<ul>
+<li><code>ServerAliveInterval 30</code> means: every 30 seconds of idleness, the SSH client sends a small <em>“are you there?”</em> probe.</li>
+<li><code>ServerAliveCountMax 4</code> means: if 4 consecutive probes get no response, give up and disconnect.</li>
+</ul>
+<p>So this tolerates up to 2 minutes (4 × 30s) of server silence. <strong>The probes themselves are what keep the connection alive</strong> — they prevent firewalls and NAT devices from forgetting your connection during idle periods.</p>
+<p>A <strong>larger</strong> <code>ServerAliveInterval</code> is <em>less</em> protective, not more, because middleboxes have more time to forget you between probes.</p>
+<p>If you want maximum durability, keep <code>ServerAliveInterval</code> small (15–30s) and crank <code>ServerAliveCountMax</code> up (e.g.&nbsp;to 120) to tolerate long server silences.</p>
+</section>
+<section id="why-the-ssh-rsa-lines" class="level2">
+<h2 class="anchored" data-anchor-id="why-the-ssh-rsa-lines">6.3 Why the <code>+ssh-rsa</code> lines?</h2>
+<p>Modern OpenSSH (9.0+) disabled the <code>ssh-rsa</code> signature algorithm by default for security reasons, but many HPC clusters still use server keys that rely on it. Without these lines you may see errors like:</p>
+<pre><code>no matching host key type found. Their offer: ssh-rsa</code></pre>
+<p>The <code>+</code> prefix means <em>“add to the default list”</em> rather than <em>“replace it,”</em> so modern algorithms still take priority — <code>ssh-rsa</code> is just available as a fallback. Keep these lines on cluster connections until your sysadmin confirms server keys have been rotated.</p>
+<hr>
+</section>
+</section>
+<section id="testing-your-setup" class="level1">
+<h1>7. Testing Your Setup</h1>
+<p>Open Terminal.app and run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You should:</p>
+<ol type="1">
+<li>Get <strong>one</strong> Duo prompt → approve it on your phone</li>
+<li>Land on the Unity login node prompt:</li>
+</ol>
+<pre><code>✅ [yourname.##@unity ~]$</code></pre>
+<p>Then <strong>without disconnecting</strong> the first session, open a new Terminal tab and run <code>ssh unity</code> again. The second connection should land <strong>instantly with no Duo prompt</strong>. That’s multiplexing working correctly.</p>
+<p>If the second connection still prompts for Duo:</p>
+<ul>
+<li>Check that <code>~/.ssh/sockets/</code> exists and is writable (<code>ls -ld ~/.ssh/sockets</code>)</li>
+<li>Run <code>ssh -v unity</code> for verbose output and look for <code>ControlMaster</code> / <code>mux</code> messages</li>
+<li>Some HPC sites disable connection sharing for audit reasons; if so, you’ll keep getting Duo prompts and the workflow on the <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a> page will be more painful</li>
+</ul>
+<hr>
+</section>
+<section id="direct-shortcuts-to-compute-nodes" class="level1">
+<h1>8. Direct Shortcuts to Compute Nodes</h1>
 <p>Students often log into specific compute nodes for debugging interactive jobs.</p>
-<p>Add entries like:</p>
-<pre class="sshconfig"><code>Host u126
+<p>Each compute node gets its own <code>Host</code> block that uses <code>unity</code> as a <code>ProxyJump</code>:</p>
+<pre class="sshconfig"><code>### Template for a compute node
+Host u126
     HostName u126.asc.ohio-state.edu
     User yourname.##
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
-    ProxyJump unity
-    ServerAliveInterval 240
-    ServerAliveCountMax 2</code></pre>
-<p>Repeat for other nodes (<code>u170</code>, <code>u181</code>, etc.).</p>
-<p>Usage:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u126</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-<section id="fix-for-older-nodes-requiring-rsa-compatibility" class="level1">
-<h1>7. Fix for Older Nodes Requiring RSA Compatibility</h1>
-<p>Some ASC systems still use older cryptographic settings. Add:</p>
-<pre class="sshconfig"><code>Host u126 u170 u181 unity
     HostKeyAlgorithms +ssh-rsa
-    PubkeyAcceptedAlgorithms +ssh-rsa</code></pre>
-<p>Only include this if needed.</p>
+    PubkeyAcceptedAlgorithms +ssh-rsa
+    ProxyJump unity</code></pre>
+<p>The <code>ProxyJump unity</code> chains through the Unity definition you already wrote (which itself chains through <code>ascjumphost</code>). So a single <code>ssh u126</code> does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.</p>
+<p>Repeat for other nodes (<code>u170</code>, <code>u181</code>, etc.). Usage:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u170</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="multi-hop-multiplexing-in-practice" class="level2">
+<h2 class="anchored" data-anchor-id="multi-hop-multiplexing-in-practice">Multi-hop multiplexing in practice</h2>
+<p>With three levels of hops (<code>laptop → ascjumphost → unity → u170</code>), the multiplexing in the global <code>Host *</code> block helps each hop independently:</p>
+<ul>
+<li><strong>First time:</strong> Duo prompt at <code>ascjumphost</code>, key auth at <code>unity</code>, key auth at <code>u170</code></li>
+<li><strong>Subsequent <code>ssh u170</code>, <code>ssh u139</code>, etc. within 10 minutes:</strong> zero prompts — the <code>ascjumphost</code> socket is reused, the <code>unity</code> socket is reused, only the final hop’s key auth happens</li>
+</ul>
+<p>This is what makes a half-dozen named compute-node aliases practical.</p>
 <hr>
 </section>
-<section id="testing-your-setup" class="level1">
-<h1>8. Testing Your Setup</h1>
-<p>Try:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> unity</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>You should connect with <strong>no password</strong>.</p>
-<p>Then:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> u126</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>You should see a prompt like:</p>
-<pre><code>[username@u126 ~]$</code></pre>
-<hr>
 </section>
-<section id="troubleshooting-guide-common-student-issues" class="level1">
-<h1>9. Troubleshooting Guide (Common Student Issues)</h1>
+<section id="common-pitfalls" class="level1">
+<h1>9. Common Pitfalls</h1>
 <section id="permission-denied-publickey" class="level3">
 <h3 class="anchored" data-anchor-id="permission-denied-publickey">❌ “Permission denied (publickey)”</h3>
-<p>Fix:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Likely causes:</p>
+<ul>
+<li>Wrong <code>IdentityFile</code> path in SSH config</li>
+<li>Key not added to SSH agent — see <a href="../ssh/ssh_keys.html">SSH Keys</a></li>
+<li>Key permissions wrong — fix:</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/buckai_key</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 644 ~/.ssh/buckai_key.pub</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<ul>
+<li>Public key not in cluster’s <code>~/.ssh/authorized_keys</code> (rerun <code>ssh-copy-id</code>)</li>
+<li><code>IdentitiesOnly yes</code> missing — your agent may be offering a different key first that gets rejected</li>
+</ul>
 </section>
 <section id="could-not-resolve-hostname-unity" class="level3">
 <h3 class="anchored" data-anchor-id="could-not-resolve-hostname-unity">❌ “Could not resolve hostname unity”</h3>
 <p>The config file name must be exactly:</p>
 <pre><code>~/.ssh/config</code></pre>
+<p>(no extension, no typos).</p>
 </section>
 <section id="jump-host-asks-for-password-every-time" class="level3">
 <h3 class="anchored" data-anchor-id="jump-host-asks-for-password-every-time">❌ Jump host asks for password every time</h3>
 <p>You forgot to copy the public key:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> <span class="at">-i</span> ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu <span class="at">-p</span> 2200</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="bad-owner-or-permissions" class="level3">
 <h3 class="anchored" data-anchor-id="bad-owner-or-permissions">❌ “Bad owner or permissions”</h3>
-<p>Folder permissions must be strict:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Folder and file permissions must be strict:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 700 ~/.ssh ~/.ssh/sockets</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/config ~/.ssh/buckai_key</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="duo-prompts-on-every-connection-multiplexing-not-working" class="level3">
+<h3 class="anchored" data-anchor-id="duo-prompts-on-every-connection-multiplexing-not-working">❌ Duo prompts on every connection (multiplexing not working)</h3>
+<ul>
+<li>Make sure <code>~/.ssh/sockets/</code> exists and is writable</li>
+<li>Different <code>Host</code> aliases pointing to the same machine each get their own socket — pick one canonical alias and stick with it</li>
+<li><code>ControlPersist 10m</code> is the cooldown — if it’s been more than 10 minutes since you last used the connection, you’ll see Duo again. Bump it (e.g.&nbsp;<code>ControlPersist 1h</code>) if you prefer</li>
+</ul>
+</section>
+<section id="ssh-hangs-on-connect" class="level3">
+<h3 class="anchored" data-anchor-id="ssh-hangs-on-connect">❌ SSH hangs on connect</h3>
+<p>A stale socket file from an uncleanly-killed previous session. Fix:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ~/.ssh/sockets/<span class="pp">*</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>then reconnect.</p>
+</section>
+<section id="no-matching-host-key-type-found.-their-offer-ssh-rsa" class="level3">
+<h3 class="anchored" data-anchor-id="no-matching-host-key-type-found.-their-offer-ssh-rsa">❌ “no matching host key type found. Their offer: ssh-rsa”</h3>
+<p>Add these lines to the affected <code>Host</code> block:</p>
+<pre class="sshconfig"><code>HostKeyAlgorithms +ssh-rsa
+PubkeyAcceptedAlgorithms +ssh-rsa</code></pre>
+</section>
+<section id="wrong-username-case" class="level3">
+<h3 class="anchored" data-anchor-id="wrong-username-case">❌ Wrong username case</h3>
+<p>ASC usernames are case-sensitive in some contexts. If in doubt, use exactly what appears on your ASC account page.</p>
 </section>
 <section id="vs-code-cannot-connect" class="level3">
 <h3 class="anchored" data-anchor-id="vs-code-cannot-connect">❌ VS Code cannot connect</h3>
 <p>Make sure your config includes:</p>
 <pre class="sshconfig"><code>IdentityFile ~/.ssh/buckai_key
 IdentitiesOnly yes</code></pre>
+<p>Then see the <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a> page for the rest of the setup.</p>
 <hr>
 </section>
 </section>
@@ -685,17 +805,14 @@ IdentitiesOnly yes</code></pre>
 <h1>10. Summary</h1>
 <p>With this setup you now have:</p>
 <ul>
-<li>secure SSH access<br>
-</li>
-<li>automated multi-hop login<br>
-</li>
-<li>passwordless authentication<br>
-</li>
-<li>shortcuts to compute nodes<br>
-</li>
-<li>compatibility with VS Code Remote SSH</li>
+<li>✔ secure SSH access</li>
+<li>✔ automated multi-hop login through the ASC jump host</li>
+<li>✔ passwordless authentication using your SSH key</li>
+<li>✔ <strong>connection multiplexing</strong> so you only Duo-tap once per ~10-minute window</li>
+<li>✔ shortcuts to specific compute nodes</li>
+<li>✔ a config ready for VS Code Remote-SSH</li>
 </ul>
-<p>This is the foundation for all future HPC usage.</p>
+<p>This is the foundation for everything else in the handbook. Next up: <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a>.</p>
 
 
 </section>

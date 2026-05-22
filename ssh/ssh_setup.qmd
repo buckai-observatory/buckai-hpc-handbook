@@ -4,27 +4,30 @@ title: "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
 
 # Introduction
 
-High-performance computing (HPC) clusters like **ASC** and **Unity** at OSU are accessed using a tool called **SSH (Secure Shell)**.  
-SSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.
+High-performance computing (HPC) clusters like **ASC** and **Unity** at OSU are accessed using a tool called **SSH (Secure Shell)**.
+SSH lets you log in to remote computers securely and run commands as if you were sitting at that machine.
 
-Because OSU clusters are protected behind institutional firewalls, you **cannot log in directly**.  
+Because OSU clusters are protected behind institutional firewalls, you **cannot log in directly**.
 Instead, you must:
 
-1. connect first to a **jump host** (a secure gateway machine), then  
+1. connect first to a **jump host** (a secure gateway machine), then
 2. from there connect to **Unity** or compute nodes like `u126`, `u170`, `u181`, etc.
 
-SSH can automatically perform these multi-step hops *for you*, but only if your setup is correct.
+SSH can automatically perform these multi-step hops *for you* — and skip extra Duo prompts along the way — **but only if your setup is correct**.
 
 This guide walks through *everything* you need:
 
-✔ Understanding SSH keys  
-✔ Why clusters use jump hosts  
-✔ How to generate a secure key pair  
-✔ How to upload your key to OSU systems  
-✔ How to configure SSH so you can just type:  
+✔ Understanding SSH keys at a high level (see [SSH Keys](ssh_keys.qmd) for the deep dive)
+✔ Why clusters use jump hosts
+✔ How to generate a secure key pair
+✔ How to upload your key to OSU systems
+✔ How to configure SSH so you can just type:
+
 ```bash
 ssh unity
 ```
+
+✔ How to set up **connection multiplexing** so Duo prompts you only once
 ✔ Troubleshooting and common mistakes
 
 It is designed for students and postdocs with **zero prior HPC experience**.
@@ -33,12 +36,12 @@ It is designed for students and postdocs with **zero prior HPC experience**.
 
 # 1. What Is SSH, and Why Do We Use It?
 
-SSH = **Secure Shell**  
+SSH = **Secure Shell**.
 It is a tool that:
 
-- encrypts your connection  
-- verifies your identity  
-- lets you run commands on remote computers  
+- encrypts your connection
+- verifies your identity
+- lets you run commands on remote computers
 
 Almost everything you do on HPC systems — submitting jobs, loading modules, managing files — starts with SSH.
 
@@ -46,25 +49,27 @@ Almost everything you do on HPC systems — submitting jobs, loading modules, ma
 
 Using passwords is:
 
-- slow  
-- easy to mistype  
-- insecure  
-- often disabled for HPC environments  
+- slow
+- easy to mistype
+- insecure
+- often disabled for HPC environments
 
 SSH **keys** are:
 
-- more secure  
-- faster (no password prompts)  
-- mandatory for multi-hop connections  
+- more secure
+- faster (no password prompts)
+- mandatory for multi-hop connections
 - compatible with VS Code Remote-SSH
 
 An SSH key pair consists of:
 
-- **private key** → stays on your laptop  
-- **public key** → copied to remote machines  
+- **private key** → stays on your laptop
+- **public key** → copied to remote machines
 
-Think of it as a **lock and key**:  
+Think of it as a **lock and key**:
 You install the lock (public key) on the cluster, you keep the key (private key) on your computer.
+
+For everything you ever wanted to know about generating keys, permissions, the SSH agent, and rotation — see the [SSH Keys](ssh_keys.qmd) page.
 
 ---
 
@@ -78,7 +83,11 @@ So you must log in through:
 Your Laptop → ASC Jump Host → Unity Login Node → Compute Nodes
 ```
 
-SSH can be configured to do this automatically using `ProxyJump`.
+The jump host (`jump.asc.ohio-state.edu`, port `2200`) is the only door that opens from the outside world. Once you're through it, you can reach Unity and the compute nodes behind it.
+
+SSH can be configured to do this **automatically** using `ProxyJump`, so `ssh unity` will silently chain through the jump host for you.
+
+The jump host also enforces **Duo multi-factor authentication (MFA)**. Every fresh connection to it triggers a push to your phone. This is where most setup pain comes from — and what **SSH connection multiplexing** (Section 5) solves.
 
 ---
 
@@ -98,6 +107,8 @@ You now have:
 ~/.ssh/buckai_key       ← private key (keep safe!)
 ~/.ssh/buckai_key.pub   ← public key (send to clusters)
 ```
+
+See [SSH Keys](ssh_keys.qmd) for what each file is, why permissions matter, and how to load the private key into your SSH agent.
 
 ---
 
@@ -125,24 +136,60 @@ After these two steps, your key is recognized on OSU systems.
 
 This file tells SSH:
 
-- how to connect  
-- which key to use  
-- how to automatically hop through the jump host  
+- how to connect
+- which key to use
+- how to automatically hop through the jump host
+- how to **reuse a single authenticated connection** so you don't get a flood of Duo prompts
 
-Open the file:
+## 5.1 Prepare `~/.ssh/` and create a sockets directory
+
+The sockets directory is where SSH will store small files used to share one authenticated connection across many sessions. Without it, you can't get the "one Duo tap, everything else is free" experience.
+
+```bash
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+mkdir -p ~/.ssh/sockets
+chmod 700 ~/.ssh/sockets
+touch ~/.ssh/config
+chmod 600 ~/.ssh/config
+```
+
+Permissions matter — SSH **silently ignores** the config file if it is world-readable.
+
+## 5.2 Open the config
 
 ```bash
 nano ~/.ssh/config
 ```
 
-Add the following **template** (replace `yourname.##` with your OSU username):
+## 5.3 Add the full template
+
+Paste the following (replace `yourname.##` with your OSU username, e.g. `smith.123`):
 
 ```sshconfig
-### ASC Jumphost
+### Global defaults: apply to ALL hosts
+Host *
+    # Connection multiplexing: authenticate once, reuse the connection
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
+
+    # Keepalives: prevent firewalls/NAT from dropping idle connections
+    ServerAliveInterval 30
+    ServerAliveCountMax 4
+    TCPKeepAlive yes
+
+    # Prefer your SSH agent + macOS Keychain (so keys stay loaded across sessions)
+    AddKeysToAgent yes
+    UseKeychain yes
+
+### ASC Jumphost (requires Duo MFA)
 Host ascjumphost
     HostName jump.asc.ohio-state.edu
     User yourname.##
     Port 2200
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
 
 ### Unity Login Node (via jump host)
 Host unity
@@ -151,8 +198,9 @@ Host unity
     IdentityFile ~/.ssh/buckai_key
     IdentitiesOnly yes
     ProxyJump ascjumphost
-    ServerAliveInterval 240
-    ServerAliveCountMax 2
+    # Older HPC SSH daemons may need these for key-based auth to work:
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
 ```
 
 Now typing:
@@ -167,77 +215,133 @@ automatically performs:
 Laptop → Jump Host → Unity
 ```
 
+with **one Duo prompt** and zero password typing.
+
 ---
 
-# 6. (Optional) Direct Shortcuts to Compute Nodes
+# 6. Understanding the Magic Settings
 
-Students often log into specific compute nodes for debugging interactive jobs.
+These three settings — multiplexing, keepalives, and the `+ssh-rsa` lines — are what make the config above robust. They're worth understanding rather than copying blindly.
 
-Add entries like:
+## 6.1 Connection multiplexing (the Duo painkiller)
 
 ```sshconfig
-Host u126
-    HostName u126.asc.ohio-state.edu
-    User yourname.##
-    IdentityFile ~/.ssh/buckai_key
-    IdentitiesOnly yes
-    ProxyJump unity
-    ServerAliveInterval 240
-    ServerAliveCountMax 2
+ControlMaster auto
+ControlPath ~/.ssh/sockets/%r@%h:%p
+ControlPersist 10m
 ```
 
-Repeat for other nodes (`u170`, `u181`, etc.).
+Together these tell SSH:
 
-Usage:
+- The **first** SSH connection to a host authenticates normally (Duo and all) and creates a Unix socket at `~/.ssh/sockets/...`
+- Any **subsequent** SSH connections to the same host **reuse that socket and skip authentication entirely**
+- The master connection stays alive for **10 minutes** after the last session closes, so quick reconnects don't re-prompt for Duo
 
-```bash
-ssh u126
-```
+This is critical for VS Code Remote-SSH, which opens multiple parallel connections during connect — without multiplexing, each one triggers a separate Duo prompt and they race each other to timeout.
 
----
-
-# 7. Fix for Older Nodes Requiring RSA Compatibility
-
-Some ASC systems still use older cryptographic settings. Add:
+## 6.2 Keepalives — the counterintuitive part
 
 ```sshconfig
-Host u126 u170 u181 unity
-    HostKeyAlgorithms +ssh-rsa
-    PubkeyAcceptedAlgorithms +ssh-rsa
+ServerAliveInterval 30
+ServerAliveCountMax 4
 ```
 
-Only include this if needed.
+The intuition *"bigger numbers = stays alive longer"* is **backwards**.
+
+- `ServerAliveInterval 30` means: every 30 seconds of idleness, the SSH client sends a small *"are you there?"* probe.
+- `ServerAliveCountMax 4` means: if 4 consecutive probes get no response, give up and disconnect.
+
+So this tolerates up to 2 minutes (4 × 30s) of server silence. **The probes themselves are what keep the connection alive** — they prevent firewalls and NAT devices from forgetting your connection during idle periods.
+
+A **larger** `ServerAliveInterval` is *less* protective, not more, because middleboxes have more time to forget you between probes.
+
+If you want maximum durability, keep `ServerAliveInterval` small (15–30s) and crank `ServerAliveCountMax` up (e.g. to 120) to tolerate long server silences.
+
+## 6.3 Why the `+ssh-rsa` lines?
+
+Modern OpenSSH (9.0+) disabled the `ssh-rsa` signature algorithm by default for security reasons, but many HPC clusters still use server keys that rely on it. Without these lines you may see errors like:
+
+```
+no matching host key type found. Their offer: ssh-rsa
+```
+
+The `+` prefix means *"add to the default list"* rather than *"replace it,"* so modern algorithms still take priority — `ssh-rsa` is just available as a fallback. Keep these lines on cluster connections until your sysadmin confirms server keys have been rotated.
 
 ---
 
-# 8. Testing Your Setup
+# 7. Testing Your Setup
 
-Try:
+Open Terminal.app and run:
 
 ```bash
 ssh unity
 ```
 
-You should connect with **no password**.
+You should:
 
-Then:
-
-```bash
-ssh u126
-```
-
-You should see a prompt like:
+1. Get **one** Duo prompt → approve it on your phone
+2. Land on the Unity login node prompt:
 
 ```
-[username@u126 ~]$
+✅ [yourname.##@unity ~]$
 ```
+
+Then **without disconnecting** the first session, open a new Terminal tab and run `ssh unity` again. The second connection should land **instantly with no Duo prompt**. That's multiplexing working correctly.
+
+If the second connection still prompts for Duo:
+
+- Check that `~/.ssh/sockets/` exists and is writable (`ls -ld ~/.ssh/sockets`)
+- Run `ssh -v unity` for verbose output and look for `ControlMaster` / `mux` messages
+- Some HPC sites disable connection sharing for audit reasons; if so, you'll keep getting Duo prompts and the workflow on the [VS Code Remote-SSH](vscode_remote_ssh.qmd) page will be more painful
 
 ---
 
-# 9. Troubleshooting Guide (Common Student Issues)
+# 8. Direct Shortcuts to Compute Nodes
+
+Students often log into specific compute nodes for debugging interactive jobs.
+
+Each compute node gets its own `Host` block that uses `unity` as a `ProxyJump`:
+
+```sshconfig
+### Template for a compute node
+Host u126
+    HostName u126.asc.ohio-state.edu
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+    ProxyJump unity
+```
+
+The `ProxyJump unity` chains through the Unity definition you already wrote (which itself chains through `ascjumphost`). So a single `ssh u126` does three hops behind the scenes — and thanks to multiplexing, only the first hop triggers Duo.
+
+Repeat for other nodes (`u170`, `u181`, etc.). Usage:
+
+```bash
+ssh u170
+```
+
+## Multi-hop multiplexing in practice
+
+With three levels of hops (`laptop → ascjumphost → unity → u170`), the multiplexing in the global `Host *` block helps each hop independently:
+
+- **First time:** Duo prompt at `ascjumphost`, key auth at `unity`, key auth at `u170`
+- **Subsequent `ssh u170`, `ssh u139`, etc. within 10 minutes:** zero prompts — the `ascjumphost` socket is reused, the `unity` socket is reused, only the final hop's key auth happens
+
+This is what makes a half-dozen named compute-node aliases practical.
+
+---
+
+# 9. Common Pitfalls
 
 ### ❌ "Permission denied (publickey)"
-Fix:
+
+Likely causes:
+
+- Wrong `IdentityFile` path in SSH config
+- Key not added to SSH agent — see [SSH Keys](ssh_keys.qmd)
+- Key permissions wrong — fix:
 
 ```bash
 chmod 700 ~/.ssh
@@ -245,14 +349,21 @@ chmod 600 ~/.ssh/buckai_key
 chmod 644 ~/.ssh/buckai_key.pub
 ```
 
+- Public key not in cluster's `~/.ssh/authorized_keys` (rerun `ssh-copy-id`)
+- `IdentitiesOnly yes` missing — your agent may be offering a different key first that gets rejected
+
 ### ❌ "Could not resolve hostname unity"
+
 The config file name must be exactly:
 
 ```
 ~/.ssh/config
 ```
 
+(no extension, no typos).
+
 ### ❌ Jump host asks for password every time
+
 You forgot to copy the public key:
 
 ```bash
@@ -260,13 +371,45 @@ ssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@jump.asc.ohio-state.edu -p 2200
 ```
 
 ### ❌ "Bad owner or permissions"
-Folder permissions must be strict:
+
+Folder and file permissions must be strict:
 
 ```bash
-chmod 700 ~/.ssh
+chmod 700 ~/.ssh ~/.ssh/sockets
+chmod 600 ~/.ssh/config ~/.ssh/buckai_key
 ```
 
+### ❌ Duo prompts on every connection (multiplexing not working)
+
+- Make sure `~/.ssh/sockets/` exists and is writable
+- Different `Host` aliases pointing to the same machine each get their own socket — pick one canonical alias and stick with it
+- `ControlPersist 10m` is the cooldown — if it's been more than 10 minutes since you last used the connection, you'll see Duo again. Bump it (e.g. `ControlPersist 1h`) if you prefer
+
+### ❌ SSH hangs on connect
+
+A stale socket file from an uncleanly-killed previous session. Fix:
+
+```bash
+rm ~/.ssh/sockets/*
+```
+
+then reconnect.
+
+### ❌ "no matching host key type found. Their offer: ssh-rsa"
+
+Add these lines to the affected `Host` block:
+
+```sshconfig
+HostKeyAlgorithms +ssh-rsa
+PubkeyAcceptedAlgorithms +ssh-rsa
+```
+
+### ❌ Wrong username case
+
+ASC usernames are case-sensitive in some contexts. If in doubt, use exactly what appears on your ASC account page.
+
 ### ❌ VS Code cannot connect
+
 Make sure your config includes:
 
 ```sshconfig
@@ -274,16 +417,19 @@ IdentityFile ~/.ssh/buckai_key
 IdentitiesOnly yes
 ```
 
+Then see the [VS Code Remote-SSH](vscode_remote_ssh.qmd) page for the rest of the setup.
+
 ---
 
 # 10. Summary
 
 With this setup you now have:
 
-- secure SSH access  
-- automated multi-hop login  
-- passwordless authentication  
-- shortcuts to compute nodes  
-- compatibility with VS Code Remote SSH  
+- ✔ secure SSH access
+- ✔ automated multi-hop login through the ASC jump host
+- ✔ passwordless authentication using your SSH key
+- ✔ **connection multiplexing** so you only Duo-tap once per ~10-minute window
+- ✔ shortcuts to specific compute nodes
+- ✔ a config ready for VS Code Remote-SSH
 
-This is the foundation for all future HPC usage.
+This is the foundation for everything else in the handbook. Next up: [VS Code Remote-SSH + Claude Code](vscode_remote_ssh.qmd).

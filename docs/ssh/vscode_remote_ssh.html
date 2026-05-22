@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>VS Code Remote SSH Setup – BuckAI HPC Handbook</title>
+<title>VS Code Remote-SSH + Claude Code on HPC – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -251,7 +286,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/vscode_remote_ssh.html">VS Code Remote SSH Setup</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code on HPC</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -311,7 +346,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">VS Code Remote SSH Setup</span></a>
+ <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
   </div>
 </li>
       </ul>
@@ -392,8 +427,64 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#install-extension" id="toc-install-extension" class="nav-link active" data-scroll-target="#install-extension">Install Extension</a></li>
-  <li><a href="#connect" id="toc-connect" class="nav-link" data-scroll-target="#connect">Connect</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#why-this-setup" id="toc-why-this-setup" class="nav-link" data-scroll-target="#why-this-setup">Why this setup?</a></li>
+  <li><a href="#prerequisites-checklist" id="toc-prerequisites-checklist" class="nav-link" data-scroll-target="#prerequisites-checklist">Prerequisites checklist</a></li>
+  <li><a href="#install-vs-code" id="toc-install-vs-code" class="nav-link" data-scroll-target="#install-vs-code">1. Install VS Code</a></li>
+  <li><a href="#install-the-remote-ssh-extension" id="toc-install-the-remote-ssh-extension" class="nav-link" data-scroll-target="#install-the-remote-ssh-extension">2. Install the Remote-SSH Extension</a></li>
+  <li><a href="#configure-vs-code-timeouts" id="toc-configure-vs-code-timeouts" class="nav-link" data-scroll-target="#configure-vs-code-timeouts">3. Configure VS Code Timeouts</a>
+  <ul class="collapse">
+  <li><a href="#what-these-settings-do" id="toc-what-these-settings-do" class="nav-link" data-scroll-target="#what-these-settings-do">What these settings do</a></li>
+  </ul></li>
+  <li><a href="#connect-to-the-cluster" id="toc-connect-to-the-cluster" class="nav-link" data-scroll-target="#connect-to-the-cluster">4. Connect to the Cluster</a>
+  <ul class="collapse">
+  <li><a href="#if-the-connection-fails-with-connecting-with-ssh-timed-out" id="toc-if-the-connection-fails-with-connecting-with-ssh-timed-out" class="nav-link" data-scroll-target="#if-the-connection-fails-with-connecting-with-ssh-timed-out">If the connection fails with “Connecting with SSH timed out”</a></li>
+  </ul></li>
+  <li><a href="#open-your-project-directory" id="toc-open-your-project-directory" class="nav-link" data-scroll-target="#open-your-project-directory">5. Open Your Project Directory</a></li>
+  <li><a href="#verify-your-shell-environment" id="toc-verify-your-shell-environment" class="nav-link" data-scroll-target="#verify-your-shell-environment">6. Verify Your Shell Environment</a>
+  <ul class="collapse">
+  <li><a href="#open-the-integrated-terminal" id="toc-open-the-integrated-terminal" class="nav-link" data-scroll-target="#open-the-integrated-terminal">6.1 Open the integrated terminal</a></li>
+  <li><a href="#check-that-your-config-is-loaded" id="toc-check-that-your-config-is-loaded" class="nav-link" data-scroll-target="#check-that-your-config-is-loaded">6.2 Check that your config is loaded</a></li>
+  <li><a href="#common-fix-source-.bashrc-from-.bash_profile" id="toc-common-fix-source-.bashrc-from-.bash_profile" class="nav-link" data-scroll-target="#common-fix-source-.bashrc-from-.bash_profile">6.3 Common fix: source <code>.bashrc</code> from <code>.bash_profile</code></a></li>
+  <li><a href="#force-a-login-shell-if-needed" id="toc-force-a-login-shell-if-needed" class="nav-link" data-scroll-target="#force-a-login-shell-if-needed">6.4 Force a login shell (if needed)</a></li>
+  </ul></li>
+  <li><a href="#install-claude-codes-vs-code-extension" id="toc-install-claude-codes-vs-code-extension" class="nav-link" data-scroll-target="#install-claude-codes-vs-code-extension">7. Install Claude Code’s VS Code Extension</a>
+  <ul class="collapse">
+  <li><a href="#auto-install-easiest" id="toc-auto-install-easiest" class="nav-link" data-scroll-target="#auto-install-easiest">7.1 Auto-install (easiest)</a></li>
+  <li><a href="#manual-install-if-auto-install-didnt-trigger" id="toc-manual-install-if-auto-install-didnt-trigger" class="nav-link" data-scroll-target="#manual-install-if-auto-install-didnt-trigger">7.2 Manual install (if auto-install didn’t trigger)</a></li>
+  <li><a href="#what-the-extension-adds" id="toc-what-the-extension-adds" class="nav-link" data-scroll-target="#what-the-extension-adds">7.3 What the extension adds</a></li>
+  <li><a href="#optional-enable-auto-save" id="toc-optional-enable-auto-save" class="nav-link" data-scroll-target="#optional-enable-auto-save">7.4 Optional: enable auto-save</a></li>
+  </ul></li>
+  <li><a href="#connecting-directly-to-compute-nodes-advanced" id="toc-connecting-directly-to-compute-nodes-advanced" class="nav-link" data-scroll-target="#connecting-directly-to-compute-nodes-advanced">8. Connecting Directly to Compute Nodes (Advanced)</a>
+  <ul class="collapse">
+  <li><a href="#the-pattern" id="toc-the-pattern" class="nav-link" data-scroll-target="#the-pattern">8.1 The pattern</a></li>
+  <li><a href="#opening-vs-code-directly-on-a-compute-node" id="toc-opening-vs-code-directly-on-a-compute-node" class="nav-link" data-scroll-target="#opening-vs-code-directly-on-a-compute-node">8.2 Opening VS Code directly on a compute node</a></li>
+  <li><a href="#port-forwarding-shortcuts-for-jupyter" id="toc-port-forwarding-shortcuts-for-jupyter" class="nav-link" data-scroll-target="#port-forwarding-shortcuts-for-jupyter">8.3 Port-forwarding shortcuts for Jupyter</a></li>
+  <li><a href="#when-you-dont-know-the-node-in-advance" id="toc-when-you-dont-know-the-node-in-advance" class="nav-link" data-scroll-target="#when-you-dont-know-the-node-in-advance">8.4 When you don’t know the node in advance</a></li>
+  </ul></li>
+  <li><a href="#daily-workflow" id="toc-daily-workflow" class="nav-link" data-scroll-target="#daily-workflow">9. Daily Workflow</a>
+  <ul class="collapse">
+  <li><a href="#starting-a-session" id="toc-starting-a-session" class="nav-link" data-scroll-target="#starting-a-session">9.1 Starting a session</a></li>
+  <li><a href="#the-interaction-model" id="toc-the-interaction-model" class="nav-link" data-scroll-target="#the-interaction-model">9.2 The interaction model</a></li>
+  <li><a href="#running-cluster-jobs" id="toc-running-cluster-jobs" class="nav-link" data-scroll-target="#running-cluster-jobs">9.3 Running cluster jobs</a></li>
+  <li><a href="#pausing-work" id="toc-pausing-work" class="nav-link" data-scroll-target="#pausing-work">9.4 Pausing work</a></li>
+  <li><a href="#ending-a-session" id="toc-ending-a-session" class="nav-link" data-scroll-target="#ending-a-session">9.5 Ending a session</a></li>
+  </ul></li>
+  <li><a href="#troubleshooting" id="toc-troubleshooting" class="nav-link" data-scroll-target="#troubleshooting">10. Troubleshooting</a>
+  <ul class="collapse">
+  <li><a href="#connecting-with-ssh-timed-out-during-remote-ssh-connect" id="toc-connecting-with-ssh-timed-out-during-remote-ssh-connect" class="nav-link" data-scroll-target="#connecting-with-ssh-timed-out-during-remote-ssh-connect">❌ “Connecting with SSH timed out” during Remote-SSH connect</a></li>
+  <li><a href="#no-matching-host-key-type-found.-their-offer-ssh-rsa" id="toc-no-matching-host-key-type-found.-their-offer-ssh-rsa" class="nav-link" data-scroll-target="#no-matching-host-key-type-found.-their-offer-ssh-rsa">❌ “no matching host key type found. Their offer: ssh-rsa”</a></li>
+  <li><a href="#aliases-env-vars-not-available-in-integrated-terminal" id="toc-aliases-env-vars-not-available-in-integrated-terminal" class="nav-link" data-scroll-target="#aliases-env-vars-not-available-in-integrated-terminal">❌ Aliases / env vars not available in integrated terminal</a></li>
+  <li><a href="#claude-code-cant-find-the-project-root" id="toc-claude-code-cant-find-the-project-root" class="nav-link" data-scroll-target="#claude-code-cant-find-the-project-root">❌ Claude Code can’t find the project root</a></li>
+  <li><a href="#duo-prompt-appears-repeatedly" id="toc-duo-prompt-appears-repeatedly" class="nav-link" data-scroll-target="#duo-prompt-appears-repeatedly">❌ Duo prompt appears repeatedly</a></li>
+  <li><a href="#vs-code-crashes-or-hangs-on-connect" id="toc-vs-code-crashes-or-hangs-on-connect" class="nav-link" data-scroll-target="#vs-code-crashes-or-hangs-on-connect">❌ VS Code crashes or hangs on connect</a></li>
+  <li><a href="#frozen-terminal-after-running-a-full-screen-program" id="toc-frozen-terminal-after-running-a-full-screen-program" class="nav-link" data-scroll-target="#frozen-terminal-after-running-a-full-screen-program">❌ Frozen terminal after running a full-screen program</a></li>
+  <li><a href="#compute-node-ssh-works-once-then-hangs" id="toc-compute-node-ssh-works-once-then-hangs" class="nav-link" data-scroll-target="#compute-node-ssh-works-once-then-hangs">❌ Compute-node SSH works once, then hangs</a></li>
+  </ul></li>
+  <li><a href="#architecture-summary" id="toc-architecture-summary" class="nav-link" data-scroll-target="#architecture-summary">11. Architecture Summary</a></li>
+  <li><a href="#quick-reference-card" id="toc-quick-reference-card" class="nav-link" data-scroll-target="#quick-reference-card">12. Quick Reference Card</a></li>
+  <li><a href="#files-modified-by-this-guide" id="toc-files-modified-by-this-guide" class="nav-link" data-scroll-target="#files-modified-by-this-guide">13. Files Modified by This Guide</a></li>
+  <li><a href="#when-not-to-use-this-setup" id="toc-when-not-to-use-this-setup" class="nav-link" data-scroll-target="#when-not-to-use-this-setup">14. When NOT to Use This Setup</a></li>
   </ul>
 </nav>
     </div>
@@ -401,9 +492,9 @@ ul.task-list li input[type="checkbox"] {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/vscode_remote_ssh.html">VS Code Remote SSH Setup</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../ssh/ssh_setup.html">SSH</a></li><li class="breadcrumb-item"><a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code on HPC</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">VS Code Remote SSH Setup</h1>
+<h1 class="title">VS Code Remote-SSH + Claude Code on HPC</h1>
 </div>
 
 
@@ -420,19 +511,485 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="install-extension" class="level1">
-<h1>Install Extension</h1>
-<p>Install <strong>Remote – SSH</strong> in VS Code.</p>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This page walks through setting up a robust, persistent <strong>Claude Code</strong> workflow against OSU HPC clusters (ASC, Unity, OSC) through the ASC jumphost — using <strong>VS Code Remote-SSH</strong> as the editor and terminal host.</p>
+<p><strong>Audience:</strong> BuckAI students, postdocs, and collaborators who want to run Claude Code against files and compute resources living on a cluster reachable only through the ASC jumphost.</p>
+<p><strong>Prerequisites:</strong> A working SSH setup (see <a href="../ssh/ssh_setup.html">SSH Setup</a> and <a href="../ssh/ssh_keys.html">SSH Keys</a>) — you should already be able to <code>ssh unity</code> from a plain terminal with <strong>one</strong> Duo prompt and connection multiplexing in place.</p>
+<hr>
 </section>
-<section id="connect" class="level1">
-<h1>Connect</h1>
+<section id="why-this-setup" class="level1">
+<h1>Why this setup?</h1>
+<p>Running Claude Code directly inside a plain SSH session on the cluster works, but has three real problems:</p>
 <ol type="1">
-<li>Cmd+Shift+P<br>
-</li>
-<li>Remote-SSH: Connect<br>
-</li>
-<li>Select <code>unity</code></li>
+<li><strong>SSH disconnects lose state.</strong> Network blips, laptop sleep, or VPN hiccups kill your session and discard Claude’s chat memory mid-task — sometimes leaving files half-edited.</li>
+<li><strong><code>tmux</code> has rough edges.</strong> Scrolling degrades over time; alternate-screen-buffer issues require manual <code>reset</code>; the learning curve is steep.</li>
+<li><strong>Duo MFA is painful.</strong> Every new SSH connection through the jumphost triggers a separate Duo push, and parallel connections (like VS Code makes) can race each other and time out.</li>
 </ol>
+<p>This guide solves all three by combining:</p>
+<ul>
+<li><strong>SSH connection multiplexing</strong> (already set up in <a href="../ssh/ssh_setup.html">SSH Setup</a>) — authenticate once, get every subsequent connection for free</li>
+<li><strong>VS Code Remote-SSH</strong> — automatic reconnection, persistent server-side state, native terminal scrollback</li>
+<li><strong>The Claude Code VS Code extension</strong> — visual diff review, selection-based prompting, shared sessions between CLI and GUI</li>
+</ul>
+<p>The end result:</p>
+<p>✔ You authenticate with <strong>one Duo tap</strong> ✔ Your editor and terminals <strong>live on the cluster</strong> but render locally ✔ Files are real (not mounted), and execution happens where the data lives ✔ Your session <strong>survives laptop sleep</strong> and network interruptions</p>
+<hr>
+</section>
+<section id="prerequisites-checklist" class="level1">
+<h1>Prerequisites checklist</h1>
+<p>Before starting, you should have:</p>
+<ul>
+<li>A Mac (these instructions are macOS-specific in places; Linux is analogous)</li>
+<li>An ASC account with SSH access to the jumphost and Unity</li>
+<li>A working <code>~/.ssh/config</code> from the <a href="../ssh/ssh_setup.html">SSH Setup</a> page, including the <code>Host *</code> multiplexing block</li>
+<li>An SSH key generated and installed on ASC (<a href="../ssh/ssh_keys.html">SSH Keys</a>)</li>
+<li>A working <code>claude</code> CLI on the cluster — confirm with <code>ssh unity which claude</code></li>
+</ul>
+<p>If you don’t yet have Claude Code installed on the cluster, install it there first using the standard Claude Code installation. This guide assumes the CLI is already working over a basic SSH session.</p>
+<hr>
+</section>
+<section id="install-vs-code" class="level1">
+<h1>1. Install VS Code</h1>
+<p>If you don’t have it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install <span class="at">--cask</span> visual-studio-code</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or download from <a href="https://code.visualstudio.com/">code.visualstudio.com</a>.</p>
+<hr>
+</section>
+<section id="install-the-remote-ssh-extension" class="level1">
+<h1>2. Install the Remote-SSH Extension</h1>
+<ol type="1">
+<li>Open VS Code</li>
+<li>Click the Extensions icon in the left sidebar (or <code>Cmd+Shift+X</code>)</li>
+<li>Search for <strong>Remote - SSH</strong></li>
+<li>Install the one published by <strong>Microsoft</strong> (verified publisher)</li>
+</ol>
+<hr>
+</section>
+<section id="configure-vs-code-timeouts" class="level1">
+<h1>3. Configure VS Code Timeouts</h1>
+<p>VS Code’s default SSH timeout is tight when Duo is in the loop. Bump it.</p>
+<ol type="1">
+<li><code>Cmd+Shift+P</code> → type <strong>Preferences: Open User Settings (JSON)</strong> → Enter</li>
+<li>Your settings file opens. It may already contain something like:</li>
+</ol>
+<pre class="jsonc"><code>{
+    "workbench.colorTheme": "Default Light Modern"
+}</code></pre>
+<ol start="3" type="1">
+<li>Add the following keys, <strong>paying careful attention to commas</strong>:</li>
+</ol>
+<pre class="jsonc"><code>{
+    "workbench.colorTheme": "Default Light Modern",
+    "remote.SSH.connectTimeout": 120,
+    "remote.SSH.useLocalServer": true,
+    "remote.SSH.showLoginTerminal": true,
+    "remote.SSH.remotePlatform": {
+        "unity": "linux"
+    }
+}</code></pre>
+<p><strong>JSON comma rule:</strong> every entry needs a comma after it <em>except</em> the last one before the closing <code>}</code>. If VS Code shows red squiggly underlines, you broke this rule.</p>
+<ol start="4" type="1">
+<li>Save the file (<code>Cmd+S</code>).</li>
+</ol>
+<section id="what-these-settings-do" class="level3">
+<h3 class="anchored" data-anchor-id="what-these-settings-do">What these settings do</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Setting</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>remote.SSH.connectTimeout: 120</code></td>
+<td>Wait up to 2 minutes for the SSH handshake (accommodates Duo)</td>
+</tr>
+<tr class="even">
+<td><code>remote.SSH.useLocalServer: true</code></td>
+<td>Use your local SSH binary, so <code>~/.ssh/config</code> is honored</td>
+</tr>
+<tr class="odd">
+<td><code>remote.SSH.showLoginTerminal: true</code></td>
+<td>Show the SSH login terminal during connect, so Duo prompts and errors are visible (invaluable for debugging)</td>
+</tr>
+<tr class="even">
+<td><code>remote.SSH.remotePlatform.unity: "linux"</code></td>
+<td>Pre-declare the OS so VS Code skips a detection step</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="connect-to-the-cluster" class="level1">
+<h1>4. Connect to the Cluster</h1>
+<ol type="1">
+<li><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Connect to Host…</strong></li>
+<li>Select <code>unity</code> from the list (VS Code reads your <code>~/.ssh/config</code>)</li>
+<li>VS Code opens a new window and starts connecting</li>
+<li>Watch your phone for <strong>one</strong> Duo push → approve</li>
+<li>VS Code will download and install its server component on the cluster (one-time, takes ~30 seconds)</li>
+<li>The bottom-left corner of the VS Code window should show:</li>
+</ol>
+<pre><code>✅ SSH: unity</code></pre>
+<p>in green when connected.</p>
+<section id="if-the-connection-fails-with-connecting-with-ssh-timed-out" class="level3">
+<h3 class="anchored" data-anchor-id="if-the-connection-fails-with-connecting-with-ssh-timed-out">If the connection fails with “Connecting with SSH timed out”</h3>
+<ul>
+<li><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Show Log</strong> and read the actual error</li>
+<li>Most often this means SSH multiplexing isn’t working; re-verify Section 7 of <a href="../ssh/ssh_setup.html">SSH Setup</a> (<code>ssh unity</code> twice should give one Duo and one instant connect)</li>
+<li>Try increasing <code>connectTimeout</code> to <code>180</code></li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="open-your-project-directory" class="level1">
+<h1>5. Open Your Project Directory</h1>
+<p>Once connected:</p>
+<ol type="1">
+<li><strong>File → Open Folder…</strong></li>
+<li>Navigate to your project on the cluster, e.g.&nbsp;<code>/fs/project/&lt;group&gt;/&lt;username&gt;/my_project</code></li>
+<li>Click <strong>Open</strong></li>
+<li>You may get one more Duo prompt the first time the file browser walks the filesystem — approve it</li>
+</ol>
+<p>VS Code remembers recently-opened remote folders, so subsequent sessions are faster.</p>
+<hr>
+</section>
+<section id="verify-your-shell-environment" class="level1">
+<h1>6. Verify Your Shell Environment</h1>
+<p>This is the step everyone skips and then regrets. VS Code’s integrated terminal on the remote host needs to source your <code>.bashrc</code> so your aliases, conda env, <code>PATH</code>, and <code>ANTHROPIC_API_KEY</code> are all available.</p>
+<section id="open-the-integrated-terminal" class="level2">
+<h2 class="anchored" data-anchor-id="open-the-integrated-terminal">6.1 Open the integrated terminal</h2>
+<p><code>Ctrl+`</code> (control + backtick) opens the terminal panel. <strong>This terminal runs on the cluster</strong>, not on your Mac. You should see your usual cluster prompt.</p>
+</section>
+<section id="check-that-your-config-is-loaded" class="level2">
+<h2 class="anchored" data-anchor-id="check-that-your-config-is-loaded">6.2 Check that your config is loaded</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="va">$ANTHROPIC_API_KEY</span>    <span class="co"># should print your key</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span>                       <span class="co"># should list your aliases</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">which</span> claude                <span class="co"># should print path to Claude Code</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If any of these are missing, your shell startup files aren’t being sourced correctly.</p>
+</section>
+<section id="common-fix-source-.bashrc-from-.bash_profile" class="level2">
+<h2 class="anchored" data-anchor-id="common-fix-source-.bashrc-from-.bash_profile">6.3 Common fix: source <code>.bashrc</code> from <code>.bash_profile</code></h2>
+<p>Edit <code>~/.bash_profile</code> on the cluster to ensure it sources <code>.bashrc</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># At the end of ~/.bash_profile, add:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">[</span> <span class="ot">-f</span> ~/.bashrc <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="bu">source</span> ~/.bashrc</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The reason this matters: VS Code’s integrated terminal usually starts as a <strong>login</strong> shell on Linux, which reads <code>~/.bash_profile</code> but <strong>not</strong> <code>~/.bashrc</code> unless the former explicitly sources the latter.</p>
+</section>
+<section id="force-a-login-shell-if-needed" class="level2">
+<h2 class="anchored" data-anchor-id="force-a-login-shell-if-needed">6.4 Force a login shell (if needed)</h2>
+<p>If your aliases still aren’t appearing, force the terminal to run as a login shell. In VS Code’s settings JSON, add:</p>
+<pre class="jsonc"><code>"terminal.integrated.profiles.linux": {
+    "bash (login)": {
+        "path": "bash",
+        "args": ["-l"]
+    }
+},
+"terminal.integrated.defaultProfile.linux": "bash (login)"</code></pre>
+<hr>
+</section>
+</section>
+<section id="install-claude-codes-vs-code-extension" class="level1">
+<h1>7. Install Claude Code’s VS Code Extension</h1>
+<p>The extension is <strong>not a replacement</strong> for the CLI. It’s a bridge that gives the CLI access to VS Code’s visual features (diff viewer, selection-based prompting, problems panel integration). The extension and CLI share session state — you can switch between them mid-task.</p>
+<section id="auto-install-easiest" class="level2">
+<h2 class="anchored" data-anchor-id="auto-install-easiest">7.1 Auto-install (easiest)</h2>
+<p>The first time you run <code>claude</code> in VS Code’s integrated terminal while connected via Remote-SSH, the extension detects it and offers to install itself:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /path/to/your/project</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">claude</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After a moment, VS Code prompts to install the Claude Code extension. Accept.</p>
+</section>
+<section id="manual-install-if-auto-install-didnt-trigger" class="level2">
+<h2 class="anchored" data-anchor-id="manual-install-if-auto-install-didnt-trigger">7.2 Manual install (if auto-install didn’t trigger)</h2>
+<ol type="1">
+<li>Open the Extensions panel (<code>Cmd+Shift+X</code>)</li>
+<li>Search for <strong>Claude Code</strong></li>
+<li>Install the official Anthropic extension</li>
+<li><strong>Critical:</strong> make sure it installs on the <strong>remote</strong> (cluster) side, not locally on your Mac. After installation, look at the Extensions panel — you’ll see two sections: <strong>Local - Installed</strong> and <strong>SSH: unity - Installed</strong>. Claude Code should appear under the SSH section. If it’s only local, click the extension and press <strong>Install in SSH: unity</strong>.</li>
+</ol>
+</section>
+<section id="what-the-extension-adds" class="level2">
+<h2 class="anchored" data-anchor-id="what-the-extension-adds">7.3 What the extension adds</h2>
+<p>Once installed, the following features become available:</p>
+<ul>
+<li><strong>Inline diff review:</strong> when Claude edits a file, VS Code’s native side-by-side diff viewer pops open. Accept or reject changes with a click instead of reading diffs in the terminal.</li>
+<li><strong>Selection-based prompting:</strong> highlight code in an editor pane, press <code>Option+K</code> (Mac), and an <code>@file.py#L23-L45</code> reference is inserted into your Claude prompt.</li>
+<li><strong>Terminal output references:</strong> in your prompt, use <code>@terminal:name</code> to give Claude access to a terminal’s output without copy-pasting.</li>
+<li><strong>Problems panel access:</strong> Claude can see VS Code’s linter and compiler errors directly.</li>
+<li><strong>Dedicated chat panel:</strong> an alternative to the terminal interface, accessible via the Claude icon in the sidebar.</li>
+</ul>
+</section>
+<section id="optional-enable-auto-save" class="level2">
+<h2 class="anchored" data-anchor-id="optional-enable-auto-save">7.4 Optional: enable auto-save</h2>
+<p>Settings → search <strong>auto save</strong> → set <strong>Auto Save</strong> to <code>afterDelay</code> with delay <code>1000</code>. This ensures that when Claude edits a file, your open editor reloads the changes without conflicting with unsaved buffer state.</p>
+<hr>
+</section>
+</section>
+<section id="connecting-directly-to-compute-nodes-advanced" class="level1">
+<h1>8. Connecting Directly to Compute Nodes (Advanced)</h1>
+<p>For interactive sessions on a specific compute node — e.g.&nbsp;running a Jupyter notebook with GPU access, or attaching to a long-running job’s allocated node — you can SSH straight through the jumphost to the node. No need to hop through the login node manually.</p>
+<section id="the-pattern" class="level2">
+<h2 class="anchored" data-anchor-id="the-pattern">8.1 The pattern</h2>
+<p>Each compute node gets its own <code>Host</code> block in <code>~/.ssh/config</code> that uses Unity as a <code>ProxyJump</code>:</p>
+<pre class="sshconfig"><code>### Template for a compute node
+Host u170
+    HostName u170.asc.ohio-state.edu
+    User yourname.##
+    IdentityFile ~/.ssh/buckai_key
+    IdentitiesOnly yes
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+    ProxyJump unity</code></pre>
+<p>See <a href="../ssh/ssh_setup.html">SSH Setup §8</a> for the multi-hop multiplexing details.</p>
+</section>
+<section id="opening-vs-code-directly-on-a-compute-node" class="level2">
+<h2 class="anchored" data-anchor-id="opening-vs-code-directly-on-a-compute-node">8.2 Opening VS Code directly on a compute node</h2>
+<p>You can use VS Code Remote-SSH to connect to a compute node directly: in the <strong>Remote-SSH: Connect to Host</strong> dialog, type <code>u170</code> (the alias) instead of <code>unity</code>. This gives you the <strong>full</strong> VS Code experience — editor, integrated terminal, Claude Code — running on the GPU node, with <strong>no port forwarding ceremony</strong>.</p>
+</section>
+<section id="port-forwarding-shortcuts-for-jupyter" class="level2">
+<h2 class="anchored" data-anchor-id="port-forwarding-shortcuts-for-jupyter">8.3 Port-forwarding shortcuts for Jupyter</h2>
+<p>If you’re running Jupyter on a compute node and want to view it in a browser on your laptop, a handy shell alias is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup170=<span class="st">'ssh -L 9099:127.0.0.1:8888 u170'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This forwards your laptop’s port <code>9099</code> to the compute node’s port <code>8888</code> (where Jupyter listens). Open <code>http://127.0.0.1:9099</code> in your browser to use the notebook.</p>
+</section>
+<section id="when-you-dont-know-the-node-in-advance" class="level2">
+<h2 class="anchored" data-anchor-id="when-you-dont-know-the-node-in-advance">8.4 When you don’t know the node in advance</h2>
+<p>Slurm assigns interactive nodes dynamically, so for one-off <code>sinteractive</code> sessions you can’t pre-write a config block. In that case, do the allocation from a VS Code integrated terminal connected to Unity:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-m</span> 48000 <span class="at">-t</span> 48:00:00 <span class="at">-g</span> 1   <span class="co"># request a GPU node, say</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once allocated, you’re SSH’d to the compute node inside that terminal pane. For lighter-weight tools (Jupyter on the node, etc.), <code>srun</code> and port forwarding from inside the VS Code terminal is usually enough.</p>
+<hr>
+</section>
+</section>
+<section id="daily-workflow" class="level1">
+<h1>9. Daily Workflow</h1>
+<section id="starting-a-session" class="level2">
+<h2 class="anchored" data-anchor-id="starting-a-session">9.1 Starting a session</h2>
+<ol type="1">
+<li>Open VS Code</li>
+<li>Click the green corner in the bottom-left → <strong>Connect to Host</strong> → <code>unity</code> (or <code>Cmd+Shift+P</code> → <strong>Remote-SSH: Connect to Host</strong>)</li>
+<li>Approve one Duo push</li>
+<li><strong>File → Open Recent</strong> → your project</li>
+<li><code>Ctrl+`</code> to open the integrated terminal</li>
+<li><code>claude</code> to start Claude Code</li>
+</ol>
+<p>You’re now editing files on the cluster, with Claude Code running on the cluster, with diff review and selection prompting wired up.</p>
+</section>
+<section id="the-interaction-model" class="level2">
+<h2 class="anchored" data-anchor-id="the-interaction-model">9.2 The interaction model</h2>
+<p>You have <strong>two views</strong> of every file:</p>
+<ul>
+<li><strong>Editor pane (top):</strong> the file as you see it. Edit by hand, scroll, search, use language features.</li>
+<li><strong>Terminal pane (bottom) running <code>claude</code>:</strong> the conversational interface. Ask Claude to read, write, edit, run things.</li>
+</ul>
+<p>When Claude edits a file:</p>
+<ol type="1">
+<li>The diff viewer appears</li>
+<li>Review the proposed change</li>
+<li>Accept (your file is updated on disk) or reject (file untouched)</li>
+<li>If you have auto-save on and the file was already open in an editor pane, the editor reloads automatically</li>
+</ol>
+<p>For longer code blocks, <strong>highlight the code in an editor pane and press <code>Option+K</code></strong> — this inserts a precise <code>@file#lines</code> reference into your Claude prompt, avoiding copy-paste.</p>
+</section>
+<section id="running-cluster-jobs" class="level2">
+<h2 class="anchored" data-anchor-id="running-cluster-jobs">9.3 Running cluster jobs</h2>
+<p>Slurm commands work identically — they’re just running in a terminal on the cluster. From the integrated terminal:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sinteractive</span> <span class="at">-m</span> 48000 <span class="at">-t</span> 48:00:00     <span class="co"># request an interactive node</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">squeue</span> <span class="at">-u</span> <span class="va">$USER</span>                       <span class="co"># check your queue</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">sbatch</span> myjob.slurm                    <span class="co"># submit a batch job</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For long-running interactive work on a compute node, you can:</p>
+<ul>
+<li>Open a <strong>second</strong> integrated terminal (click the <code>+</code> in the terminal panel), request an interactive node there, and run Claude Code on the compute node while the first terminal stays on the login node for monitoring</li>
+<li>Or wrap <code>sinteractive</code> in <code>tmux</code> so the allocation survives disconnects</li>
+</ul>
+</section>
+<section id="pausing-work" class="level2">
+<h2 class="anchored" data-anchor-id="pausing-work">9.4 Pausing work</h2>
+<p>You can safely:</p>
+<ul>
+<li>✔ <strong>Close your laptop lid</strong> — VS Code’s remote server keeps running on the cluster. Reopen, the connection re-establishes automatically, terminals are still there with full state.</li>
+<li>✔ <strong>Disconnect from WiFi</strong> — same as above. VS Code reconnects when the network returns.</li>
+<li>⚠ <strong>Quit VS Code entirely</strong> — your terminals on the cluster die, so Claude Code’s session ends. To survive a full quit, run <code>claude</code> inside <code>tmux</code> on the cluster (which works fine inside VS Code’s terminal too).</li>
+</ul>
+</section>
+<section id="ending-a-session" class="level2">
+<h2 class="anchored" data-anchor-id="ending-a-session">9.5 Ending a session</h2>
+<ol type="1">
+<li>Save any open files (<code>Cmd+S</code>, or with auto-save it’s already done)</li>
+<li>In the Claude Code terminal, type <code>/exit</code> to cleanly end the session</li>
+<li><strong>File → Close Window</strong> — VS Code keeps the remote server running for ~10 minutes in case you reconnect, then shuts it down</li>
+</ol>
+<p>To force immediate disconnect: <code>Cmd+Shift+P</code> → <strong>Remote-SSH: Kill VS Code Server on Host</strong>.</p>
+<hr>
+</section>
+</section>
+<section id="troubleshooting" class="level1">
+<h1>10. Troubleshooting</h1>
+<section id="connecting-with-ssh-timed-out-during-remote-ssh-connect" class="level3">
+<h3 class="anchored" data-anchor-id="connecting-with-ssh-timed-out-during-remote-ssh-connect">❌ “Connecting with SSH timed out” during Remote-SSH connect</h3>
+<p><strong>Likely cause:</strong> SSH multiplexing isn’t working, so each of VS Code’s parallel sub-connections triggers a separate Duo prompt and they race.</p>
+<p><strong>Diagnostic steps:</strong></p>
+<ol type="1">
+<li><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Show Log</strong> → check the log for the actual error</li>
+<li>From Terminal.app, run <code>ssh unity</code> and <code>ssh unity</code> again — the second one should be instant with no Duo. If not, multiplexing is broken — see <a href="../ssh/ssh_setup.html">SSH Setup §7</a>.</li>
+<li>Check <code>~/.ssh/sockets/</code> exists and is writable</li>
+<li>With <code>"remote.SSH.showLoginTerminal": true</code>, the SSH terminal is visible during connect — watch what it actually says</li>
+</ol>
+</section>
+<section id="no-matching-host-key-type-found.-their-offer-ssh-rsa" class="level3">
+<h3 class="anchored" data-anchor-id="no-matching-host-key-type-found.-their-offer-ssh-rsa">❌ “no matching host key type found. Their offer: ssh-rsa”</h3>
+<p>The cluster uses a key type modern OpenSSH disables by default. Add to the relevant <code>Host</code> block in <code>~/.ssh/config</code>:</p>
+<pre class="sshconfig"><code>HostKeyAlgorithms +ssh-rsa
+PubkeyAcceptedAlgorithms +ssh-rsa</code></pre>
+</section>
+<section id="aliases-env-vars-not-available-in-integrated-terminal" class="level3">
+<h3 class="anchored" data-anchor-id="aliases-env-vars-not-available-in-integrated-terminal">❌ Aliases / env vars not available in integrated terminal</h3>
+<p>Shell startup files not being sourced. See Section 6 above.</p>
+</section>
+<section id="claude-code-cant-find-the-project-root" class="level3">
+<h3 class="anchored" data-anchor-id="claude-code-cant-find-the-project-root">❌ Claude Code can’t find the project root</h3>
+<p>You started <code>claude</code> without <code>cd</code>-ing to the project directory first. Exit Claude (<code>/exit</code>), <code>cd</code> to the right place, restart.</p>
+</section>
+<section id="duo-prompt-appears-repeatedly" class="level3">
+<h3 class="anchored" data-anchor-id="duo-prompt-appears-repeatedly">❌ Duo prompt appears repeatedly</h3>
+<p>Likely causes:</p>
+<ul>
+<li>Multiplexing not configured (most common)</li>
+<li><code>ControlPersist</code> timeout expired (default 10m — bump it if you want longer)</li>
+<li>Different <code>Host</code> aliases pointing to the same machine — each triggers a separate Duo because SSH treats them as different connections</li>
+</ul>
+</section>
+<section id="vs-code-crashes-or-hangs-on-connect" class="level3">
+<h3 class="anchored" data-anchor-id="vs-code-crashes-or-hangs-on-connect">❌ VS Code crashes or hangs on connect</h3>
+<p>Try a clean slate:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On your Mac</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> ~/.ssh/sockets/<span class="pp">*</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># On the cluster (via plain SSH)</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> ~/.vscode-server</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then retry the connection from VS Code. The cluster-side cleanup forces VS Code to reinstall its server, which fixes most weird state.</p>
+</section>
+<section id="frozen-terminal-after-running-a-full-screen-program" class="level3">
+<h3 class="anchored" data-anchor-id="frozen-terminal-after-running-a-full-screen-program">❌ Frozen terminal after running a full-screen program</h3>
+<p><strong>Symptom:</strong> scrolling stops working, terminal seems stuck. <strong>Cause:</strong> alternate screen buffer not cleaned up (less, vim, etc. exited uncleanly). <strong>Fix:</strong> type <code>reset</code> (blind — you may not see it) and press Enter.</p>
+</section>
+<section id="compute-node-ssh-works-once-then-hangs" class="level3">
+<h3 class="anchored" data-anchor-id="compute-node-ssh-works-once-then-hangs">❌ Compute-node SSH works once, then hangs</h3>
+<p><strong>Likely cause:</strong> the node’s Slurm allocation expired, but the SSH config block still points at the node. SSH connects to <code>sshd</code> but the node won’t let you in without a current allocation. <strong>Fix:</strong> request a fresh allocation via <code>sinteractive</code> on Unity, note the node hostname, and either edit the config block or use the new node directly.</p>
+<hr>
+</section>
+</section>
+<section id="architecture-summary" class="level1">
+<h1>11. Architecture Summary</h1>
+<pre><code>┌─────────────────┐                            ┌──────────────────┐
+│      Mac        │                            │     Cluster      │
+│                 │                            │   (Unity, OSC)   │
+│  ┌───────────┐  │                            │                  │
+│  │  VS Code  │  │   SSH (multiplexed)        │  ┌────────────┐  │
+│  │    UI     │  │◄──────────────────────────►│  │  VS Code   │  │
+│  │           │  │   via ASC jumphost         │  │   Server   │  │
+│  │  Editor   │  │   (one Duo prompt)         │  └─────┬──────┘  │
+│  │  panes    │  │                            │        │         │
+│  │           │  │                            │  ┌─────▼──────┐  │
+│  │ Terminal  │  │                            │  │   bash     │  │
+│  │   pane    │◄─┼─────── shared session ─────┼──│   shell    │  │
+│  │           │  │                            │  └─────┬──────┘  │
+│  └───────────┘  │                            │        │         │
+│                 │                            │  ┌─────▼──────┐  │
+└─────────────────┘                            │  │   claude   │  │
+                                               │  │    CLI     │  │
+                                               │  └─────┬──────┘  │
+                                               │        │         │
+                                               │  ┌─────▼──────┐  │
+                                               │  │ Filesystem │  │
+                                               │  └────────────┘  │
+                                               │                  │
+                                               └──────────────────┘</code></pre>
+<p>The UI runs locally on your Mac. <strong>Everything else</strong> — editor server, shell, Claude Code, file I/O, execution — runs on the cluster. The diff viewer and extension features bridge the UI to the CLI through VS Code’s extension API, all over the same multiplexed SSH connection.</p>
+<hr>
+</section>
+<section id="quick-reference-card" class="level1">
+<h1>12. Quick Reference Card</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Action</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Connect</td>
+<td><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Connect to Host</strong> → <code>unity</code></td>
+</tr>
+<tr class="even">
+<td>Open integrated terminal</td>
+<td><code>Ctrl+`</code></td>
+</tr>
+<tr class="odd">
+<td>Start Claude</td>
+<td><code>cd /path/to/project &amp;&amp; claude</code></td>
+</tr>
+<tr class="even">
+<td>Selection prompting</td>
+<td>highlight code → <code>Option+K</code></td>
+</tr>
+<tr class="odd">
+<td>Force reconnect</td>
+<td>click <strong>SSH: unity</strong> in bottom-left → <strong>Reload Window</strong></td>
+</tr>
+<tr class="even">
+<td>Kill remote server</td>
+<td><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Kill VS Code Server on Host</strong></td>
+</tr>
+<tr class="odd">
+<td>View logs</td>
+<td><code>Cmd+Shift+P</code> → <strong>Remote-SSH: Show Log</strong></td>
+</tr>
+<tr class="even">
+<td>Clear stuck multiplex sockets</td>
+<td><code>rm ~/.ssh/sockets/*</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="files-modified-by-this-guide" class="level1">
+<h1>13. Files Modified by This Guide</h1>
+<p>On your <strong>Mac</strong>:</p>
+<ul>
+<li><code>~/.ssh/config</code> — multiplexing, keepalives, host definitions (<a href="../ssh/ssh_setup.html">SSH Setup</a>)</li>
+<li><code>~/.ssh/sockets/</code> — connection sockets (auto-managed)</li>
+<li><code>~/Library/Application Support/Code/User/settings.json</code> — VS Code Remote-SSH timeouts and login-terminal display</li>
+</ul>
+<p>On the <strong>cluster</strong>:</p>
+<ul>
+<li><code>~/.bash_profile</code> — ensure it sources <code>.bashrc</code></li>
+<li><code>~/.bashrc</code> — <code>ANTHROPIC_API_KEY</code>, <code>PATH</code>, aliases</li>
+<li><code>~/.vscode-server/</code> — VS Code server (auto-managed)</li>
+<li><code>~/.claude/</code> — Claude Code state (auto-managed)</li>
+</ul>
+<p>Nothing in <code>/etc</code> or other system locations is modified.</p>
+<hr>
+</section>
+<section id="when-not-to-use-this-setup" class="level1">
+<h1>14. When NOT to Use This Setup</h1>
+<p>This workflow is optimized for <strong>active development against cluster files</strong>. For other use cases:</p>
+<ul>
+<li><strong>Pure data analysis on your Mac:</strong> use Claude Code locally, no cluster involved</li>
+<li><strong>Long-running unattended jobs:</strong> submit Slurm jobs the normal way; Claude Code is for the development phase, not the run phase</li>
+<li><strong>Brief ad-hoc commands:</strong> plain SSH or Mosh is faster to fire up</li>
+<li><strong>Offline work:</strong> none of this works without network — bring code home in a git repo</li>
+</ul>
 
 
 </section>

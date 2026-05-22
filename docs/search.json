@@ -4,7 +4,18 @@
     "href": "ssh/ssh_keys.html",
     "title": "SSH Keys — Concepts & Best Practices",
     "section": "",
-    "text": "Why SSH Keys?\nSecure authentication without passwords.\n\n\nCreate Key\nssh-keygen -t ed25519 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key\n\n\nPermissions\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/buckai_key\nchmod 644 ~/.ssh/buckai_key.pub",
+    "text": "If you followed the SSH Setup page, you’ve already generated a key, copied it to ASC and Unity, and tested that ssh unity works without a password. This page is the deeper reference for everything keys: what they are, why they’re shaped the way they are, how to load them into your SSH agent, how to manage multiple keys, and how to recover when things go wrong.\nYou can read this top to bottom on your first time through, or treat it as a lookup when something breaks.",
+    "crumbs": [
+      "SSH",
+      "SSH Keys — Concepts & Best Practices"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_keys.html#when-to-use-rsa-instead",
+    "href": "ssh/ssh_keys.html#when-to-use-rsa-instead",
+    "title": "SSH Keys — Concepts & Best Practices",
+    "section": "When to use RSA instead",
+    "text": "When to use RSA instead\nIf you must interoperate with a very old system that doesn’t accept Ed25519:\nssh-keygen -t rsa -b 4096 -C \"yourname@osu.edu\" -f ~/.ssh/buckai_key_rsa\n(-b 4096 means a 4096-bit RSA key — anything less is too short by modern standards.)\nThis is rare for OSU clusters in 2025. Stick with Ed25519 unless you hit a wall.",
     "crumbs": [
       "SSH",
       "SSH Keys — Concepts & Best Practices"
@@ -13,12 +24,199 @@
   {
     "objectID": "ssh/vscode_remote_ssh.html",
     "href": "ssh/vscode_remote_ssh.html",
-    "title": "VS Code Remote SSH Setup",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
     "section": "",
-    "text": "Install Extension\nInstall Remote – SSH in VS Code.\n\n\nConnect\n\nCmd+Shift+P\n\nRemote-SSH: Connect\n\nSelect unity",
+    "text": "This page walks through setting up a robust, persistent Claude Code workflow against OSU HPC clusters (ASC, Unity, OSC) through the ASC jumphost — using VS Code Remote-SSH as the editor and terminal host.\nAudience: BuckAI students, postdocs, and collaborators who want to run Claude Code against files and compute resources living on a cluster reachable only through the ASC jumphost.\nPrerequisites: A working SSH setup (see SSH Setup and SSH Keys) — you should already be able to ssh unity from a plain terminal with one Duo prompt and connection multiplexing in place.",
     "crumbs": [
       "SSH",
-      "VS Code Remote SSH Setup"
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#open-the-integrated-terminal",
+    "href": "ssh/vscode_remote_ssh.html#open-the-integrated-terminal",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "6.1 Open the integrated terminal",
+    "text": "6.1 Open the integrated terminal\nCtrl+` (control + backtick) opens the terminal panel. This terminal runs on the cluster, not on your Mac. You should see your usual cluster prompt.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#check-that-your-config-is-loaded",
+    "href": "ssh/vscode_remote_ssh.html#check-that-your-config-is-loaded",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "6.2 Check that your config is loaded",
+    "text": "6.2 Check that your config is loaded\necho $ANTHROPIC_API_KEY    # should print your key\nalias                       # should list your aliases\nwhich claude                # should print path to Claude Code\nIf any of these are missing, your shell startup files aren’t being sourced correctly.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#common-fix-source-.bashrc-from-.bash_profile",
+    "href": "ssh/vscode_remote_ssh.html#common-fix-source-.bashrc-from-.bash_profile",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "6.3 Common fix: source .bashrc from .bash_profile",
+    "text": "6.3 Common fix: source .bashrc from .bash_profile\nEdit ~/.bash_profile on the cluster to ensure it sources .bashrc:\n# At the end of ~/.bash_profile, add:\n[ -f ~/.bashrc ] && source ~/.bashrc\nThe reason this matters: VS Code’s integrated terminal usually starts as a login shell on Linux, which reads ~/.bash_profile but not ~/.bashrc unless the former explicitly sources the latter.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#force-a-login-shell-if-needed",
+    "href": "ssh/vscode_remote_ssh.html#force-a-login-shell-if-needed",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "6.4 Force a login shell (if needed)",
+    "text": "6.4 Force a login shell (if needed)\nIf your aliases still aren’t appearing, force the terminal to run as a login shell. In VS Code’s settings JSON, add:\n\"terminal.integrated.profiles.linux\": {\n    \"bash (login)\": {\n        \"path\": \"bash\",\n        \"args\": [\"-l\"]\n    }\n},\n\"terminal.integrated.defaultProfile.linux\": \"bash (login)\"",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#auto-install-easiest",
+    "href": "ssh/vscode_remote_ssh.html#auto-install-easiest",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "7.1 Auto-install (easiest)",
+    "text": "7.1 Auto-install (easiest)\nThe first time you run claude in VS Code’s integrated terminal while connected via Remote-SSH, the extension detects it and offers to install itself:\ncd /path/to/your/project\nclaude\nAfter a moment, VS Code prompts to install the Claude Code extension. Accept.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#manual-install-if-auto-install-didnt-trigger",
+    "href": "ssh/vscode_remote_ssh.html#manual-install-if-auto-install-didnt-trigger",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "7.2 Manual install (if auto-install didn’t trigger)",
+    "text": "7.2 Manual install (if auto-install didn’t trigger)\n\nOpen the Extensions panel (Cmd+Shift+X)\nSearch for Claude Code\nInstall the official Anthropic extension\nCritical: make sure it installs on the remote (cluster) side, not locally on your Mac. After installation, look at the Extensions panel — you’ll see two sections: Local - Installed and SSH: unity - Installed. Claude Code should appear under the SSH section. If it’s only local, click the extension and press Install in SSH: unity.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#what-the-extension-adds",
+    "href": "ssh/vscode_remote_ssh.html#what-the-extension-adds",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "7.3 What the extension adds",
+    "text": "7.3 What the extension adds\nOnce installed, the following features become available:\n\nInline diff review: when Claude edits a file, VS Code’s native side-by-side diff viewer pops open. Accept or reject changes with a click instead of reading diffs in the terminal.\nSelection-based prompting: highlight code in an editor pane, press Option+K (Mac), and an @file.py#L23-L45 reference is inserted into your Claude prompt.\nTerminal output references: in your prompt, use @terminal:name to give Claude access to a terminal’s output without copy-pasting.\nProblems panel access: Claude can see VS Code’s linter and compiler errors directly.\nDedicated chat panel: an alternative to the terminal interface, accessible via the Claude icon in the sidebar.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#optional-enable-auto-save",
+    "href": "ssh/vscode_remote_ssh.html#optional-enable-auto-save",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "7.4 Optional: enable auto-save",
+    "text": "7.4 Optional: enable auto-save\nSettings → search auto save → set Auto Save to afterDelay with delay 1000. This ensures that when Claude edits a file, your open editor reloads the changes without conflicting with unsaved buffer state.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#the-pattern",
+    "href": "ssh/vscode_remote_ssh.html#the-pattern",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "8.1 The pattern",
+    "text": "8.1 The pattern\nEach compute node gets its own Host block in ~/.ssh/config that uses Unity as a ProxyJump:\n### Template for a compute node\nHost u170\n    HostName u170.asc.ohio-state.edu\n    User yourname.##\n    IdentityFile ~/.ssh/buckai_key\n    IdentitiesOnly yes\n    HostKeyAlgorithms +ssh-rsa\n    PubkeyAcceptedAlgorithms +ssh-rsa\n    ProxyJump unity\nSee SSH Setup §8 for the multi-hop multiplexing details.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#opening-vs-code-directly-on-a-compute-node",
+    "href": "ssh/vscode_remote_ssh.html#opening-vs-code-directly-on-a-compute-node",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "8.2 Opening VS Code directly on a compute node",
+    "text": "8.2 Opening VS Code directly on a compute node\nYou can use VS Code Remote-SSH to connect to a compute node directly: in the Remote-SSH: Connect to Host dialog, type u170 (the alias) instead of unity. This gives you the full VS Code experience — editor, integrated terminal, Claude Code — running on the GPU node, with no port forwarding ceremony.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#port-forwarding-shortcuts-for-jupyter",
+    "href": "ssh/vscode_remote_ssh.html#port-forwarding-shortcuts-for-jupyter",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "8.3 Port-forwarding shortcuts for Jupyter",
+    "text": "8.3 Port-forwarding shortcuts for Jupyter\nIf you’re running Jupyter on a compute node and want to view it in a browser on your laptop, a handy shell alias is:\nalias jup170='ssh -L 9099:127.0.0.1:8888 u170'\nThis forwards your laptop’s port 9099 to the compute node’s port 8888 (where Jupyter listens). Open http://127.0.0.1:9099 in your browser to use the notebook.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#when-you-dont-know-the-node-in-advance",
+    "href": "ssh/vscode_remote_ssh.html#when-you-dont-know-the-node-in-advance",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "8.4 When you don’t know the node in advance",
+    "text": "8.4 When you don’t know the node in advance\nSlurm assigns interactive nodes dynamically, so for one-off sinteractive sessions you can’t pre-write a config block. In that case, do the allocation from a VS Code integrated terminal connected to Unity:\nsinteractive -m 48000 -t 48:00:00 -g 1   # request a GPU node, say\nOnce allocated, you’re SSH’d to the compute node inside that terminal pane. For lighter-weight tools (Jupyter on the node, etc.), srun and port forwarding from inside the VS Code terminal is usually enough.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#starting-a-session",
+    "href": "ssh/vscode_remote_ssh.html#starting-a-session",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "9.1 Starting a session",
+    "text": "9.1 Starting a session\n\nOpen VS Code\nClick the green corner in the bottom-left → Connect to Host → unity (or Cmd+Shift+P → Remote-SSH: Connect to Host)\nApprove one Duo push\nFile → Open Recent → your project\nCtrl+` to open the integrated terminal\nclaude to start Claude Code\n\nYou’re now editing files on the cluster, with Claude Code running on the cluster, with diff review and selection prompting wired up.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#the-interaction-model",
+    "href": "ssh/vscode_remote_ssh.html#the-interaction-model",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "9.2 The interaction model",
+    "text": "9.2 The interaction model\nYou have two views of every file:\n\nEditor pane (top): the file as you see it. Edit by hand, scroll, search, use language features.\nTerminal pane (bottom) running claude: the conversational interface. Ask Claude to read, write, edit, run things.\n\nWhen Claude edits a file:\n\nThe diff viewer appears\nReview the proposed change\nAccept (your file is updated on disk) or reject (file untouched)\nIf you have auto-save on and the file was already open in an editor pane, the editor reloads automatically\n\nFor longer code blocks, highlight the code in an editor pane and press Option+K — this inserts a precise @file#lines reference into your Claude prompt, avoiding copy-paste.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#running-cluster-jobs",
+    "href": "ssh/vscode_remote_ssh.html#running-cluster-jobs",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "9.3 Running cluster jobs",
+    "text": "9.3 Running cluster jobs\nSlurm commands work identically — they’re just running in a terminal on the cluster. From the integrated terminal:\nsinteractive -m 48000 -t 48:00:00     # request an interactive node\nsqueue -u $USER                       # check your queue\nsbatch myjob.slurm                    # submit a batch job\nFor long-running interactive work on a compute node, you can:\n\nOpen a second integrated terminal (click the + in the terminal panel), request an interactive node there, and run Claude Code on the compute node while the first terminal stays on the login node for monitoring\nOr wrap sinteractive in tmux so the allocation survives disconnects",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#pausing-work",
+    "href": "ssh/vscode_remote_ssh.html#pausing-work",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "9.4 Pausing work",
+    "text": "9.4 Pausing work\nYou can safely:\n\n✔ Close your laptop lid — VS Code’s remote server keeps running on the cluster. Reopen, the connection re-establishes automatically, terminals are still there with full state.\n✔ Disconnect from WiFi — same as above. VS Code reconnects when the network returns.\n⚠ Quit VS Code entirely — your terminals on the cluster die, so Claude Code’s session ends. To survive a full quit, run claude inside tmux on the cluster (which works fine inside VS Code’s terminal too).",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
+    ]
+  },
+  {
+    "objectID": "ssh/vscode_remote_ssh.html#ending-a-session",
+    "href": "ssh/vscode_remote_ssh.html#ending-a-session",
+    "title": "VS Code Remote-SSH + Claude Code on HPC",
+    "section": "9.5 Ending a session",
+    "text": "9.5 Ending a session\n\nSave any open files (Cmd+S, or with auto-save it’s already done)\nIn the Claude Code terminal, type /exit to cleanly end the session\nFile → Close Window — VS Code keeps the remote server running for ~10 minutes in case you reconnect, then shuts it down\n\nTo force immediate disconnect: Cmd+Shift+P → Remote-SSH: Kill VS Code Server on Host.",
+    "crumbs": [
+      "SSH",
+      "VS Code Remote-SSH + Claude Code on HPC"
     ]
   },
   {
@@ -120,7 +318,7 @@
     "href": "ssh/ssh_setup.html",
     "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
     "section": "",
-    "text": "High-performance computing (HPC) clusters like ASC and Unity at OSU are accessed using a tool called SSH (Secure Shell).\nSSH allows you to log in to remote computers securely and run commands just as if you were sitting at that machine.\nBecause OSU clusters are protected behind institutional firewalls, you cannot log in directly.\nInstead, you must:\n\nconnect first to a jump host (a secure gateway machine), then\n\nfrom there connect to Unity or compute nodes like u126, u170, u181, etc.\n\nSSH can automatically perform these multi-step hops for you, but only if your setup is correct.\nThis guide walks through everything you need:\n✔ Understanding SSH keys\n✔ Why clusters use jump hosts\n✔ How to generate a secure key pair\n✔ How to upload your key to OSU systems\n✔ How to configure SSH so you can just type:\nssh unity\n✔ Troubleshooting and common mistakes\nIt is designed for students and postdocs with zero prior HPC experience.",
+    "text": "High-performance computing (HPC) clusters like ASC and Unity at OSU are accessed using a tool called SSH (Secure Shell). SSH lets you log in to remote computers securely and run commands as if you were sitting at that machine.\nBecause OSU clusters are protected behind institutional firewalls, you cannot log in directly. Instead, you must:\n\nconnect first to a jump host (a secure gateway machine), then\nfrom there connect to Unity or compute nodes like u126, u170, u181, etc.\n\nSSH can automatically perform these multi-step hops for you — and skip extra Duo prompts along the way — but only if your setup is correct.\nThis guide walks through everything you need:\n✔ Understanding SSH keys at a high level (see SSH Keys for the deep dive) ✔ Why clusters use jump hosts ✔ How to generate a secure key pair ✔ How to upload your key to OSU systems ✔ How to configure SSH so you can just type:\nssh unity\n✔ How to set up connection multiplexing so Duo prompts you only once ✔ Troubleshooting and common mistakes\nIt is designed for students and postdocs with zero prior HPC experience.",
     "crumbs": [
       "SSH",
       "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
@@ -143,6 +341,83 @@
     "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
     "section": "4.2 Install on Unity Login Node",
     "text": "4.2 Install on Unity Login Node\nssh-copy-id -i ~/.ssh/buckai_key.pub yourname.##@unity.asc.ohio-state.edu\nAfter these two steps, your key is recognized on OSU systems.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#prepare-.ssh-and-create-a-sockets-directory",
+    "href": "ssh/ssh_setup.html#prepare-.ssh-and-create-a-sockets-directory",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "5.1 Prepare ~/.ssh/ and create a sockets directory",
+    "text": "5.1 Prepare ~/.ssh/ and create a sockets directory\nThe sockets directory is where SSH will store small files used to share one authenticated connection across many sessions. Without it, you can’t get the “one Duo tap, everything else is free” experience.\nmkdir -p ~/.ssh\nchmod 700 ~/.ssh\nmkdir -p ~/.ssh/sockets\nchmod 700 ~/.ssh/sockets\ntouch ~/.ssh/config\nchmod 600 ~/.ssh/config\nPermissions matter — SSH silently ignores the config file if it is world-readable.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#open-the-config",
+    "href": "ssh/ssh_setup.html#open-the-config",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "5.2 Open the config",
+    "text": "5.2 Open the config\nnano ~/.ssh/config",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#add-the-full-template",
+    "href": "ssh/ssh_setup.html#add-the-full-template",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "5.3 Add the full template",
+    "text": "5.3 Add the full template\nPaste the following (replace yourname.## with your OSU username, e.g. smith.123):\n### Global defaults: apply to ALL hosts\nHost *\n    # Connection multiplexing: authenticate once, reuse the connection\n    ControlMaster auto\n    ControlPath ~/.ssh/sockets/%r@%h:%p\n    ControlPersist 10m\n\n    # Keepalives: prevent firewalls/NAT from dropping idle connections\n    ServerAliveInterval 30\n    ServerAliveCountMax 4\n    TCPKeepAlive yes\n\n    # Prefer your SSH agent + macOS Keychain (so keys stay loaded across sessions)\n    AddKeysToAgent yes\n    UseKeychain yes\n\n### ASC Jumphost (requires Duo MFA)\nHost ascjumphost\n    HostName jump.asc.ohio-state.edu\n    User yourname.##\n    Port 2200\n    IdentityFile ~/.ssh/buckai_key\n    IdentitiesOnly yes\n\n### Unity Login Node (via jump host)\nHost unity\n    HostName unity.asc.ohio-state.edu\n    User yourname.##\n    IdentityFile ~/.ssh/buckai_key\n    IdentitiesOnly yes\n    ProxyJump ascjumphost\n    # Older HPC SSH daemons may need these for key-based auth to work:\n    HostKeyAlgorithms +ssh-rsa\n    PubkeyAcceptedAlgorithms +ssh-rsa\nNow typing:\nssh unity\nautomatically performs:\nLaptop → Jump Host → Unity\nwith one Duo prompt and zero password typing.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#connection-multiplexing-the-duo-painkiller",
+    "href": "ssh/ssh_setup.html#connection-multiplexing-the-duo-painkiller",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "6.1 Connection multiplexing (the Duo painkiller)",
+    "text": "6.1 Connection multiplexing (the Duo painkiller)\nControlMaster auto\nControlPath ~/.ssh/sockets/%r@%h:%p\nControlPersist 10m\nTogether these tell SSH:\n\nThe first SSH connection to a host authenticates normally (Duo and all) and creates a Unix socket at ~/.ssh/sockets/...\nAny subsequent SSH connections to the same host reuse that socket and skip authentication entirely\nThe master connection stays alive for 10 minutes after the last session closes, so quick reconnects don’t re-prompt for Duo\n\nThis is critical for VS Code Remote-SSH, which opens multiple parallel connections during connect — without multiplexing, each one triggers a separate Duo prompt and they race each other to timeout.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#keepalives-the-counterintuitive-part",
+    "href": "ssh/ssh_setup.html#keepalives-the-counterintuitive-part",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "6.2 Keepalives — the counterintuitive part",
+    "text": "6.2 Keepalives — the counterintuitive part\nServerAliveInterval 30\nServerAliveCountMax 4\nThe intuition “bigger numbers = stays alive longer” is backwards.\n\nServerAliveInterval 30 means: every 30 seconds of idleness, the SSH client sends a small “are you there?” probe.\nServerAliveCountMax 4 means: if 4 consecutive probes get no response, give up and disconnect.\n\nSo this tolerates up to 2 minutes (4 × 30s) of server silence. The probes themselves are what keep the connection alive — they prevent firewalls and NAT devices from forgetting your connection during idle periods.\nA larger ServerAliveInterval is less protective, not more, because middleboxes have more time to forget you between probes.\nIf you want maximum durability, keep ServerAliveInterval small (15–30s) and crank ServerAliveCountMax up (e.g. to 120) to tolerate long server silences.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#why-the-ssh-rsa-lines",
+    "href": "ssh/ssh_setup.html#why-the-ssh-rsa-lines",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "6.3 Why the +ssh-rsa lines?",
+    "text": "6.3 Why the +ssh-rsa lines?\nModern OpenSSH (9.0+) disabled the ssh-rsa signature algorithm by default for security reasons, but many HPC clusters still use server keys that rely on it. Without these lines you may see errors like:\nno matching host key type found. Their offer: ssh-rsa\nThe + prefix means “add to the default list” rather than “replace it,” so modern algorithms still take priority — ssh-rsa is just available as a fallback. Keep these lines on cluster connections until your sysadmin confirms server keys have been rotated.",
+    "crumbs": [
+      "SSH",
+      "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
+    ]
+  },
+  {
+    "objectID": "ssh/ssh_setup.html#multi-hop-multiplexing-in-practice",
+    "href": "ssh/ssh_setup.html#multi-hop-multiplexing-in-practice",
+    "title": "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)",
+    "section": "Multi-hop multiplexing in practice",
+    "text": "Multi-hop multiplexing in practice\nWith three levels of hops (laptop → ascjumphost → unity → u170), the multiplexing in the global Host * block helps each hop independently:\n\nFirst time: Duo prompt at ascjumphost, key auth at unity, key auth at u170\nSubsequent ssh u170, ssh u139, etc. within 10 minutes: zero prompts — the ascjumphost socket is reused, the unity socket is reused, only the final hop’s key auth happens\n\nThis is what makes a half-dozen named compute-node aliases practical.",
     "crumbs": [
       "SSH",
       "SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)"
