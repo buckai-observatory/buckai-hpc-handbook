@@ -304,12 +304,12 @@ Same `ProxyJump` magic delivers the tunnel through unity to the compute node.
 
 # 6. Keeping It Alive Across Disconnects
 
-If your laptop sleeps, the SSH tunnel dies — but **Jupyter itself keeps running** as long as the Slurm allocation and the cluster-side shell are still alive. To make sure they are:
+If your laptop sleeps, the SSH tunnel dies — but **Jupyter itself can keep running** as long as the Slurm allocation and the cluster-side shell are still alive. The question is just *how* you keep them alive.
+
+### 6.1 The `tmux` / `livenode` recipe
 
 - Run `jupyter notebook --no-browser ...` **inside a `tmux` session** on the compute node (or use the `livenode` function in [Persistent Sessions](persistent_sessions.qmd))
-- When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You're back where you left off, with all variables and the kernel state intact.
-
-The recipe:
+- When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You're back where you left off, with all variables and kernel state intact.
 
 ```bash
 # On Unity:
@@ -328,6 +328,67 @@ jup                                 # re-opens the tunnel
 ```
 
 If you *do* want to interact with the running Python kernel via the shell (e.g. to `ls` for new log files), `livenode` (`tmux attach -t jbm_node`) reattaches you to the same Jupyter terminal.
+
+### 6.2 What about `nohup`?
+
+A natural question: instead of running Jupyter inside tmux, why not just use `nohup` to make it survive disconnects?
+
+```bash
+nohup jupyter notebook --no-browser --port=8888 &     # note the `&` — must be backgrounded
+```
+
+`nohup` is a real, useful tool — but on a **compute node** it doesn't quite save you. Here's the catch.
+
+#### The Slurm chain-of-death
+
+`nohup` does exactly one thing: it makes a process ignore the `SIGHUP` signal that a shell sends when it dies. But on a compute node, your interactive shell isn't just any shell — it's the **owner of your Slurm allocation**. When that shell dies, this happens:
+
+```
+SSH connection drops
+   ↓
+sshd kills your login-node shell
+   ↓
+your login-node shell kills the sinteractive client
+   ↓
+Slurm reclaims the compute-node allocation
+   ↓
+The compute node forcibly kills ALL your processes there
+   ↓
+… including the nohup'd Jupyter
+```
+
+`nohup` protected Jupyter from one specific signal, but it can't survive **the whole Slurm allocation going away**. Slurm's cleanup at allocation end is non-negotiable.
+
+By contrast, `tmux` keeps the **interactive shell itself alive** on the cluster side (the tmux server process is detached from sshd), so the Slurm allocation never sees the SSH disconnect. Allocation persists → shell persists → Jupyter persists.
+
+#### Where `nohup` *does* work: the login node
+
+For things that don't need a Slurm allocation at all — TensorBoard reading log files off the shared filesystem, a light analysis script — running on the **login node** with `nohup` is fine:
+
+```bash
+# On unity directly, no sinteractive needed:
+nohup tensorboard --logdir /fs/project/<group>/runs --port 6006 &
+```
+
+This survives your SSH disconnect cleanly because nothing is trying to kill it. It's the simpler alternative to a `tmux`-wrapped TensorBoard, and is what many people end up doing.
+
+(Login nodes shouldn't do heavy compute, but reading TFEvents files is cheap — fine on the login node.)
+
+#### Side-by-side comparison (Jupyter on a compute node)
+
+| | `nohup jupyter ... &` | `tmux` / `livenode` |
+|---|---|---|
+| Survives SSH disconnect | ✅ Yes (the SIGHUP part) | ✅ Yes |
+| **Survives Slurm allocation expiring/cleanup** | ❌ **No — the killer issue** | ✅ Yes (allocation stays alive) |
+| Get the Jupyter token after the fact | `cat nohup.out` or `jupyter notebook list` | Reattach and see the live terminal |
+| See live tracebacks if Jupyter crashes | Only via `nohup.out` | Right there in the pane |
+| Stop the server later | `pkill -u $USER jupyter` | Reattach and `Ctrl+C` |
+| Multiple notebooks side by side | Separate `nohup` per launch; clutter | One tmux session, multiple windows |
+
+#### Rule of thumb
+
+- ✔ **Jupyter or anything that needs a Slurm allocation:** use `tmux` / `livenode`. `nohup` won't save you when the allocation is cleaned up.
+- ✔ **TensorBoard or any other lightweight thing on the login node:** `nohup ... &` is fine and arguably simpler than tmux.
 
 ---
 

@@ -477,7 +477,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#open-the-browser" id="toc-open-the-browser" class="nav-link" data-scroll-target="#open-the-browser">5.4 Open the browser</a></li>
   <li><a href="#tensorboard-on-a-compute-node-when-the-login-node-wont-do" id="toc-tensorboard-on-a-compute-node-when-the-login-node-wont-do" class="nav-link" data-scroll-target="#tensorboard-on-a-compute-node-when-the-login-node-wont-do">5.5 TensorBoard on a compute node (when the login node won’t do)</a></li>
   </ul></li>
-  <li><a href="#keeping-it-alive-across-disconnects" id="toc-keeping-it-alive-across-disconnects" class="nav-link" data-scroll-target="#keeping-it-alive-across-disconnects">6. Keeping It Alive Across Disconnects</a></li>
+  <li><a href="#keeping-it-alive-across-disconnects" id="toc-keeping-it-alive-across-disconnects" class="nav-link" data-scroll-target="#keeping-it-alive-across-disconnects">6. Keeping It Alive Across Disconnects</a>
+  <ul class="collapse">
+  <li><a href="#the-tmux-livenode-recipe" id="toc-the-tmux-livenode-recipe" class="nav-link" data-scroll-target="#the-tmux-livenode-recipe">6.1 The <code>tmux</code> / <code>livenode</code> recipe</a></li>
+  <li><a href="#what-about-nohup" id="toc-what-about-nohup" class="nav-link" data-scroll-target="#what-about-nohup">6.2 What about <code>nohup</code>?</a></li>
+  </ul></li>
   <li><a href="#common-pitfalls" id="toc-common-pitfalls" class="nav-link" data-scroll-target="#common-pitfalls">7. Common Pitfalls</a>
   <ul class="collapse">
   <li><a href="#connection-refused-when-opening-http127.0.0.19099" id="toc-connection-refused-when-opening-http127.0.0.19099" class="nav-link" data-scroll-target="#connection-refused-when-opening-http127.0.0.19099">❌ “Connection refused” when opening <code>http://127.0.0.1:9099</code></a></li>
@@ -753,12 +757,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="keeping-it-alive-across-disconnects" class="level1">
 <h1>6. Keeping It Alive Across Disconnects</h1>
-<p>If your laptop sleeps, the SSH tunnel dies — but <strong>Jupyter itself keeps running</strong> as long as the Slurm allocation and the cluster-side shell are still alive. To make sure they are:</p>
+<p>If your laptop sleeps, the SSH tunnel dies — but <strong>Jupyter itself can keep running</strong> as long as the Slurm allocation and the cluster-side shell are still alive. The question is just <em>how</em> you keep them alive.</p>
+<section id="the-tmux-livenode-recipe" class="level3">
+<h3 class="anchored" data-anchor-id="the-tmux-livenode-recipe">6.1 The <code>tmux</code> / <code>livenode</code> recipe</h3>
 <ul>
 <li>Run <code>jupyter notebook --no-browser ...</code> <strong>inside a <code>tmux</code> session</strong> on the compute node (or use the <code>livenode</code> function in <a href="../hpc/persistent_sessions.html">Persistent Sessions</a>)</li>
-<li>When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You’re back where you left off, with all variables and the kernel state intact.</li>
+<li>When you come back: re-open the SSH tunnel from your laptop, refresh your browser tab. You’re back where you left off, with all variables and kernel state intact.</li>
 </ul>
-<p>The recipe:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On Unity:</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">livenode</span>                            <span class="co"># tmux + sinteractive (defined in your .bashrc)</span></span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                                 <span class="co"># starts headless Jupyter</span></span>
@@ -773,7 +778,95 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="ex">jup</span>                                 <span class="co"># re-opens the tunnel</span></span>
 <span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Browser refresh on http://127.0.0.1:9099 — done.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>If you <em>do</em> want to interact with the running Python kernel via the shell (e.g.&nbsp;to <code>ls</code> for new log files), <code>livenode</code> (<code>tmux attach -t jbm_node</code>) reattaches you to the same Jupyter terminal.</p>
+</section>
+<section id="what-about-nohup" class="level3">
+<h3 class="anchored" data-anchor-id="what-about-nohup">6.2 What about <code>nohup</code>?</h3>
+<p>A natural question: instead of running Jupyter inside tmux, why not just use <code>nohup</code> to make it survive disconnects?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nohup</span> jupyter notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8888 <span class="kw">&amp;</span>     <span class="co"># note the `&amp;` — must be backgrounded</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>nohup</code> is a real, useful tool — but on a <strong>compute node</strong> it doesn’t quite save you. Here’s the catch.</p>
+<section id="the-slurm-chain-of-death" class="level4">
+<h4 class="anchored" data-anchor-id="the-slurm-chain-of-death">The Slurm chain-of-death</h4>
+<p><code>nohup</code> does exactly one thing: it makes a process ignore the <code>SIGHUP</code> signal that a shell sends when it dies. But on a compute node, your interactive shell isn’t just any shell — it’s the <strong>owner of your Slurm allocation</strong>. When that shell dies, this happens:</p>
+<pre><code>SSH connection drops
+   ↓
+sshd kills your login-node shell
+   ↓
+your login-node shell kills the sinteractive client
+   ↓
+Slurm reclaims the compute-node allocation
+   ↓
+The compute node forcibly kills ALL your processes there
+   ↓
+… including the nohup'd Jupyter</code></pre>
+<p><code>nohup</code> protected Jupyter from one specific signal, but it can’t survive <strong>the whole Slurm allocation going away</strong>. Slurm’s cleanup at allocation end is non-negotiable.</p>
+<p>By contrast, <code>tmux</code> keeps the <strong>interactive shell itself alive</strong> on the cluster side (the tmux server process is detached from sshd), so the Slurm allocation never sees the SSH disconnect. Allocation persists → shell persists → Jupyter persists.</p>
+</section>
+<section id="where-nohup-does-work-the-login-node" class="level4">
+<h4 class="anchored" data-anchor-id="where-nohup-does-work-the-login-node">Where <code>nohup</code> <em>does</em> work: the login node</h4>
+<p>For things that don’t need a Slurm allocation at all — TensorBoard reading log files off the shared filesystem, a light analysis script — running on the <strong>login node</strong> with <code>nohup</code> is fine:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On unity directly, no sinteractive needed:</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nohup</span> tensorboard <span class="at">--logdir</span> /fs/project/<span class="op">&lt;</span>group<span class="op">&gt;</span>/runs <span class="at">--port</span> 6006 <span class="kw">&amp;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This survives your SSH disconnect cleanly because nothing is trying to kill it. It’s the simpler alternative to a <code>tmux</code>-wrapped TensorBoard, and is what many people end up doing.</p>
+<p>(Login nodes shouldn’t do heavy compute, but reading TFEvents files is cheap — fine on the login node.)</p>
+</section>
+<section id="side-by-side-comparison-jupyter-on-a-compute-node" class="level4">
+<h4 class="anchored" data-anchor-id="side-by-side-comparison-jupyter-on-a-compute-node">Side-by-side comparison (Jupyter on a compute node)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><code>nohup jupyter ... &amp;</code></th>
+<th><code>tmux</code> / <code>livenode</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Survives SSH disconnect</td>
+<td>✅ Yes (the SIGHUP part)</td>
+<td>✅ Yes</td>
+</tr>
+<tr class="even">
+<td><strong>Survives Slurm allocation expiring/cleanup</strong></td>
+<td>❌ <strong>No — the killer issue</strong></td>
+<td>✅ Yes (allocation stays alive)</td>
+</tr>
+<tr class="odd">
+<td>Get the Jupyter token after the fact</td>
+<td><code>cat nohup.out</code> or <code>jupyter notebook list</code></td>
+<td>Reattach and see the live terminal</td>
+</tr>
+<tr class="even">
+<td>See live tracebacks if Jupyter crashes</td>
+<td>Only via <code>nohup.out</code></td>
+<td>Right there in the pane</td>
+</tr>
+<tr class="odd">
+<td>Stop the server later</td>
+<td><code>pkill -u $USER jupyter</code></td>
+<td>Reattach and <code>Ctrl+C</code></td>
+</tr>
+<tr class="even">
+<td>Multiple notebooks side by side</td>
+<td>Separate <code>nohup</code> per launch; clutter</td>
+<td>One tmux session, multiple windows</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rule-of-thumb" class="level4">
+<h4 class="anchored" data-anchor-id="rule-of-thumb">Rule of thumb</h4>
+<ul>
+<li>✔ <strong>Jupyter or anything that needs a Slurm allocation:</strong> use <code>tmux</code> / <code>livenode</code>. <code>nohup</code> won’t save you when the allocation is cleaned up.</li>
+<li>✔ <strong>TensorBoard or any other lightweight thing on the login node:</strong> <code>nohup ... &amp;</code> is fine and arguably simpler than tmux.</li>
+</ul>
 <hr>
+</section>
+</section>
 </section>
 <section id="common-pitfalls" class="level1">
 <h1>7. Common Pitfalls</h1>
@@ -789,9 +882,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="address-already-in-use-when-starting-jupyter" class="level3">
 <h3 class="anchored" data-anchor-id="address-already-in-use-when-starting-jupyter">❌ “Address already in use” when starting Jupyter</h3>
 <p>Another Jupyter process is already bound to port 8888 on the same node — maybe from an earlier session you forgot to kill. Either:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8889   <span class="co"># use a different port</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> notebook <span class="at">--no-browser</span> <span class="at">--port</span><span class="op">=</span>8889   <span class="co"># use a different port</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(and remember to bump the local-side port in your <code>ssh -L</code>), or kill the old one:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pkill</span> <span class="at">-u</span> <span class="va">$USER</span> jupyter</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pkill</span> <span class="at">-u</span> <span class="va">$USER</span> jupyter</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="address-already-in-use-when-opening-the-ssh-tunnel" class="level3">
 <h3 class="anchored" data-anchor-id="address-already-in-use-when-opening-the-ssh-tunnel">❌ “Address already in use” when opening the SSH tunnel</h3>
@@ -804,14 +897,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="could-not-find-a-kernel-matching" class="level3">
 <h3 class="anchored" data-anchor-id="could-not-find-a-kernel-matching">❌ “Could not find a kernel matching …”</h3>
 <p>Your notebook expects a kernel (e.g.&nbsp;a mamba env) that isn’t registered as a Jupyter kernel. From the cluster shell:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span> myproject <span class="at">--display-name</span> <span class="st">"myproject"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate myproject</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> ipykernel install <span class="at">--user</span> <span class="at">--name</span> myproject <span class="at">--display-name</span> <span class="st">"myproject"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Then refresh Jupyter and pick “myproject” from the Kernel menu.</p>
 </section>
 <section id="tunnel-works-once-then-fails-on-later-attempts" class="level3">
 <h3 class="anchored" data-anchor-id="tunnel-works-once-then-fails-on-later-attempts">❌ Tunnel works once, then fails on later attempts</h3>
 <p>Stale ControlMaster socket from a half-broken SSH connection. Clear it (same as the SSH setup page):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ~/.ssh/sockets/<span class="pp">*</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ~/.ssh/sockets/<span class="pp">*</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="jupyter-dies-when-i-close-the-laptop" class="level3">
 <h3 class="anchored" data-anchor-id="jupyter-dies-when-i-close-the-laptop">❌ Jupyter dies when I close the laptop</h3>
@@ -822,11 +915,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="quick-reference" class="level1">
 <h1>8. Quick Reference</h1>
 <p><strong>Cluster-side aliases (in your Unity <code>~/.bashrc</code>):</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'jupyter notebook --no-browser --port=8888'</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb=<span class="st">'tensorboard --logdir runs --port 6006'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'jupyter notebook --no-browser --port=8888'</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb=<span class="st">'tensorboard --logdir runs --port 6006'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Laptop-side aliases (in your Mac <code>~/.bashrc</code> or <code>~/.zshrc</code>):</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'ssh -L 9099:127.0.0.1:8888 mynode'</span>      <span class="co"># replace `mynode`</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb_unity=<span class="st">'ssh -L 16006:127.0.0.1:6006 unity'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> jup=<span class="st">'ssh -L 9099:127.0.0.1:8888 mynode'</span>      <span class="co"># replace `mynode`</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="bu">alias</span> tb_unity=<span class="st">'ssh -L 16006:127.0.0.1:6006 unity'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Browser URLs:</strong></p>
 <table class="caption-top table">
 <thead>
