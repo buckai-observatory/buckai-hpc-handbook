@@ -246,7 +246,7 @@
     "href": "banner.html",
     "title": "BuckAI HPC Handbook",
     "section": "",
-    "text": "BuckAI Observatory — HPC Handbook"
+    "text": "&lt;div style=\"font-size:2.4rem; font-weight:700; line-height:1.1;\"&gt;BuckAI HPC Handbook&lt;/div&gt;\n&lt;div style=\"font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;\"&gt;\n  Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.\n&lt;/div&gt;"
   },
   {
     "objectID": "slurm/slurm_cpu_templates.html",
@@ -293,11 +293,51 @@
     ]
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
+    "objectID": "index.html#what-this-handbook-is",
+    "href": "index.html#what-this-handbook-is",
     "title": "BuckAI HPC Handbook",
-    "section": "",
-    "text": "BuckAI Observatory — HPC Handbook\n\n\n\n\nBuckAI HPC Handbook\nThis handbook provides standardized documentation for BuckAI students, postdocs, and collaborators who use OSU HPC systems (ASC, Unity).",
+    "section": "What this handbook is",
+    "text": "What this handbook is\nA practical, opinionated reference for using OSU’s Unity HPC cluster — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from “I just got my HPC account and the SSH prompt is rejecting me” to “I’m training models on GPU nodes from VS Code on my laptop, with Claude Code helping me debug, while sharing a reproducible mamba environment with my labmates.”\nIt’s opinionated about workflows that work well in practice, and warns about the ones that look fine but break in subtle ways.",
+    "crumbs": [
+      "BuckAI HPC Handbook"
+    ]
+  },
+  {
+    "objectID": "index.html#browse-by-topic",
+    "href": "index.html#browse-by-topic",
+    "title": "BuckAI HPC Handbook",
+    "section": "Browse by topic",
+    "text": "Browse by topic\n\n\n\n\n\n  SSH\n\nConnect securely from your laptop to Unity through the ASC jumphost — with one Duo prompt per ten-minute window instead of one per connection.\n\nSSH Setup — config, multiplexing, keepalives\nSSH Keys — concepts and best practices\nVS Code Remote-SSH + Claude Code — the recommended dev environment\n\n\n\n\n\n\n\n\n  HPC fundamentals\n\nThe shell, environments, and patterns that turn a raw cluster account into a productive setup.\n\nShell Environment — .bashrc, aliases, PATH, umask, groups\nPersistent Sessions — tmux, nohup, and the livenode pattern\nJupyter & TensorBoard — OnDemand and SSH-tunnel workflows\nPython Environments — mamba, conda, pip — and the pip trap\n\n\n\n\n\n\n\n\n  Slurm\n\nSubmit jobs, request resources, and use partitions properly.\n\nSlurm Basics\nBest Practices\nGPU Templates\nCPU Templates\n\nThis section is a work in progress — the polished versions are still being written.",
+    "crumbs": [
+      "BuckAI HPC Handbook"
+    ]
+  },
+  {
+    "objectID": "index.html#where-to-start",
+    "href": "index.html#where-to-start",
+    "title": "BuckAI HPC Handbook",
+    "section": "Where to start",
+    "text": "Where to start\nIf you’ve just been given an OSU HPC account and want a sensible reading order, work through these in sequence:\n\nSSH Setup — write a working ~/.ssh/config with connection multiplexing so you only Duo-tap once.\nSSH Keys — the concepts behind why your setup is secure, and how to manage keys long-term.\nVS Code Remote-SSH + Claude Code — set up the editor + AI assistant that you’ll spend most of your time in.\nShell Environment — make .bashrc work for you (aliases, PATH, umask 002 for group collaboration, your Unix groups and Slurm partitions).\nPersistent Sessions — keep work alive across disconnects with tmux and the livenode function.\nPython Environments — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.\nJupyter & TensorBoard — run interactive notebooks and live training dashboards in your laptop’s browser while compute happens on Unity.\n\nReturning to look something up? Use the search box at the top of the sidebar — it indexes every page.",
+    "crumbs": [
+      "BuckAI HPC Handbook"
+    ]
+  },
+  {
+    "objectID": "index.html#conventions-used-in-this-handbook",
+    "href": "index.html#conventions-used-in-this-handbook",
+    "title": "BuckAI HPC Handbook",
+    "section": "Conventions used in this handbook",
+    "text": "Conventions used in this handbook\n\nCopy-paste code: Code blocks are ready to paste, with placeholders you replace:\n\nyourname.## — your OSU username (e.g. smith.123)\n&lt;group&gt; — your Slurm partition name (often batch) or your Unix group name\n&lt;username&gt; — same as above, in path contexts\nmynode — a real compute-node hostname (on Unity these follow uXXX: u101, u250, u500, etc.)\nbuckai_key — the name we use for your SSH private key\n\nEmoji legend:\n\n✔ — a recommended practice or thing to do\n❌ — a problem symptom or common mistake\n✅ — a verification step (“you should see this”)\n⚠ — a caution or non-obvious gotcha",
+    "crumbs": [
+      "BuckAI HPC Handbook"
+    ]
+  },
+  {
+    "objectID": "index.html#about",
+    "href": "index.html#about",
+    "title": "BuckAI HPC Handbook",
+    "section": "About",
+    "text": "About\nThis handbook is maintained by the BuckAI Observatory at Ohio State University.\n\nSource: github.com/buckai-observatory/buckai-hpc-handbook\nCorrections, additions, and pull requests welcome — open an issue or PR.\nBuilt with Quarto.",
     "crumbs": [
       "BuckAI HPC Handbook"
     ]

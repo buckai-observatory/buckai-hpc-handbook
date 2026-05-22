@@ -44,9 +44,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-76856fad3469a9725597717dd028a81b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4469d617958d98ac575a98bb526105ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-b98fe1f1ea5774c890543de8b028cfba.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-9a5085dea70abec25b91684d8e41a1ed.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-b98fe1f1ea5774c890543de8b028cfba.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -79,7 +79,7 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-sidebar docked quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar docked fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -392,48 +392,126 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#buckai-hpc-handbook" id="toc-buckai-hpc-handbook" class="nav-link active" data-scroll-target="#buckai-hpc-handbook">BuckAI HPC Handbook</a></li>
-  </ul>
-</nav>
-    </div>
+    
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><h1 class="title display-7">BuckAI HPC Handbook</h1></header>
 
 
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">BuckAI HPC Handbook</h1>
-</div>
-
-
-
-<div class="quarto-title-meta">
-
-    
-  
-    
-  </div>
-  
+<header id="title-block-header">
 
 
 </header>
 
 
-<div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
-<img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="90">
-<div style="font-size:2.0rem; font-weight:700;">
-<pre><code>BuckAI Observatory — HPC Handbook</code></pre>
+<div class="bah-hero" style="display:flex; align-items:center; gap:28px; padding:28px 0; border-bottom: 3px solid #bb0000; margin-bottom: 36px; flex-wrap:wrap;">
+<img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="115" style="flex-shrink:0;">
+<div style="flex:1; min-width:280px;">
+<pre><code>&lt;div style="font-size:2.4rem; font-weight:700; line-height:1.1;"&gt;BuckAI HPC Handbook&lt;/div&gt;
+&lt;div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;"&gt;
+  Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.
+&lt;/div&gt;</code></pre>
 </div>
 </div>
-<hr>
-<section id="buckai-hpc-handbook" class="level1">
-<h1>BuckAI HPC Handbook</h1>
-<p>This handbook provides standardized documentation for BuckAI students, postdocs, and collaborators who use OSU HPC systems (ASC, Unity).</p>
+<section id="what-this-handbook-is" class="level2">
+<h2 class="anchored" data-anchor-id="what-this-handbook-is">What this handbook is</h2>
+<p>A practical, opinionated reference for using <strong>OSU’s Unity HPC cluster</strong> — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from <em>“I just got my HPC account and the SSH prompt is rejecting me”</em> to <em>“I’m training models on GPU nodes from VS Code on my laptop, with Claude Code helping me debug, while sharing a reproducible mamba environment with my labmates.”</em></p>
+<p>It’s opinionated about workflows that work well in practice, and warns about the ones that look fine but break in subtle ways.</p>
+</section>
+<section id="browse-by-topic" class="level2">
+<h2 class="anchored" data-anchor-id="browse-by-topic">Browse by topic</h2>
+<div class="grid">
+<div class="g-col-12 g-col-md-4">
+<div class="card h-100 shadow-sm">
+<div class="card-body">
+<h4 style="margin-top:0;" class="anchored">
+<i class="bi bi-unlock"></i> &nbsp;SSH
+</h4>
+<p>Connect securely from your laptop to Unity through the ASC jumphost — with <strong>one</strong> Duo prompt per ten-minute window instead of one per connection.</p>
+<ul>
+<li><a href="./ssh/ssh_setup.html">SSH Setup</a> — config, multiplexing, keepalives</li>
+<li><a href="./ssh/ssh_keys.html">SSH Keys</a> — concepts and best practices</li>
+<li><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a> — the recommended dev environment</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card h-100 shadow-sm">
+<div class="card-body">
+<h4 style="margin-top:0;" class="anchored">
+<i class="bi bi-server"></i> &nbsp;HPC fundamentals
+</h4>
+<p>The shell, environments, and patterns that turn a raw cluster account into a productive setup.</p>
+<ul>
+<li><a href="./hpc/shell_environment.html">Shell Environment</a> — <code>.bashrc</code>, aliases, <code>PATH</code>, <code>umask</code>, groups</li>
+<li><a href="./hpc/persistent_sessions.html">Persistent Sessions</a> — <code>tmux</code>, <code>nohup</code>, and the <code>livenode</code> pattern</li>
+<li><a href="./hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard</a> — OnDemand and SSH-tunnel workflows</li>
+<li><a href="./hpc/conda_envs.html">Python Environments</a> — mamba, conda, pip — and the pip trap</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card h-100 shadow-sm">
+<div class="card-body">
+<h4 style="margin-top:0;" class="anchored">
+<i class="bi bi-cpu"></i> &nbsp;Slurm
+</h4>
+<p>Submit jobs, request resources, and use partitions properly.</p>
+<ul>
+<li><a href="./slurm/slurm_basics.html">Slurm Basics</a></li>
+<li><a href="./slurm/slurm_best_practices.html">Best Practices</a></li>
+<li><a href="./slurm/slurm_gpu_templates.html">GPU Templates</a></li>
+<li><a href="./slurm/slurm_cpu_templates.html">CPU Templates</a></li>
+</ul>
+<p><em>This section is a work in progress — the polished versions are still being written.</em></p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="where-to-start" class="level2">
+<h2 class="anchored" data-anchor-id="where-to-start">Where to start</h2>
+<p>If you’ve just been given an OSU HPC account and want a sensible reading order, work through these in sequence:</p>
+<ol type="1">
+<li><strong><a href="./ssh/ssh_setup.html">SSH Setup</a></strong> — write a working <code>~/.ssh/config</code> with connection multiplexing so you only Duo-tap once.</li>
+<li><strong><a href="./ssh/ssh_keys.html">SSH Keys</a></strong> — the concepts behind why your setup is secure, and how to manage keys long-term.</li>
+<li><strong><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a></strong> — set up the editor + AI assistant that you’ll spend most of your time in.</li>
+<li><strong><a href="./hpc/shell_environment.html">Shell Environment</a></strong> — make <code>.bashrc</code> work for you (aliases, <code>PATH</code>, <code>umask 002</code> for group collaboration, your Unix groups and Slurm partitions).</li>
+<li><strong><a href="./hpc/persistent_sessions.html">Persistent Sessions</a></strong> — keep work alive across disconnects with <code>tmux</code> and the <code>livenode</code> function.</li>
+<li><strong><a href="./hpc/conda_envs.html">Python Environments</a></strong> — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.</li>
+<li><strong><a href="./hpc/jupyter_and_tensorboard.html">Jupyter &amp; TensorBoard</a></strong> — run interactive notebooks and live training dashboards in your laptop’s browser while compute happens on Unity.</li>
+</ol>
+<p>Returning to look something up? Use the <strong>search box at the top of the sidebar</strong> — it indexes every page.</p>
+</section>
+<section id="conventions-used-in-this-handbook" class="level2">
+<h2 class="anchored" data-anchor-id="conventions-used-in-this-handbook">Conventions used in this handbook</h2>
+<ul>
+<li><strong>Copy-paste code:</strong> Code blocks are ready to paste, with placeholders you replace:
+<ul>
+<li><code>yourname.##</code> — your OSU username (e.g.&nbsp;<code>smith.123</code>)</li>
+<li><code>&lt;group&gt;</code> — your Slurm partition name (often <code>batch</code>) or your Unix group name</li>
+<li><code>&lt;username&gt;</code> — same as above, in path contexts</li>
+<li><code>mynode</code> — a real compute-node hostname (on Unity these follow <code>uXXX</code>: <code>u101</code>, <code>u250</code>, <code>u500</code>, etc.)</li>
+<li><code>buckai_key</code> — the name we use for your SSH private key</li>
+</ul></li>
+<li><strong>Emoji legend:</strong>
+<ul>
+<li>✔ — a recommended practice or thing to do</li>
+<li>❌ — a problem symptom or common mistake</li>
+<li>✅ — a verification step (“you should see this”)</li>
+<li>⚠ — a caution or non-obvious gotcha</li>
+</ul></li>
+</ul>
+</section>
+<section id="about" class="level2">
+<h2 class="anchored" data-anchor-id="about">About</h2>
+<p>This handbook is maintained by the <strong><a href="https://buckai-observatory.org">BuckAI Observatory</a></strong> at Ohio State University.</p>
+<ul>
+<li><strong>Source:</strong> <a href="https://github.com/buckai-observatory/buckai-hpc-handbook">github.com/buckai-observatory/buckai-hpc-handbook</a></li>
+<li><strong>Corrections, additions, and pull requests welcome</strong> — open an issue or PR.</li>
+<li>Built with <a href="https://quarto.org">Quarto</a>.</li>
+</ul>
 
 
 </section>

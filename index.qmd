@@ -1,9 +1,101 @@
-{{< include banner.qmd >}}
-
 ---
 title: "BuckAI HPC Handbook"
+title-block-style: none
+toc: false
 ---
 
-# BuckAI HPC Handbook
+{{< include banner.qmd >}}
 
-This handbook provides standardized documentation for BuckAI students, postdocs, and collaborators who use OSU HPC systems (ASC, Unity).
+## What this handbook is
+
+A practical, opinionated reference for using **OSU's Unity HPC cluster** — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from *"I just got my HPC account and the SSH prompt is rejecting me"* to *"I'm training models on GPU nodes from VS Code on my laptop, with Claude Code helping me debug, while sharing a reproducible mamba environment with my labmates."*
+
+It's opinionated about workflows that work well in practice, and warns about the ones that look fine but break in subtle ways.
+
+## Browse by topic
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .h-100 .shadow-sm}
+::: {.card-body}
+<h4 style="margin-top:0;"><i class="bi bi-unlock"></i> &nbsp;SSH</h4>
+
+Connect securely from your laptop to Unity through the ASC jumphost — with **one** Duo prompt per ten-minute window instead of one per connection.
+
+- [SSH Setup](ssh/ssh_setup.qmd) — config, multiplexing, keepalives
+- [SSH Keys](ssh/ssh_keys.qmd) — concepts and best practices
+- [VS Code Remote-SSH + Claude Code](ssh/vscode_remote_ssh.qmd) — the recommended dev environment
+:::
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .h-100 .shadow-sm}
+::: {.card-body}
+<h4 style="margin-top:0;"><i class="bi bi-server"></i> &nbsp;HPC fundamentals</h4>
+
+The shell, environments, and patterns that turn a raw cluster account into a productive setup.
+
+- [Shell Environment](hpc/shell_environment.qmd) — `.bashrc`, aliases, `PATH`, `umask`, groups
+- [Persistent Sessions](hpc/persistent_sessions.qmd) — `tmux`, `nohup`, and the `livenode` pattern
+- [Jupyter & TensorBoard](hpc/jupyter_and_tensorboard.qmd) — OnDemand and SSH-tunnel workflows
+- [Python Environments](hpc/conda_envs.qmd) — mamba, conda, pip — and the pip trap
+:::
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .h-100 .shadow-sm}
+::: {.card-body}
+<h4 style="margin-top:0;"><i class="bi bi-cpu"></i> &nbsp;Slurm</h4>
+
+Submit jobs, request resources, and use partitions properly.
+
+- [Slurm Basics](slurm/slurm_basics.qmd)
+- [Best Practices](slurm/slurm_best_practices.qmd)
+- [GPU Templates](slurm/slurm_gpu_templates.qmd)
+- [CPU Templates](slurm/slurm_cpu_templates.qmd)
+
+*This section is a work in progress — the polished versions are still being written.*
+:::
+:::
+:::
+
+:::
+
+## Where to start
+
+If you've just been given an OSU HPC account and want a sensible reading order, work through these in sequence:
+
+1. **[SSH Setup](ssh/ssh_setup.qmd)** — write a working `~/.ssh/config` with connection multiplexing so you only Duo-tap once.
+2. **[SSH Keys](ssh/ssh_keys.qmd)** — the concepts behind why your setup is secure, and how to manage keys long-term.
+3. **[VS Code Remote-SSH + Claude Code](ssh/vscode_remote_ssh.qmd)** — set up the editor + AI assistant that you'll spend most of your time in.
+4. **[Shell Environment](hpc/shell_environment.qmd)** — make `.bashrc` work for you (aliases, `PATH`, `umask 002` for group collaboration, your Unix groups and Slurm partitions).
+5. **[Persistent Sessions](hpc/persistent_sessions.qmd)** — keep work alive across disconnects with `tmux` and the `livenode` function.
+6. **[Python Environments](hpc/conda_envs.qmd)** — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.
+7. **[Jupyter & TensorBoard](hpc/jupyter_and_tensorboard.qmd)** — run interactive notebooks and live training dashboards in your laptop's browser while compute happens on Unity.
+
+Returning to look something up? Use the **search box at the top of the sidebar** — it indexes every page.
+
+## Conventions used in this handbook
+
+- **Copy-paste code:** Code blocks are ready to paste, with placeholders you replace:
+  - `yourname.##` — your OSU username (e.g. `smith.123`)
+  - `<group>` — your Slurm partition name (often `batch`) or your Unix group name
+  - `<username>` — same as above, in path contexts
+  - `mynode` — a real compute-node hostname (on Unity these follow `uXXX`: `u101`, `u250`, `u500`, etc.)
+  - `buckai_key` — the name we use for your SSH private key
+- **Emoji legend:**
+  - ✔ — a recommended practice or thing to do
+  - ❌ — a problem symptom or common mistake
+  - ✅ — a verification step ("you should see this")
+  - ⚠ — a caution or non-obvious gotcha
+
+## About
+
+This handbook is maintained by the **[BuckAI Observatory](https://buckai-observatory.org)** at Ohio State University.
+
+- **Source:** [github.com/buckai-observatory/buckai-hpc-handbook](https://github.com/buckai-observatory/buckai-hpc-handbook)
+- **Corrections, additions, and pull requests welcome** — open an issue or PR.
+- Built with [Quarto](https://quarto.org).
