@@ -4,7 +4,7 @@ title: "Running Jupyter and TensorBoard from Your Laptop"
 
 # Introduction
 
-One of the most useful daily HPC patterns is **running a notebook or dashboard in your browser on your Mac, while the actual code and GPU live on Unity**. Your browser stays responsive, the computation happens where the data and hardware are, and you keep all of Jupyter's interactivity.
+One of the most useful daily HPC patterns is **running a notebook or dashboard in your browser on your Mac, while the actual code and CPU/GPU compute live on Unity**. Your browser stays responsive, the computation happens where the data and hardware are, and you keep all of Jupyter's interactivity.
 
 There are two ways to do this:
 
