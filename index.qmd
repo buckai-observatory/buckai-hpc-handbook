@@ -1,8 +1,14 @@
 ---
 title: "BuckAI HPC Handbook"
-title-block-style: none
 toc: false
 ---
+
+```{=html}
+<style>
+/* Hide the auto-generated title block on the landing page — the banner below serves as the visible title */
+#title-block-header { display: none; }
+</style>
+```
 
 {{< include banner.qmd >}}
 

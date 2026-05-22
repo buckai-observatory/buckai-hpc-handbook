@@ -246,7 +246,7 @@
     "href": "banner.html",
     "title": "BuckAI HPC Handbook",
     "section": "",
-    "text": "&lt;div style=\"font-size:2.4rem; font-weight:700; line-height:1.1;\"&gt;BuckAI HPC Handbook&lt;/div&gt;\n&lt;div style=\"font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;\"&gt;\n  Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.\n&lt;/div&gt;"
+    "text": "BuckAI HPC Handbook\nPractical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together."
   },
   {
     "objectID": "slurm/slurm_cpu_templates.html",
@@ -290,6 +290,16 @@
     "crumbs": [
       "Slurm",
       "GPU Job Templates"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "BuckAI HPC Handbook",
+    "section": "",
+    "text": "BuckAI HPC Handbook\nPractical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.",
+    "crumbs": [
+      "BuckAI HPC Handbook"
     ]
   },
   {
