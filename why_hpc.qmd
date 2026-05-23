@@ -1,0 +1,135 @@
+---
+title: "Start here: Why HPC, and is it for you?"
+---
+
+# If you've never heard of HPC, Unity, or Slurm — read this first
+
+The rest of this handbook assumes you already know what an HPC cluster is and want to use one productively. This page is for people who do **not** — students who landed here through a link from a labmate or advisor and are wondering whether any of this applies to them. **Most of the technical content in the rest of the handbook is genuinely useful only for a subset of grad students.** This page tries to honestly help you figure out whether you're in that subset.
+
+If at the end you decide "this isn't for me right now," that's a perfectly fine answer. You can always come back when your research outgrows your laptop.
+
+---
+
+# 1. What is an HPC cluster, in plain terms?
+
+**An HPC (High-Performance Computing) cluster is a room full of computers in some data center somewhere that someone else manages for you.** You don't see them; you don't hear them; you don't pay for the electricity or the cooling. You just log in remotely from your laptop and use them.
+
+Think of it as **renting (for free, if you're an OSU student) a bigger, faster computer when your own isn't enough**. You write your code the same way you always do — Python scripts, R scripts, MATLAB, whatever — and then ship it off to the cluster to run, instead of running it on your laptop.
+
+The "cluster" part means the data center has *many* computers (called "nodes") all networked together, so:
+
+- If your work needs more memory than any one laptop has, you can ask for a node with more memory
+- If your work needs a GPU and your laptop doesn't have one, you can ask for a node with one
+- If you want to run 100 similar experiments at once, you can spread them across 100 nodes
+
+You don't need to know how this works under the hood. You just submit your code along with a description of what resources it needs ("4 CPUs, 16 GB of memory, 2 hours of time, please"), and the cluster's scheduling software figures out where to run it.
+
+---
+
+# 2. What is **Unity** specifically?
+
+**Unity** is OSU's HPC cluster, operated by the College of Arts and Sciences' technical group (ASC). It's:
+
+- ✔ **Free** for OSU students, postdocs, and faculty (CAS-affiliated; other colleges typically also have access through arrangement)
+- ✔ Reachable from anywhere with internet (no need to be on campus)
+- ✔ Hundreds of computers' worth of CPU, GPU, and storage capacity
+- ✔ Always-on — your job can run while you sleep, while you're on a plane, while you're at a conference
+
+OSU also has a **separate** HPC offering, **OSC** (the Ohio Supercomputer Center), which runs the Pitzer, Cardinal, and Owens clusters. OSC accounts are also free for OSU students and use similar tooling — most of what you learn for Unity transfers directly to OSC.
+
+You don't need to pick one. Most BuckAI lab members use both for different things.
+
+---
+
+# 3. The Linux question (and why Windows users shouldn't be intimidated)
+
+Yes — HPC clusters almost universally run **Linux** (a free, open-source operating system descended from Unix). This includes Unity. Your laptop running Windows or macOS is not Linux, and a lot of HPC tutorials assume you already know your way around a Linux command line, which is unfair if you've never seen one.
+
+Here's the honest landscape by OS:
+
+| Your laptop OS | What this means for using Unity |
+|---|---|
+| **macOS** | Easiest path. macOS is built on Unix, so the terminal and a lot of basic commands are nearly identical to what you'll use on Unity. You barely have to adjust. |
+| **Linux** (rare for grad students) | Trivially easy. You're already there. |
+| **Windows** | A small extra step: install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux). It gives you a Linux command line on your Windows machine — about a 10-minute one-time setup. After that, the rest of this handbook applies the same as it does for Mac users. |
+
+You do **not** need to switch your laptop to Linux. You do **not** need to give up Windows or your familiar tools. You just need a way to type commands into a terminal that gets connected to the cluster.
+
+For Windows users specifically: there is now a separate "Windows quickstart" pointer at the top of the [SSH Setup](ssh/ssh_setup.qmd) page that walks through the small WSL2 detour.
+
+---
+
+# 4. Do you actually need HPC? An honest assessment
+
+Many grad students complete their PhDs without ever touching a cluster. **That's a valid path.** Here's the honest version of "do you need HPC?":
+
+### ✔ Strong signs you'd benefit from HPC
+
+- **Your code runs for hours or days on your laptop**, blocking it from other use
+- **Your model is a deep neural network** (CNN, transformer, LLM, etc.) and your laptop doesn't have an NVIDIA GPU (most don't — gaming laptops aside)
+- **Your data doesn't fit comfortably in your laptop's RAM** (e.g. 64 GB of imagery you have to chunk-process awkwardly)
+- **You want to run many similar experiments in parallel** — a hyperparameter sweep, 100 simulation seeds, processing 500 input files
+- **You're working with satellite imagery, video, large genomics data, climate model output, or anything similar** — these are inherently big and cluster-friendly
+- **Your lab has shared storage on Unity** (BuckAI has 1 PB) and your collaborators expect you to use it
+- **Your faculty advisor expects you to use cluster compute** — common in computational labs
+
+### ❌ Honest signs you probably don't need HPC
+
+- Your work is **mostly writing, theorem-proving, or literature review** with light computation
+- Your code uses **scikit-learn on tabular data** that fits in memory and trains in minutes
+- You do **pure statistical analysis** on datasets a few GB at most
+- Your laptop runs everything you need to do **without ever feeling slow**
+- You're early in your PhD and **don't yet know what kind of computation you'll need** — fine to wait
+
+If you're in the second list right now, you're not missing out by skipping this handbook today. Bookmark it. **Come back when you start feeling computational pain.**
+
+---
+
+# 5. What HPC unlocks: concrete examples
+
+To make this concrete — here are real things people at BuckAI and adjacent labs use Unity for:
+
+- **Training computer-vision models on satellite imagery.** The training data is hundreds of GB of TIFF files; the model is a deep neural network that needs a GPU; the training run takes 12+ hours. None of this fits on a laptop.
+- **Hyperparameter sweeps.** Try 200 combinations of learning rates × architectures × random seeds, in parallel. On a laptop this would take a week; on the cluster (with job arrays), an afternoon.
+- **Processing large data archives.** Convert 10 TB of raw ArcticDEM tiles into a derived data product. The compute per tile is modest, but you need to do it 100,000 times. The cluster runs these as a job array.
+- **Running ensemble climate / hydrologic simulations.** Each simulation might take a few hours; you want to run 50 of them with perturbed initial conditions. Embarrassingly parallel; perfect for a cluster.
+- **Sharing a 1-petabyte project data store.** BuckAI's project storage on Unity is shared between everyone in the lab. Your collaborator drops a new dataset in `/fs/project/<group>/...` and you can access it from any of your cluster sessions, without copying it around.
+
+If any of those sound like *your* PhD research, the rest of this handbook is for you.
+
+---
+
+# 6. What you'll actually have to learn
+
+The full handbook covers a lot of material, but the **minimum to be productive** is:
+
+1. **SSH** — how to log into a remote computer from your laptop. (~1 hour to set up the first time.)
+2. **Basic Linux command line** — `cd`, `ls`, `cat`, editing a file with `nano`. (You probably already know most of this even on Mac.)
+3. **A workflow** — recommended: [VS Code Remote-SSH](ssh/vscode_remote_ssh.qmd), so most of your editing happens in a familiar GUI editor even though the files live on the cluster.
+4. **Mamba / Python environments** — how to install Python packages on the cluster. ([Python Environments](hpc/conda_envs.qmd) chapter.)
+5. **Slurm** — how to ask the cluster to run your code. (The [Slurm Basics](slurm/slurm_basics.qmd) chapter is sufficient; the rest is optimization.)
+
+That's it. With those five things, you can do useful research on Unity. The rest of the handbook is about doing it *well* (right-sizing requests so you don't waste cluster resources, AI coding assistants integrated into your workflow, persistent sessions that survive disconnects, etc.) but you don't need it on day one.
+
+The companion **[BuckAI HPC Practicum](https://buckai-observatory.org/buckai-hpc-course/)** is a self-guided 1-credit course that walks through all of this in 15 weekly labs, each taking about an hour.
+
+---
+
+# 7. Getting an account
+
+If you've decided you want to try it, getting access is the easy part:
+
+- **Unity (ASC):** Request through your department, your faculty advisor, or directly via [asctech.osu.edu](https://asctech.osu.edu/). Free for OSU students. Typical turnaround: 1–3 business days.
+- **OSC (Pitzer/Cardinal/Owens):** Free academic accounts via [my.osc.edu](https://my.osc.edu/).
+
+You don't need to commit to anything. Get the account, sit on it. When you decide to try the cluster, the rest of this handbook is here.
+
+---
+
+# 8. Where to go from here
+
+- 📖 **The full handbook** starts with [SSH Setup](ssh/ssh_setup.qmd). The sidebar to the left has every chapter.
+- 🎓 **The 1-credit self-guided course** at [buckai-observatory.org/buckai-hpc-course/](https://buckai-observatory.org/buckai-hpc-course/) turns the handbook into 15 weekly labs.
+- 🤔 **Still not sure?** Email your faculty advisor or a senior grad student in your lab. They can usually tell you in 5 minutes whether your research direction will eventually want HPC.
+
+If you decide it isn't for you right now: that's fine. **Bookmark this page. Come back later if your research grows in a direction that benefits from HPC.** The handbook isn't going anywhere.

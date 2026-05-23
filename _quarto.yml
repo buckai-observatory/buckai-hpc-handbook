@@ -15,6 +15,8 @@ website:
     logo: images/BuckAI_logo_transp.png
     contents:
       - index.qmd
+      - text: "Start here: Why HPC?"
+        href: why_hpc.qmd
       - section: "SSH"
         icon: "unlock"
         contents:

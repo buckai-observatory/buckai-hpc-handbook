@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>banner – BuckAI HPC Handbook</title>
+<title>Start here: Why HPC, and is it for you? – BuckAI HPC Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,6 +30,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./ssh/ssh_setup.html" rel="next">
+<link href="./index.html" rel="prev">
 <link href="./images/BuckAI_logo_transp.png" rel="icon" type="image/png">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -249,7 +251,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./why_hpc.html">Start here: Why HPC?</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -286,7 +288,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./why_hpc.html" class="sidebar-item-text sidebar-link">
+  <a href="./why_hpc.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Start here: Why HPC?</span></a>
   </div>
 </li>
@@ -397,25 +399,188 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#if-youve-never-heard-of-hpc-unity-or-slurm-read-this-first" id="toc-if-youve-never-heard-of-hpc-unity-or-slurm-read-this-first" class="nav-link active" data-scroll-target="#if-youve-never-heard-of-hpc-unity-or-slurm-read-this-first">If you’ve never heard of HPC, Unity, or Slurm — read this first</a></li>
+  <li><a href="#what-is-an-hpc-cluster-in-plain-terms" id="toc-what-is-an-hpc-cluster-in-plain-terms" class="nav-link" data-scroll-target="#what-is-an-hpc-cluster-in-plain-terms">1. What is an HPC cluster, in plain terms?</a></li>
+  <li><a href="#what-is-unity-specifically" id="toc-what-is-unity-specifically" class="nav-link" data-scroll-target="#what-is-unity-specifically">2. What is <strong>Unity</strong> specifically?</a></li>
+  <li><a href="#the-linux-question-and-why-windows-users-shouldnt-be-intimidated" id="toc-the-linux-question-and-why-windows-users-shouldnt-be-intimidated" class="nav-link" data-scroll-target="#the-linux-question-and-why-windows-users-shouldnt-be-intimidated">3. The Linux question (and why Windows users shouldn’t be intimidated)</a></li>
+  <li><a href="#do-you-actually-need-hpc-an-honest-assessment" id="toc-do-you-actually-need-hpc-an-honest-assessment" class="nav-link" data-scroll-target="#do-you-actually-need-hpc-an-honest-assessment">4. Do you actually need HPC? An honest assessment</a>
+  <ul class="collapse">
+  <li><a href="#strong-signs-youd-benefit-from-hpc" id="toc-strong-signs-youd-benefit-from-hpc" class="nav-link" data-scroll-target="#strong-signs-youd-benefit-from-hpc">✔ Strong signs you’d benefit from HPC</a></li>
+  <li><a href="#honest-signs-you-probably-dont-need-hpc" id="toc-honest-signs-you-probably-dont-need-hpc" class="nav-link" data-scroll-target="#honest-signs-you-probably-dont-need-hpc">❌ Honest signs you probably don’t need HPC</a></li>
+  </ul></li>
+  <li><a href="#what-hpc-unlocks-concrete-examples" id="toc-what-hpc-unlocks-concrete-examples" class="nav-link" data-scroll-target="#what-hpc-unlocks-concrete-examples">5. What HPC unlocks: concrete examples</a></li>
+  <li><a href="#what-youll-actually-have-to-learn" id="toc-what-youll-actually-have-to-learn" class="nav-link" data-scroll-target="#what-youll-actually-have-to-learn">6. What you’ll actually have to learn</a></li>
+  <li><a href="#getting-an-account" id="toc-getting-an-account" class="nav-link" data-scroll-target="#getting-an-account">7. Getting an account</a></li>
+  <li><a href="#where-to-go-from-here" id="toc-where-to-go-from-here" class="nav-link" data-scroll-target="#where-to-go-from-here">8. Where to go from here</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
 
 
-
-
-
-<div class="bah-hero" style="display:flex; align-items:center; gap:28px; padding:28px 0; border-bottom: 3px solid #bb0000; margin-bottom: 36px; flex-wrap:wrap;">
-<img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="115" style="flex-shrink:0;">
-<div style="flex:1; min-width:280px;">
-<div style="font-size:2.4rem; font-weight:700; line-height:1.1;">BuckAI HPC Handbook</div>
-<div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;">Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, AI coding assistants (Claude Code, Copilot, Gemini), mamba, tmux, Jupyter, and the workflows that make them all play nicely together.</div>
-</div>
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Start here: Why HPC, and is it for you?</h1>
 </div>
 
 
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="if-youve-never-heard-of-hpc-unity-or-slurm-read-this-first" class="level1">
+<h1>If you’ve never heard of HPC, Unity, or Slurm — read this first</h1>
+<p>The rest of this handbook assumes you already know what an HPC cluster is and want to use one productively. This page is for people who do <strong>not</strong> — students who landed here through a link from a labmate or advisor and are wondering whether any of this applies to them. <strong>Most of the technical content in the rest of the handbook is genuinely useful only for a subset of grad students.</strong> This page tries to honestly help you figure out whether you’re in that subset.</p>
+<p>If at the end you decide “this isn’t for me right now,” that’s a perfectly fine answer. You can always come back when your research outgrows your laptop.</p>
+<hr>
+</section>
+<section id="what-is-an-hpc-cluster-in-plain-terms" class="level1">
+<h1>1. What is an HPC cluster, in plain terms?</h1>
+<p><strong>An HPC (High-Performance Computing) cluster is a room full of computers in some data center somewhere that someone else manages for you.</strong> You don’t see them; you don’t hear them; you don’t pay for the electricity or the cooling. You just log in remotely from your laptop and use them.</p>
+<p>Think of it as <strong>renting (for free, if you’re an OSU student) a bigger, faster computer when your own isn’t enough</strong>. You write your code the same way you always do — Python scripts, R scripts, MATLAB, whatever — and then ship it off to the cluster to run, instead of running it on your laptop.</p>
+<p>The “cluster” part means the data center has <em>many</em> computers (called “nodes”) all networked together, so:</p>
+<ul>
+<li>If your work needs more memory than any one laptop has, you can ask for a node with more memory</li>
+<li>If your work needs a GPU and your laptop doesn’t have one, you can ask for a node with one</li>
+<li>If you want to run 100 similar experiments at once, you can spread them across 100 nodes</li>
+</ul>
+<p>You don’t need to know how this works under the hood. You just submit your code along with a description of what resources it needs (“4 CPUs, 16 GB of memory, 2 hours of time, please”), and the cluster’s scheduling software figures out where to run it.</p>
+<hr>
+</section>
+<section id="what-is-unity-specifically" class="level1">
+<h1>2. What is <strong>Unity</strong> specifically?</h1>
+<p><strong>Unity</strong> is OSU’s HPC cluster, operated by the College of Arts and Sciences’ technical group (ASC). It’s:</p>
+<ul>
+<li>✔ <strong>Free</strong> for OSU students, postdocs, and faculty (CAS-affiliated; other colleges typically also have access through arrangement)</li>
+<li>✔ Reachable from anywhere with internet (no need to be on campus)</li>
+<li>✔ Hundreds of computers’ worth of CPU, GPU, and storage capacity</li>
+<li>✔ Always-on — your job can run while you sleep, while you’re on a plane, while you’re at a conference</li>
+</ul>
+<p>OSU also has a <strong>separate</strong> HPC offering, <strong>OSC</strong> (the Ohio Supercomputer Center), which runs the Pitzer, Cardinal, and Owens clusters. OSC accounts are also free for OSU students and use similar tooling — most of what you learn for Unity transfers directly to OSC.</p>
+<p>You don’t need to pick one. Most BuckAI lab members use both for different things.</p>
+<hr>
+</section>
+<section id="the-linux-question-and-why-windows-users-shouldnt-be-intimidated" class="level1">
+<h1>3. The Linux question (and why Windows users shouldn’t be intimidated)</h1>
+<p>Yes — HPC clusters almost universally run <strong>Linux</strong> (a free, open-source operating system descended from Unix). This includes Unity. Your laptop running Windows or macOS is not Linux, and a lot of HPC tutorials assume you already know your way around a Linux command line, which is unfair if you’ve never seen one.</p>
+<p>Here’s the honest landscape by OS:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Your laptop OS</th>
+<th>What this means for using Unity</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>macOS</strong></td>
+<td>Easiest path. macOS is built on Unix, so the terminal and a lot of basic commands are nearly identical to what you’ll use on Unity. You barely have to adjust.</td>
+</tr>
+<tr class="even">
+<td><strong>Linux</strong> (rare for grad students)</td>
+<td>Trivially easy. You’re already there.</td>
+</tr>
+<tr class="odd">
+<td><strong>Windows</strong></td>
+<td>A small extra step: install <a href="https://learn.microsoft.com/en-us/windows/wsl/install">WSL2</a> (Windows Subsystem for Linux). It gives you a Linux command line on your Windows machine — about a 10-minute one-time setup. After that, the rest of this handbook applies the same as it does for Mac users.</td>
+</tr>
+</tbody>
+</table>
+<p>You do <strong>not</strong> need to switch your laptop to Linux. You do <strong>not</strong> need to give up Windows or your familiar tools. You just need a way to type commands into a terminal that gets connected to the cluster.</p>
+<p>For Windows users specifically: there is now a separate “Windows quickstart” pointer at the top of the <a href="./ssh/ssh_setup.html">SSH Setup</a> page that walks through the small WSL2 detour.</p>
+<hr>
+</section>
+<section id="do-you-actually-need-hpc-an-honest-assessment" class="level1">
+<h1>4. Do you actually need HPC? An honest assessment</h1>
+<p>Many grad students complete their PhDs without ever touching a cluster. <strong>That’s a valid path.</strong> Here’s the honest version of “do you need HPC?”:</p>
+<section id="strong-signs-youd-benefit-from-hpc" class="level3">
+<h3 class="anchored" data-anchor-id="strong-signs-youd-benefit-from-hpc">✔ Strong signs you’d benefit from HPC</h3>
+<ul>
+<li><strong>Your code runs for hours or days on your laptop</strong>, blocking it from other use</li>
+<li><strong>Your model is a deep neural network</strong> (CNN, transformer, LLM, etc.) and your laptop doesn’t have an NVIDIA GPU (most don’t — gaming laptops aside)</li>
+<li><strong>Your data doesn’t fit comfortably in your laptop’s RAM</strong> (e.g.&nbsp;64 GB of imagery you have to chunk-process awkwardly)</li>
+<li><strong>You want to run many similar experiments in parallel</strong> — a hyperparameter sweep, 100 simulation seeds, processing 500 input files</li>
+<li><strong>You’re working with satellite imagery, video, large genomics data, climate model output, or anything similar</strong> — these are inherently big and cluster-friendly</li>
+<li><strong>Your lab has shared storage on Unity</strong> (BuckAI has 1 PB) and your collaborators expect you to use it</li>
+<li><strong>Your faculty advisor expects you to use cluster compute</strong> — common in computational labs</li>
+</ul>
+</section>
+<section id="honest-signs-you-probably-dont-need-hpc" class="level3">
+<h3 class="anchored" data-anchor-id="honest-signs-you-probably-dont-need-hpc">❌ Honest signs you probably don’t need HPC</h3>
+<ul>
+<li>Your work is <strong>mostly writing, theorem-proving, or literature review</strong> with light computation</li>
+<li>Your code uses <strong>scikit-learn on tabular data</strong> that fits in memory and trains in minutes</li>
+<li>You do <strong>pure statistical analysis</strong> on datasets a few GB at most</li>
+<li>Your laptop runs everything you need to do <strong>without ever feeling slow</strong></li>
+<li>You’re early in your PhD and <strong>don’t yet know what kind of computation you’ll need</strong> — fine to wait</li>
+</ul>
+<p>If you’re in the second list right now, you’re not missing out by skipping this handbook today. Bookmark it. <strong>Come back when you start feeling computational pain.</strong></p>
+<hr>
+</section>
+</section>
+<section id="what-hpc-unlocks-concrete-examples" class="level1">
+<h1>5. What HPC unlocks: concrete examples</h1>
+<p>To make this concrete — here are real things people at BuckAI and adjacent labs use Unity for:</p>
+<ul>
+<li><strong>Training computer-vision models on satellite imagery.</strong> The training data is hundreds of GB of TIFF files; the model is a deep neural network that needs a GPU; the training run takes 12+ hours. None of this fits on a laptop.</li>
+<li><strong>Hyperparameter sweeps.</strong> Try 200 combinations of learning rates × architectures × random seeds, in parallel. On a laptop this would take a week; on the cluster (with job arrays), an afternoon.</li>
+<li><strong>Processing large data archives.</strong> Convert 10 TB of raw ArcticDEM tiles into a derived data product. The compute per tile is modest, but you need to do it 100,000 times. The cluster runs these as a job array.</li>
+<li><strong>Running ensemble climate / hydrologic simulations.</strong> Each simulation might take a few hours; you want to run 50 of them with perturbed initial conditions. Embarrassingly parallel; perfect for a cluster.</li>
+<li><strong>Sharing a 1-petabyte project data store.</strong> BuckAI’s project storage on Unity is shared between everyone in the lab. Your collaborator drops a new dataset in <code>/fs/project/&lt;group&gt;/...</code> and you can access it from any of your cluster sessions, without copying it around.</li>
+</ul>
+<p>If any of those sound like <em>your</em> PhD research, the rest of this handbook is for you.</p>
+<hr>
+</section>
+<section id="what-youll-actually-have-to-learn" class="level1">
+<h1>6. What you’ll actually have to learn</h1>
+<p>The full handbook covers a lot of material, but the <strong>minimum to be productive</strong> is:</p>
+<ol type="1">
+<li><strong>SSH</strong> — how to log into a remote computer from your laptop. (~1 hour to set up the first time.)</li>
+<li><strong>Basic Linux command line</strong> — <code>cd</code>, <code>ls</code>, <code>cat</code>, editing a file with <code>nano</code>. (You probably already know most of this even on Mac.)</li>
+<li><strong>A workflow</strong> — recommended: <a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a>, so most of your editing happens in a familiar GUI editor even though the files live on the cluster.</li>
+<li><strong>Mamba / Python environments</strong> — how to install Python packages on the cluster. (<a href="./hpc/conda_envs.html">Python Environments</a> chapter.)</li>
+<li><strong>Slurm</strong> — how to ask the cluster to run your code. (The <a href="./slurm/slurm_basics.html">Slurm Basics</a> chapter is sufficient; the rest is optimization.)</li>
+</ol>
+<p>That’s it. With those five things, you can do useful research on Unity. The rest of the handbook is about doing it <em>well</em> (right-sizing requests so you don’t waste cluster resources, AI coding assistants integrated into your workflow, persistent sessions that survive disconnects, etc.) but you don’t need it on day one.</p>
+<p>The companion <strong><a href="https://buckai-observatory.org/buckai-hpc-course/">BuckAI HPC Practicum</a></strong> is a self-guided 1-credit course that walks through all of this in 15 weekly labs, each taking about an hour.</p>
+<hr>
+</section>
+<section id="getting-an-account" class="level1">
+<h1>7. Getting an account</h1>
+<p>If you’ve decided you want to try it, getting access is the easy part:</p>
+<ul>
+<li><strong>Unity (ASC):</strong> Request through your department, your faculty advisor, or directly via <a href="https://asctech.osu.edu/">asctech.osu.edu</a>. Free for OSU students. Typical turnaround: 1–3 business days.</li>
+<li><strong>OSC (Pitzer/Cardinal/Owens):</strong> Free academic accounts via <a href="https://my.osc.edu/">my.osc.edu</a>.</li>
+</ul>
+<p>You don’t need to commit to anything. Get the account, sit on it. When you decide to try the cluster, the rest of this handbook is here.</p>
+<hr>
+</section>
+<section id="where-to-go-from-here" class="level1">
+<h1>8. Where to go from here</h1>
+<ul>
+<li>📖 <strong>The full handbook</strong> starts with <a href="./ssh/ssh_setup.html">SSH Setup</a>. The sidebar to the left has every chapter.</li>
+<li>🎓 <strong>The 1-credit self-guided course</strong> at <a href="https://buckai-observatory.org/buckai-hpc-course/">buckai-observatory.org/buckai-hpc-course/</a> turns the handbook into 15 weekly labs.</li>
+<li>🤔 <strong>Still not sure?</strong> Email your faculty advisor or a senior grad student in your lab. They can usually tell you in 5 minutes whether your research direction will eventually want HPC.</li>
+</ul>
+<p>If you decide it isn’t for you right now: that’s fine. <strong>Bookmark this page. Come back later if your research grows in a direction that benefits from HPC.</strong> The handbook isn’t going anywhere.</p>
+
+
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -831,6 +996,18 @@ ul.task-list li input[type="checkbox"] {
     }
   });
   </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="BuckAI HPC Handbook">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">BuckAI HPC Handbook</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./ssh/ssh_setup.html" class="pagination-link" aria-label="SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)">
+        <span class="nav-page-text">SSH Setup for ASC and Unity (Complete Beginner-Friendly Guide)</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 

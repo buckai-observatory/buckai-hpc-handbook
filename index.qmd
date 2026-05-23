@@ -12,6 +12,12 @@ toc: false
 
 {{< include banner.qmd >}}
 
+::: {.callout-tip icon=false}
+### 👋 Never heard of HPC, Unity, or Slurm?
+
+**Start with [Why HPC, and is it for you?](why_hpc.qmd)** — a beginner-friendly explanation of what an HPC cluster actually is, why a grad student might (or might not) need one, and an honest assessment of who this handbook is for. Especially recommended for Windows users and anyone whose only computing experience is on a personal laptop.
+:::
+
 ## What this handbook is
 
 A practical, opinionated reference for using **OSU's Unity HPC cluster** — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from *"I just got my HPC account and the SSH prompt is rejecting me"* to *"I'm training models on GPU nodes from VS Code on my laptop, with my AI coding assistant (Claude Code / Copilot / Gemini) helping me debug, while sharing a reproducible mamba environment with my labmates."*
