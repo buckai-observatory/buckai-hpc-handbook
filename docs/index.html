@@ -310,7 +310,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
+ <span class="menu-text">VS Code Remote-SSH + AI Coding Assistants on HPC</span></a>
   </div>
 </li>
       </ul>
@@ -424,12 +424,12 @@ ul.task-list li input[type="checkbox"] {
 <img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="115" style="flex-shrink:0;">
 <div style="flex:1; min-width:280px;">
 <div style="font-size:2.4rem; font-weight:700; line-height:1.1;">BuckAI HPC Handbook</div>
-<div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;">Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.</div>
+<div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;">Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, AI coding assistants (Claude Code, Copilot, Gemini), mamba, tmux, Jupyter, and the workflows that make them all play nicely together.</div>
 </div>
 </div>
 <section id="what-this-handbook-is" class="level2">
 <h2 class="anchored" data-anchor-id="what-this-handbook-is">What this handbook is</h2>
-<p>A practical, opinionated reference for using <strong>OSU’s Unity HPC cluster</strong> — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from <em>“I just got my HPC account and the SSH prompt is rejecting me”</em> to <em>“I’m training models on GPU nodes from VS Code on my laptop, with Claude Code helping me debug, while sharing a reproducible mamba environment with my labmates.”</em></p>
+<p>A practical, opinionated reference for using <strong>OSU’s Unity HPC cluster</strong> — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from <em>“I just got my HPC account and the SSH prompt is rejecting me”</em> to <em>“I’m training models on GPU nodes from VS Code on my laptop, with my AI coding assistant (Claude Code / Copilot / Gemini) helping me debug, while sharing a reproducible mamba environment with my labmates.”</em></p>
 <p>It’s opinionated about workflows that work well in practice, and warns about the ones that look fine but break in subtle ways.</p>
 </section>
 <section id="browse-by-topic" class="level2">
@@ -445,7 +445,7 @@ ul.task-list li input[type="checkbox"] {
 <ul>
 <li><a href="./ssh/ssh_setup.html">SSH Setup</a> — config, multiplexing, keepalives</li>
 <li><a href="./ssh/ssh_keys.html">SSH Keys</a> — concepts and best practices</li>
-<li><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a> — the recommended dev environment</li>
+<li><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + AI Coding Assistants</a> — the recommended dev environment, with options for Claude Code, GitHub Copilot, and Gemini Code Assist</li>
 </ul>
 </div>
 </div>
@@ -490,7 +490,7 @@ ul.task-list li input[type="checkbox"] {
 <ol type="1">
 <li><strong><a href="./ssh/ssh_setup.html">SSH Setup</a></strong> — write a working <code>~/.ssh/config</code> with connection multiplexing so you only Duo-tap once.</li>
 <li><strong><a href="./ssh/ssh_keys.html">SSH Keys</a></strong> — the concepts behind why your setup is secure, and how to manage keys long-term.</li>
-<li><strong><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + Claude Code</a></strong> — set up the editor + AI assistant that you’ll spend most of your time in.</li>
+<li><strong><a href="./ssh/vscode_remote_ssh.html">VS Code Remote-SSH + AI Coding Assistants</a></strong> — set up the editor + AI assistant (Claude Code, Copilot, or Gemini) that you’ll spend most of your time in.</li>
 <li><strong><a href="./hpc/shell_environment.html">Shell Environment</a></strong> — make <code>.bashrc</code> work for you (aliases, <code>PATH</code>, <code>umask 002</code> for group collaboration, your Unix groups and Slurm partitions).</li>
 <li><strong><a href="./hpc/persistent_sessions.html">Persistent Sessions</a></strong> — keep work alive across disconnects with <code>tmux</code> and the <code>livenode</code> function.</li>
 <li><strong><a href="./hpc/conda_envs.html">Python Environments</a></strong> — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.</li>

@@ -329,7 +329,7 @@ export PATH=$PATH:/path/to/my/tools
 |---|---|
 | `LD_LIBRARY_PATH` | Where the dynamic linker looks for shared libraries (`.so` files). Often needed when running self-compiled code |
 | `CUDA_HOME` | Where the CUDA toolkit is installed |
-| `ANTHROPIC_API_KEY` | Used by Claude Code (see warning below) |
+| `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, etc. | Used by AI coding assistants (Claude Code, GitHub Copilot CLI, etc.) — see warning below |
 | `OMP_NUM_THREADS` | OpenMP thread count for multithreaded code |
 | `TMPDIR` | Where temp files go — Unity typically wants this pointed at a fast scratch filesystem |
 | `umask` | Default file/directory permissions (Section 7) |

@@ -1,22 +1,24 @@
 ---
-title: "VS Code Remote-SSH + Claude Code on HPC"
+title: "VS Code Remote-SSH + AI Coding Assistants on HPC"
 ---
 
 # Introduction
 
-This page walks through setting up a robust, persistent **Claude Code** workflow against OSU HPC clusters (ASC, Unity, OSC) through the ASC jumphost — using **VS Code Remote-SSH** as the editor and terminal host.
+This page walks through setting up a robust, persistent **AI-assisted development** workflow against OSU HPC clusters (ASC, Unity, OSC) through the ASC jumphost — using **VS Code Remote-SSH** as the editor and terminal host.
 
-**Audience:** BuckAI students, postdocs, and collaborators who want to run Claude Code against files and compute resources living on a cluster reachable only through the ASC jumphost.
+**Audience:** BuckAI students, postdocs, and collaborators who want to develop code (with help from an AI coding assistant) against files and compute resources living on a cluster reachable only through the ASC jumphost.
 
 **Prerequisites:** A working SSH setup (see [SSH Setup](ssh_setup.qmd) and [SSH Keys](ssh_keys.qmd)) — you should already be able to `ssh unity` from a plain terminal with **one** Duo prompt and connection multiplexing in place.
+
+**AI assistants covered:** [Claude Code](https://www.anthropic.com/claude-code) (Anthropic), [GitHub Copilot](https://github.com/features/copilot) (Microsoft/GitHub), and [Gemini Code Assist](https://codeassist.google/) (Google). OSU students typically have institutional access to several of these — see Section 7.1 below.
 
 ---
 
 # Why this setup?
 
-Running Claude Code directly inside a plain SSH session on the cluster works, but has three real problems:
+Running an AI coding assistant directly inside a plain SSH session on the cluster works, but has three real problems:
 
-1. **SSH disconnects lose state.** Network blips, laptop sleep, or VPN hiccups kill your session and discard Claude's chat memory mid-task — sometimes leaving files half-edited.
+1. **SSH disconnects lose state.** Network blips, laptop sleep, or VPN hiccups kill your session and discard your conversation history mid-task — sometimes leaving files half-edited.
 2. **`tmux` has rough edges.** Scrolling degrades over time; alternate-screen-buffer issues require manual `reset`; the learning curve is steep.
 3. **Duo MFA is painful.** Every new SSH connection through the jumphost triggers a separate Duo push, and parallel connections (like VS Code makes) can race each other and time out.
 
@@ -24,7 +26,7 @@ This guide solves all three by combining:
 
 - **SSH connection multiplexing** (already set up in [SSH Setup](ssh_setup.qmd)) — authenticate once, get every subsequent connection for free
 - **VS Code Remote-SSH** — automatic reconnection, persistent server-side state, native terminal scrollback
-- **The Claude Code VS Code extension** — visual diff review, selection-based prompting, shared sessions between CLI and GUI
+- **An AI coding assistant VS Code extension** — visual diff review, inline completions, integrated chat — shared with the cluster-side terminal
 
 The end result:
 
@@ -43,9 +45,9 @@ Before starting, you should have:
 - An ASC account with SSH access to the jumphost and Unity
 - A working `~/.ssh/config` from the [SSH Setup](ssh_setup.qmd) page, including the `Host *` multiplexing block
 - An SSH key generated and installed on ASC ([SSH Keys](ssh_keys.qmd))
-- A working `claude` CLI on the cluster — confirm with `ssh unity which claude`
+- An account with at least one AI assistant provider (Anthropic, GitHub, or Google). For Claude Code specifically, the cluster-side CLI must also be installed — confirm with `ssh unity which claude`. GitHub Copilot and Gemini Code Assist don't need a cluster-side CLI; they live entirely in the VS Code extension.
 
-If you don't yet have Claude Code installed on the cluster, install it there first using the standard Claude Code installation. This guide assumes the CLI is already working over a basic SSH session.
+Section 7 below covers each AI assistant separately — pick whichever fits your access.
 
 ---
 
@@ -161,7 +163,7 @@ This is the step everyone skips and then regrets. VS Code's integrated terminal 
 ```bash
 echo $ANTHROPIC_API_KEY    # should print your key
 alias                       # should list your aliases
-which claude                # should print path to Claude Code
+which claude                # only if you'll use Claude Code — should print a path on Unity
 ```
 
 If any of these are missing, your shell startup files aren't being sourced correctly.
@@ -193,41 +195,110 @@ If your aliases still aren't appearing, force the terminal to run as a login she
 
 ---
 
-# 7. Install Claude Code's VS Code Extension
+# 7. Install an AI Coding Assistant VS Code Extension
 
-The extension is **not a replacement** for the CLI. It's a bridge that gives the CLI access to VS Code's visual features (diff viewer, selection-based prompting, problems panel integration). The extension and CLI share session state — you can switch between them mid-task.
+VS Code Remote-SSH plus an AI coding assistant is the productive combination this guide is really about. Pick whichever assistant matches your access — all three work over Remote-SSH following the same general pattern.
 
-## 7.1 Auto-install (easiest)
+## 7.1 OSU institutional access to enterprise-privacy AI tools
 
-The first time you run `claude` in VS Code's integrated terminal while connected via Remote-SSH, the extension detects it and offers to install itself:
+OSU students typically have access to multiple AI assistants through their institutional accounts, often with **enterprise privacy guarantees** stronger than what consumer/free accounts provide (no use of your prompts for model training, retention limits, audit guarantees, etc.):
 
-```bash
-cd /path/to/your/project
-claude
-```
+| Tool | OSU access route |
+|---|---|
+| **Microsoft Copilot** (M365 + GitHub) | Through your OSU Microsoft 365 / `buckeyemail.osu.edu` account. **GitHub Copilot** is free for verified students via [GitHub Education](https://education.github.com/) — sign up with your `.osu.edu` email. |
+| **Google Gemini / Gemini Code Assist** | Through your OSU Google Workspace account (most OSU `buckeyemail` addresses are linked to Google services). |
+| **Claude Code** (Anthropic) | Anthropic's consumer plans (free or paid). OSU may have institutional access — check OCIO / OSU IT services. |
 
-After a moment, VS Code prompts to install the Claude Code extension. Accept.
+✔ **Whichever tool you choose, prefer the institutional/enterprise account when working with sensitive data** — privacy terms there are stricter than consumer-tier ones. Check OSU IT services for the most current list of institutional AI options.
 
-## 7.2 Manual install (if auto-install didn't trigger)
+## 7.2 The universal pattern: install on the REMOTE side
 
-1. Open the Extensions panel (`Cmd+Shift+X`)
-2. Search for **Claude Code**
-3. Install the official Anthropic extension
-4. **Critical:** make sure it installs on the **remote** (cluster) side, not locally on your Mac. After installation, look at the Extensions panel — you'll see two sections: **Local - Installed** and **SSH: unity - Installed**. Claude Code should appear under the SSH section. If it's only local, click the extension and press **Install in SSH: unity**.
+All three extensions follow the same critical rule when used via Remote-SSH:
 
-## 7.3 What the extension adds
+⚠ **You must install the AI extension on the remote (cluster) side, not just locally.**
 
-Once installed, the following features become available:
+After installing any extension, open the Extensions panel (`Cmd+Shift+X`) and look at the two sections:
 
-- **Inline diff review:** when Claude edits a file, VS Code's native side-by-side diff viewer pops open. Accept or reject changes with a click instead of reading diffs in the terminal.
-- **Selection-based prompting:** highlight code in an editor pane, press `Option+K` (Mac), and an `@file.py#L23-L45` reference is inserted into your Claude prompt.
-- **Terminal output references:** in your prompt, use `@terminal:name` to give Claude access to a terminal's output without copy-pasting.
-- **Problems panel access:** Claude can see VS Code's linter and compiler errors directly.
-- **Dedicated chat panel:** an alternative to the terminal interface, accessible via the Claude icon in the sidebar.
+- **Local - Installed**
+- **SSH: unity - Installed**
 
-## 7.4 Optional: enable auto-save
+The AI extension must appear under **SSH: unity - Installed**. If it's only local, click the extension's gear icon and select **Install in SSH: unity**.
 
-Settings → search **auto save** → set **Auto Save** to `afterDelay` with delay `1000`. This ensures that when Claude edits a file, your open editor reloads the changes without conflicting with unsaved buffer state.
+Without this, the extension can't see the files, terminals, or code on the cluster — it'll behave as if it's editing your local (empty) home directory.
+
+## 7.3 Option A: Claude Code (Anthropic)
+
+[Claude Code](https://www.anthropic.com/claude-code) is a CLI tool that integrates with VS Code via a companion extension. The extension is **not a replacement** for the CLI — it's a bridge that exposes the CLI's session through VS Code's diff viewer, selection-prompting, and problems panel.
+
+### Install
+
+1. On the cluster: install the Claude CLI per [Anthropic's instructions](https://docs.anthropic.com/claude-code). Confirm: `which claude` should print a path.
+2. In a VS Code integrated terminal (remote side), run `claude` in your project directory. The extension auto-detects this and prompts to install itself — accept.
+3. Verify: in the Extensions panel, **Claude Code** should appear under **SSH: unity - Installed**.
+
+If auto-install didn't trigger: search "Claude Code" in the Extensions panel and explicitly **Install in SSH: unity**.
+
+### What the extension adds
+
+- **Inline diff review:** when Claude edits a file, VS Code's native side-by-side diff viewer pops open. Accept or reject changes with a click.
+- **Selection-based prompting:** highlight code, press `Option+K` (Mac), and an `@file.py#L23-L45` reference is inserted into your Claude prompt.
+- **Terminal output references:** use `@terminal:name` in your prompt to share a terminal's output with Claude without copy-pasting.
+- **Problems panel access:** Claude sees VS Code's linter/compiler errors.
+- **Dedicated chat panel:** alternative to the terminal interface, accessed via the Claude icon in the sidebar.
+
+## 7.4 Option B: GitHub Copilot
+
+[GitHub Copilot](https://github.com/features/copilot) is widely used and free for students through [GitHub Education](https://education.github.com/).
+
+### Install
+
+1. Make sure you've activated your **GitHub Education** student benefits (one-time, via your `.osu.edu` email).
+2. In VS Code's Extensions panel (`Cmd+Shift+X`), search for **GitHub Copilot** and **GitHub Copilot Chat**.
+3. **Install both in SSH: unity** (not local — same rule as Section 7.2).
+4. When prompted, sign in with your GitHub account.
+
+### What the extension adds
+
+- **Inline completions:** as you type, Copilot suggests grey "ghost text" that you accept with Tab.
+- **Chat sidebar:** multi-turn conversations with `/explain`, `/fix`, `/tests`, etc. slash commands.
+- **Inline chat:** `Cmd+I` (Mac) opens an inline chat box right where your cursor is.
+- **Workspace context:** Copilot can read your open files and recent edits for context.
+
+## 7.5 Option C: Gemini Code Assist (Google)
+
+[Gemini Code Assist](https://codeassist.google/) (formerly Duet AI for Developers) is Google's AI coding assistant.
+
+### Install
+
+1. Make sure you're signed into a Google account with Gemini access (your OSU `buckeyemail.osu.edu` typically works through Google Workspace).
+2. In VS Code's Extensions panel, search for **Gemini Code Assist**.
+3. **Install in SSH: unity** (not local).
+4. Sign in with your Google account when prompted.
+
+### What the extension adds
+
+- **Inline completions** as you type (similar to Copilot).
+- **Chat sidebar** for multi-turn conversations.
+- **Code transformations** via right-click menu (refactor, comment, generate tests).
+- **Smart actions** in Google Cloud-related code.
+
+## 7.6 Comparing the three (briefly)
+
+| Feature | Claude Code | GitHub Copilot | Gemini Code Assist |
+|---|---|---|---|
+| Inline completions | Indirect (via CLI) | ✅ Strong | ✅ Strong |
+| Chat sidebar | ✅ Yes | ✅ Yes | ✅ Yes |
+| File-editing diff viewer | ✅ Excellent | ✅ Yes | ✅ Yes |
+| Cluster-side CLI required | ✅ Yes (`claude`) | ❌ No | ❌ No |
+| Free tier | Limited | Free for verified students | Limited |
+| Tab-completion-driven UX | Less so | Primary UX | Primary UX |
+| Agent-style multi-step edits | ✅ Strong | Growing | Growing |
+
+Most users settle on the one matching their dominant institutional account. **You can also have more than one installed** — they don't conflict, though Tab-completion may compete (you can disable one's inline completions and use it only for chat).
+
+## 7.7 Optional: enable auto-save
+
+Whichever assistant you use: in VS Code settings (`Cmd+,`), search **auto save** and set **Auto Save** to `afterDelay` with delay `1000`. This ensures that when the assistant edits a file, your open editor reloads the changes cleanly without conflicting with unsaved buffer state.
 
 ---
 
@@ -257,7 +328,7 @@ See [SSH Setup §8](ssh_setup.qmd) for the multi-hop multiplexing details.
 
 ## 8.2 Opening VS Code directly on a compute node
 
-You can use VS Code Remote-SSH to connect to a compute node directly: in the **Remote-SSH: Connect to Host** dialog, type your node alias (e.g. `mynode`) instead of `unity`. This gives you the **full** VS Code experience — editor, integrated terminal, Claude Code — running on the compute node, with **no port forwarding ceremony**.
+You can use VS Code Remote-SSH to connect to a compute node directly: in the **Remote-SSH: Connect to Host** dialog, type your node alias (e.g. `mynode`) instead of `unity`. This gives you the **full** VS Code experience — editor, integrated terminal, your AI assistant — running on the compute node, with **no port forwarding ceremony**.
 
 ## 8.3 Port-forwarding shortcuts for Jupyter
 
@@ -291,25 +362,29 @@ Once allocated, you're SSH'd to the compute node inside that terminal pane. For 
 3. Approve one Duo push
 4. **File → Open Recent** → your project
 5. `` Ctrl+` `` to open the integrated terminal
-6. `claude` to start Claude Code
+6. Start your AI assistant (e.g. `claude` for Claude Code, or open the Copilot/Gemini chat sidebar from the VS Code activity bar)
 
-You're now editing files on the cluster, with Claude Code running on the cluster, with diff review and selection prompting wired up.
+You're now editing files on the cluster, with your AI assistant running against the same cluster files, with diff review and chat integration wired up.
 
 ## 9.2 The interaction model
 
 You have **two views** of every file:
 
 - **Editor pane (top):** the file as you see it. Edit by hand, scroll, search, use language features.
-- **Terminal pane (bottom) running `claude`:** the conversational interface. Ask Claude to read, write, edit, run things.
+- **AI assistant interface (bottom or sidebar):** the conversational interface — either Claude Code's terminal, or Copilot's / Gemini's chat sidebar. Ask the assistant to read, write, edit, or run things.
 
-When Claude edits a file:
+When the assistant edits a file:
 
 1. The diff viewer appears
 2. Review the proposed change
 3. Accept (your file is updated on disk) or reject (file untouched)
 4. If you have auto-save on and the file was already open in an editor pane, the editor reloads automatically
 
-For longer code blocks, **highlight the code in an editor pane and press `Option+K`** — this inserts a precise `@file#lines` reference into your Claude prompt, avoiding copy-paste.
+Each assistant has its own shortcut for **selection-based prompting** — highlighting code in an editor pane and adding it to your prompt:
+
+- **Claude Code:** `Option+K` (Mac) inserts an `@file#L23-L45` reference
+- **GitHub Copilot:** `Cmd+I` opens an inline chat at the selection
+- **Gemini Code Assist:** right-click → "Ask Gemini" sends the selection to the chat panel
 
 ## 9.3 Running cluster jobs
 
@@ -323,7 +398,7 @@ sbatch myjob.slurm                    # submit a batch job
 
 For long-running interactive work on a compute node, you can:
 
-- Open a **second** integrated terminal (click the `+` in the terminal panel), request an interactive node there, and run Claude Code on the compute node while the first terminal stays on the login node for monitoring
+- Open a **second** integrated terminal (click the `+` in the terminal panel), request an interactive node there, and run your AI assistant on the compute node while the first terminal stays on the login node for monitoring
 - Or wrap `sinteractive` in `tmux` so the allocation survives disconnects
 
 ## 9.4 Pausing work
@@ -332,12 +407,12 @@ You can safely:
 
 - ✔ **Close your laptop lid** — VS Code's remote server keeps running on the cluster. Reopen, the connection re-establishes automatically, terminals are still there with full state.
 - ✔ **Disconnect from WiFi** — same as above. VS Code reconnects when the network returns.
-- ⚠ **Quit VS Code entirely** — your terminals on the cluster die, so Claude Code's session ends. To survive a full quit, run `claude` inside `tmux` on the cluster (which works fine inside VS Code's terminal too).
+- ⚠ **Quit VS Code entirely** — your terminals on the cluster die, so any CLI-based assistant session (e.g. `claude`) ends. To survive a full quit, run your assistant inside `tmux` on the cluster (which works fine inside VS Code's terminal too). Chat-sidebar assistants (Copilot, Gemini) lose their conversation context on full quit either way.
 
 ## 9.5 Ending a session
 
 1. Save any open files (`Cmd+S`, or with auto-save it's already done)
-2. In the Claude Code terminal, type `/exit` to cleanly end the session
+2. End your AI assistant session cleanly: for Claude Code, type `/exit` in its terminal. For Copilot/Gemini, just close the chat sidebar (nothing to "exit").
 3. **File → Close Window** — VS Code keeps the remote server running for ~10 minutes in case you reconnect, then shuts it down
 
 To force immediate disconnect: `Cmd+Shift+P` → **Remote-SSH: Kill VS Code Server on Host**.
@@ -372,7 +447,7 @@ Shell startup files not being sourced. See Section 6 above.
 
 ### ❌ Claude Code can't find the project root
 
-You started `claude` without `cd`-ing to the project directory first. Exit Claude (`/exit`), `cd` to the right place, restart.
+You started `claude` without `cd`-ing to the project directory first. Exit Claude (`/exit`), `cd` to the right place, restart. (Copilot and Gemini infer the workspace from VS Code's open folder, so they don't have this problem — but they do need you to have **opened a folder** in VS Code, not just a single file.)
 
 ### ❌ Duo prompt appears repeatedly
 
@@ -448,8 +523,8 @@ The UI runs locally on your Mac. **Everything else** — editor server, shell, C
 |---|---|
 | Connect | `Cmd+Shift+P` → **Remote-SSH: Connect to Host** → `unity` |
 | Open integrated terminal | `` Ctrl+` `` |
-| Start Claude | `cd /path/to/project && claude` |
-| Selection prompting | highlight code → `Option+K` |
+| Start AI assistant | `cd /path/to/project && claude` (Claude Code) or open the Copilot/Gemini chat sidebar |
+| Selection prompting | Claude: `Option+K` &nbsp; · &nbsp; Copilot: `Cmd+I` &nbsp; · &nbsp; Gemini: right-click → Ask |
 | Force reconnect | click **SSH: unity** in bottom-left → **Reload Window** |
 | Kill remote server | `Cmd+Shift+P` → **Remote-SSH: Kill VS Code Server on Host** |
 | View logs | `Cmd+Shift+P` → **Remote-SSH: Show Log** |
@@ -468,9 +543,10 @@ On your **Mac**:
 On the **cluster**:
 
 - `~/.bash_profile` — ensure it sources `.bashrc`
-- `~/.bashrc` — `ANTHROPIC_API_KEY`, `PATH`, aliases
+- `~/.bashrc` — AI-tool API keys (e.g. `ANTHROPIC_API_KEY`), `PATH`, aliases
 - `~/.vscode-server/` — VS Code server (auto-managed)
-- `~/.claude/` — Claude Code state (auto-managed)
+- `~/.claude/` — Claude Code state if you use it (auto-managed)
+- `~/.config/github-copilot/`, `~/.config/gemini/`, etc. — analogous state for other assistants (auto-managed)
 
 Nothing in `/etc` or other system locations is modified.
 
@@ -480,7 +556,7 @@ Nothing in `/etc` or other system locations is modified.
 
 This workflow is optimized for **active development against cluster files**. For other use cases:
 
-- **Pure data analysis on your Mac:** use Claude Code locally, no cluster involved
-- **Long-running unattended jobs:** submit Slurm jobs the normal way; Claude Code is for the development phase, not the run phase
+- **Pure data analysis on your Mac:** use your AI assistant locally, no cluster involved
+- **Long-running unattended jobs:** submit Slurm jobs the normal way; AI assistants are for the development phase, not the run phase
 - **Brief ad-hoc commands:** plain SSH or Mosh is faster to fire up
 - **Offline work:** none of this works without network — bring code home in a git repo

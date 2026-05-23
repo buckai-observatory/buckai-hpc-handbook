@@ -21,6 +21,12 @@ This page covers three solutions, each suited to a different situation:
 
 This page assumes you've read [The Shell Environment](shell_environment.qmd) and have a working `.bashrc`. It's complementary to [VS Code Remote-SSH](../ssh/vscode_remote_ssh.qmd) — see Section 6 for when to use which.
 
+::: {.callout-note}
+**A note on AI coding assistants and persistence:** This page uses **Claude Code** as the recurring example because, among the AI assistants covered in the handbook, it's the one that benefits most from `tmux`-style persistence — it runs as a CLI process on the cluster, so a dropped SSH connection (or a Slurm allocation expiring) takes its session state with it.
+
+**VS Code-extension-based assistants** like GitHub Copilot and Gemini Code Assist persist *differently*: their state lives in the VS Code Remote-SSH extension, which auto-reconnects when your laptop comes back. They don't need `tmux`. But the rest of this page — keeping long-running Python jobs, Jupyter servers, or interactive Slurm allocations alive — applies to *all* workflows regardless of which AI tool you use.
+:::
+
 ---
 
 # 1. The Disconnect Problem in More Detail

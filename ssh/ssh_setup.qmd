@@ -435,4 +435,4 @@ With this setup you now have:
 - ✔ shortcuts to specific compute nodes
 - ✔ a config ready for VS Code Remote-SSH
 
-This is the foundation for everything else in the handbook. Next up: [VS Code Remote-SSH + Claude Code](vscode_remote_ssh.qmd).
+This is the foundation for everything else in the handbook. Next up: [VS Code Remote-SSH + AI Coding Assistants](vscode_remote_ssh.qmd).

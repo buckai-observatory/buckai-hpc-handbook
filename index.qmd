@@ -14,7 +14,7 @@ toc: false
 
 ## What this handbook is
 
-A practical, opinionated reference for using **OSU's Unity HPC cluster** — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from *"I just got my HPC account and the SSH prompt is rejecting me"* to *"I'm training models on GPU nodes from VS Code on my laptop, with Claude Code helping me debug, while sharing a reproducible mamba environment with my labmates."*
+A practical, opinionated reference for using **OSU's Unity HPC cluster** — written for BuckAI Observatory students, postdocs, and collaborators. It takes you from *"I just got my HPC account and the SSH prompt is rejecting me"* to *"I'm training models on GPU nodes from VS Code on my laptop, with my AI coding assistant (Claude Code / Copilot / Gemini) helping me debug, while sharing a reproducible mamba environment with my labmates."*
 
 It's opinionated about workflows that work well in practice, and warns about the ones that look fine but break in subtle ways.
 
@@ -31,7 +31,7 @@ Connect securely from your laptop to Unity through the ASC jumphost — with **o
 
 - [SSH Setup](ssh/ssh_setup.qmd) — config, multiplexing, keepalives
 - [SSH Keys](ssh/ssh_keys.qmd) — concepts and best practices
-- [VS Code Remote-SSH + Claude Code](ssh/vscode_remote_ssh.qmd) — the recommended dev environment
+- [VS Code Remote-SSH + AI Coding Assistants](ssh/vscode_remote_ssh.qmd) — the recommended dev environment, with options for Claude Code, GitHub Copilot, and Gemini Code Assist
 :::
 :::
 :::
@@ -74,7 +74,7 @@ If you've just been given an OSU HPC account and want a sensible reading order, 
 
 1. **[SSH Setup](ssh/ssh_setup.qmd)** — write a working `~/.ssh/config` with connection multiplexing so you only Duo-tap once.
 2. **[SSH Keys](ssh/ssh_keys.qmd)** — the concepts behind why your setup is secure, and how to manage keys long-term.
-3. **[VS Code Remote-SSH + Claude Code](ssh/vscode_remote_ssh.qmd)** — set up the editor + AI assistant that you'll spend most of your time in.
+3. **[VS Code Remote-SSH + AI Coding Assistants](ssh/vscode_remote_ssh.qmd)** — set up the editor + AI assistant (Claude Code, Copilot, or Gemini) that you'll spend most of your time in.
 4. **[Shell Environment](hpc/shell_environment.qmd)** — make `.bashrc` work for you (aliases, `PATH`, `umask 002` for group collaboration, your Unix groups and Slurm partitions).
 5. **[Persistent Sessions](hpc/persistent_sessions.qmd)** — keep work alive across disconnects with `tmux` and the `livenode` function.
 6. **[Python Environments](hpc/conda_envs.qmd)** — install mamba, create per-project envs, and avoid the nightmare of mixing pip with conda incorrectly.

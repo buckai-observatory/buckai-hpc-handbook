@@ -346,7 +346,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../ssh/vscode_remote_ssh.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">VS Code Remote-SSH + Claude Code on HPC</span></a>
+ <span class="menu-text">VS Code Remote-SSH + AI Coding Assistants on HPC</span></a>
   </div>
 </li>
       </ul>
@@ -515,6 +515,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong><code>livenode</code></strong> — a small function you put in your <code>.bashrc</code> that combines tmux with <code>sinteractive</code> to give you a persistent, reattachable compute-node session. <strong>This is the headline pattern.</strong></li>
 </ol>
 <p>This page assumes you’ve read <a href="../hpc/shell_environment.html">The Shell Environment</a> and have a working <code>.bashrc</code>. It’s complementary to <a href="../ssh/vscode_remote_ssh.html">VS Code Remote-SSH</a> — see Section 6 for when to use which.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>A note on AI coding assistants and persistence:</strong> This page uses <strong>Claude Code</strong> as the recurring example because, among the AI assistants covered in the handbook, it’s the one that benefits most from <code>tmux</code>-style persistence — it runs as a CLI process on the cluster, so a dropped SSH connection (or a Slurm allocation expiring) takes its session state with it.</p>
+<p><strong>VS Code-extension-based assistants</strong> like GitHub Copilot and Gemini Code Assist persist <em>differently</em>: their state lives in the VS Code Remote-SSH extension, which auto-reconnects when your laptop comes back. They don’t need <code>tmux</code>. But the rest of this page — keeping long-running Python jobs, Jupyter servers, or interactive Slurm allocations alive — applies to <em>all</em> workflows regardless of which AI tool you use.</p>
+</div>
+</div>
 <hr>
 </section>
 <section id="the-disconnect-problem-in-more-detail" class="level1">

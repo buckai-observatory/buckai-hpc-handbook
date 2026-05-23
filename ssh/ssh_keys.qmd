@@ -308,4 +308,4 @@ Without the passphrase, the private key is useless. If you set one, write it dow
 - ✔ Back up your private key somewhere encrypted and offline
 - ✔ Rotate keys when you leave a project; revoke immediately if a device is lost
 
-Back to [SSH Setup](ssh_setup.qmd) for the config file, or onward to [VS Code Remote-SSH + Claude Code](vscode_remote_ssh.qmd) for the editor workflow.
+Back to [SSH Setup](ssh_setup.qmd) for the config file, or onward to [VS Code Remote-SSH + AI Coding Assistants](vscode_remote_ssh.qmd) for the editor workflow.

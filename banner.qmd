@@ -3,7 +3,7 @@
 <img src="images/BuckAI_logo_transp.png" alt="BuckAI Observatory Logo" height="115" style="flex-shrink:0;">
 <div style="flex:1; min-width:280px;">
 <div style="font-size:2.4rem; font-weight:700; line-height:1.1;">BuckAI HPC Handbook</div>
-<div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;">Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, Claude Code, mamba, tmux, Jupyter, and the workflows that make them all play nicely together.</div>
+<div style="font-size:1.05rem; opacity:0.75; margin-top:10px; line-height:1.45;">Practical notes from the BuckAI Observatory on using OSU's Unity HPC cluster — SSH, AI coding assistants (Claude Code, Copilot, Gemini), mamba, tmux, Jupyter, and the workflows that make them all play nicely together.</div>
 </div>
 </div>
 ```
